@@ -1,0 +1,183 @@
+'use client';
+import { useState } from 'react';
+
+const PECAHAN = [100000, 50000, 20000, 10000, 5000, 2000, 1000, 500, 200, 100, 50];
+
+const fmtPecahan = (n) => {
+  if (n >= 1000) return `Rp ${(n / 1000).toLocaleString('id-ID')}rb`;
+  return `Rp ${n}`;
+};
+
+export default function PaymentModal({ total, itemCount = 0, onPay, onClose }) {
+  const [method, setMethod]   = useState('cash');
+  const [tunai, setTunai]     = useState(0);
+  const [tunaiStr, setTunaiStr] = useState('');
+
+  const kembalian = method === 'cash' ? tunai - total : 0;
+  const canPay    = method !== 'cash' || (tunai >= total);
+
+  const addPecahan = (p) => {
+    const newVal = tunai + p;
+    setTunai(newVal);
+    setTunaiStr(newVal.toLocaleString('id-ID'));
+  };
+
+  const handleTunaiInput = (val) => {
+    const clean = parseInt(val.replace(/\D/g, '')) || 0;
+    setTunai(clean);
+    setTunaiStr(clean > 0 ? clean.toLocaleString('id-ID') : '');
+  };
+
+  const handleMethod = (m) => {
+    setMethod(m);
+    setTunai(0);
+    setTunaiStr('');
+  };
+
+  const methods = [
+    { id: 'cash',     label: 'Tunai',    icon: '💵' },
+    { id: 'qris',     label: 'QRIS',     icon: '📱' },
+    { id: 'transfer', label: 'Transfer', icon: '🏦' },
+  ];
+
+  return (
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-slate-900 rounded-2xl w-full max-w-md border border-slate-700 my-4 overflow-hidden">
+
+        {/* Header */}
+        <div className="px-5 py-4 border-b border-slate-700 flex items-center justify-between">
+          <h2 className="text-white font-bold text-lg">Pembayaran</h2>
+          <button onClick={onClose} className="text-slate-500 hover:text-slate-300 text-xl leading-none transition-colors">×</button>
+        </div>
+
+        <div className="px-5 py-4 space-y-5">
+
+          {/* Total Tagihan */}
+          <div className="bg-slate-800 rounded-xl p-4 flex justify-between items-center border border-slate-700">
+            <div>
+              <p className="text-slate-400 text-xs uppercase tracking-wide font-medium">Total Tagihan</p>
+              <p className="text-orange-400 text-2xl font-black mt-0.5">
+                Rp {total.toLocaleString('id-ID')}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-slate-400 text-xs">{itemCount} item</p>
+            </div>
+          </div>
+
+          {/* Metode Bayar */}
+          <div>
+            <p className="text-slate-500 text-xs uppercase tracking-wide font-medium mb-2">Metode Bayar</p>
+            <div className="grid grid-cols-3 gap-2">
+              {methods.map(m => (
+                <button
+                  key={m.id}
+                  onClick={() => handleMethod(m.id)}
+                  className={`py-3 rounded-xl text-sm font-semibold transition-all border ${
+                    method === m.id
+                      ? 'bg-orange-500/10 border-orange-500 text-orange-400'
+                      : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500'
+                  }`}
+                >
+                  <div className="text-xl mb-1">{m.icon}</div>
+                  <div>{m.label}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Section Tunai */}
+          {method === 'cash' && (
+            <>
+              {/* Pecahan Uang */}
+              <div>
+                <p className="text-slate-500 text-xs uppercase tracking-wide font-medium mb-2">Pecahan Uang</p>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {PECAHAN.map(p => (
+                    <button
+                      key={p}
+                      onClick={() => addPecahan(p)}
+                      className="bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-orange-500 text-slate-300 hover:text-orange-400 text-xs font-semibold py-2 rounded-lg transition-all active:scale-95"
+                    >
+                      {fmtPecahan(p)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Input Uang Diterima */}
+              <div>
+                <label className="text-slate-500 text-xs uppercase tracking-wide font-medium block mb-2">
+                  Uang Diterima
+                </label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-semibold text-sm">Rp</span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={tunaiStr}
+                    onChange={e => handleTunaiInput(e.target.value)}
+                    placeholder="0"
+                    className="w-full bg-slate-800 border border-slate-600 focus:border-orange-500 text-white font-bold text-lg rounded-xl pl-10 pr-4 py-3 outline-none transition-colors"
+                  />
+                  {tunai > 0 && (
+                    <button
+                      onClick={() => { setTunai(0); setTunaiStr(''); }}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 text-lg transition-colors"
+                    >×</button>
+                  )}
+                </div>
+              </div>
+
+              {/* Kembalian */}
+              <div>
+                <label className="text-slate-500 text-xs uppercase tracking-wide font-medium block mb-2">
+                  Kembalian
+                </label>
+                <div className={`w-full rounded-xl px-4 py-3 font-black text-lg border transition-colors ${
+                  tunai === 0        ? 'bg-slate-800 border-slate-700 text-slate-500' :
+                  kembalian >= 0     ? 'bg-green-950 border-green-800 text-green-400' :
+                                       'bg-red-950 border-red-800 text-red-400'
+                }`}>
+                  {tunai === 0 ? 'Rp 0' :
+                   kembalian >= 0
+                     ? `Rp ${kembalian.toLocaleString('id-ID')}`
+                     : `Kurang Rp ${Math.abs(kembalian).toLocaleString('id-ID')}`
+                  }
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Non-cash info */}
+          {method !== 'cash' && (
+            <div className="bg-slate-800 rounded-xl p-4 border border-slate-700 text-center">
+              <p className="text-slate-400 text-sm">
+                {method === 'qris' ? '📱 Tunjukkan QR kepada pelanggan' : '🏦 Konfirmasi transfer sebelum proses'}
+              </p>
+            </div>
+          )}
+
+        </div>
+
+        {/* Footer */}
+        <div className="px-5 pb-5 flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 font-semibold rounded-xl py-3 transition-colors"
+          >
+            Batal
+          </button>
+          <button
+            onClick={() => canPay && onPay(method, tunai, kembalian)}
+            disabled={!canPay}
+            className="flex-[2] bg-orange-500 hover:bg-orange-600 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black rounded-xl py-3 text-base transition-colors"
+          >
+            Proses & Cetak Struk
+          </button>
+        </div>
+
+      </div>
+    </div>
+  );
+}
