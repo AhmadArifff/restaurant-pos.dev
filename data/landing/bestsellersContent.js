@@ -1,0 +1,36 @@
+export const bestsellersContent = {
+  title: 'Menu Andalan',
+  description: 'Produk terlaris kami yang paling dicintai pelanggan',
+  products: [
+    {
+      id: 1,
+      name: 'Sultan Royal Kebab',
+      image: 'https://images.unsplash.com/photo-1565299624946-b28e9fac482c?w=500&q=80',
+      price: 65000,
+      badge: 'Bestseller',
+      rating: 4.9,
+      reviews: 328,
+      description: 'Daging lamb premium dengan bumbu rahasia, salad segar, dan saus spesial',
+    },
+    {
+      id: 2,
+      name: 'Shawarma Bombastic',
+      image: 'https://images.unsplash.com/photo-1599058917212-d217cde476a6?w=500&q=80',
+      price: 55000,
+      badge: 'Populer',
+      rating: 4.8,
+      reviews: 245,
+      description: 'Daging ayam tebal berlapis dengan tomat, bawang, dan saus tahini premium',
+    },
+    {
+      id: 3,
+      name: 'Mixed Grill Platter',
+      image: 'https://images.unsplash.com/photo-1555939594-58d7cb561407?w=500&q=80',
+      price: 145000,
+      badge: 'Spesial',
+      rating: 4.9,
+      reviews: 412,
+      description: 'Kombinasi lamb, ayam, dan keba dengan side dishes dan minuman pilihan',
+    },
+  ],
+};
