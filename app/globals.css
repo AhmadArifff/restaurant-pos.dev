@@ -970,43 +970,74 @@ body {
 
 .landing-preview-section--active {
   position: relative;
-  outline: 2px solid #facc15;
-  outline-offset: 0;
-  box-shadow: 0 0 0 1px rgba(250, 204, 21, 0.45), 0 0 22px rgba(250, 204, 21, 0.3);
+  border: 2px solid #facc15;
+  box-shadow: inset 0 0 0 1px rgba(250, 204, 21, 0.55), 0 0 0 1px rgba(250, 204, 21, 0.45), 0 0 22px rgba(250, 204, 21, 0.3);
   animation: landingPreviewPulse 1.6s ease-in-out infinite;
-}
-
-.landing-preview-section-label {
-  padding: 0.55rem 0.85rem;
-  font-size: 0.74rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  background: #0f172a;
-  color: #cbd5e1;
-  border-top: 1px solid #334155;
-  border-bottom: 1px solid #334155;
-}
-
-.landing-preview-cursor-text {
-  display: inline-block;
-  margin-top: 0.25rem;
-  overflow: hidden;
-  white-space: nowrap;
-  border-right: 2px solid #facc15;
-  width: min(100%, 64ch);
-  max-width: 64ch;
-  font-weight: 500;
-  color: #facc15;
-  text-transform: none;
-  letter-spacing: 0.02em;
-  animation: previewTyping 3s steps(64, end), previewCursorBlink 0.8s step-end infinite;
 }
 
 .landing-admin-preview {
   position: relative;
   overflow: hidden;
   isolation: isolate;
+}
+
+.landing-preview-hover-block {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.landing-preview-hover-content {
+  position: relative;
+  z-index: 1;
+  transition: transform 0.45s cubic-bezier(.4,0,.2,1), filter 0.45s cubic-bezier(.4,0,.2,1);
+  transform-origin: center center;
+}
+
+.landing-preview-hover-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1.4rem;
+  background: linear-gradient(135deg, rgba(13,10,6,0.26) 0%, rgba(13,10,6,0.78) 70%, rgba(13,10,6,0.9) 100%);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.35s cubic-bezier(.4,0,.2,1), transform 0.35s cubic-bezier(.4,0,.2,1);
+  pointer-events: none;
+}
+
+.landing-preview-hover-block:hover .landing-preview-hover-overlay {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.landing-preview-hover-block:hover .landing-preview-hover-content {
+  transform: scale(1.02);
+  filter: blur(2.5px) brightness(0.55);
+}
+
+.landing-preview-hover-title {
+  display: inline-block;
+  max-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  border-right: 2px solid transparent;
+  font-size: 1.22rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #facc15;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+  opacity: 0;
+}
+
+.landing-preview-hover-block:hover .landing-preview-hover-title {
+  opacity: 1;
+  border-right-color: #facc15;
+  animation: previewSectionTyping 1.15s steps(24, end) forwards, previewSectionCursor 0.8s step-end infinite;
 }
 
 .landing-admin-preview nav {
@@ -1022,6 +1053,10 @@ body {
   position: absolute !important;
 }
 
+.landing-admin-preview [data-preview-section='header'] nav {
+  position: relative !important;
+}
+
 .landing-admin-preview .float-btn {
   position: absolute !important;
   right: 1rem !important;
@@ -1031,28 +1066,145 @@ body {
   z-index: 70 !important;
 }
 
+.landing-admin-preview [data-preview-section='floatButton'] {
+  position: relative;
+  min-height: 130px;
+  overflow: hidden;
+}
+
+.landing-admin-preview [data-preview-section='floatButton'] .landing-preview-hover-content {
+  min-height: 130px;
+}
+
+.landing-admin-preview [data-preview-section='floatButton'] .float-btn {
+  position: absolute !important;
+}
+
 .landing-admin-preview .scroll-indicator {
   display: none !important;
 }
 
-@keyframes previewTyping {
+@keyframes previewSectionTyping {
   from { max-width: 0; }
-  to { max-width: 64ch; }
+  to { max-width: 34ch; }
 }
 
-@keyframes previewCursorBlink {
-  0%, 100% { border-color: #facc15; }
-  50% { border-color: transparent; }
+@keyframes previewSectionCursor {
+  0%, 100% { border-right-color: #facc15; }
+  50% { border-right-color: transparent; }
 }
 
 @keyframes landingPreviewPulse {
   0% {
-    box-shadow: 0 0 0 1px rgba(250, 204, 21, 0.35), 0 0 10px rgba(250, 204, 21, 0.2);
+    box-shadow: inset 0 0 0 1px rgba(250, 204, 21, 0.45), 0 0 0 1px rgba(250, 204, 21, 0.35), 0 0 10px rgba(250, 204, 21, 0.2);
   }
   50% {
-    box-shadow: 0 0 0 1px rgba(250, 204, 21, 0.65), 0 0 26px rgba(250, 204, 21, 0.45);
+    box-shadow: inset 0 0 0 1px rgba(250, 204, 21, 0.7), 0 0 0 1px rgba(250, 204, 21, 0.65), 0 0 26px rgba(250, 204, 21, 0.45);
   }
   100% {
-    box-shadow: 0 0 0 1px rgba(250, 204, 21, 0.35), 0 0 10px rgba(250, 204, 21, 0.2);
+    box-shadow: inset 0 0 0 1px rgba(250, 204, 21, 0.45), 0 0 0 1px rgba(250, 204, 21, 0.35), 0 0 10px rgba(250, 204, 21, 0.2);
   }
+}
+
+/* ===== ADMIN FORM STYLING ===== */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #e2e8f0;
+  letter-spacing: 0.01em;
+}
+
+.form-label-colon {
+  color: #facc15;
+  opacity: 0.9;
+}
+
+.form-input,
+.form-textarea {
+  width: 100%;
+  background: #0f172a;
+  color: #f8fafc;
+  border: 1px solid #334155;
+  border-radius: 0.5rem;
+  padding: 0.62rem 0.72rem;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-input::placeholder,
+.form-textarea::placeholder {
+  color: #94a3b8;
+}
+
+.form-input:focus,
+.form-textarea:focus {
+  border-color: #facc15;
+  box-shadow: 0 0 0 1px rgba(250, 204, 21, 0.35);
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 92px;
+}
+
+.form-input.error,
+.form-textarea.error {
+  border-color: #ef4444;
+}
+
+.form-counter {
+  font-size: 0.74rem;
+  color: #94a3b8;
+  margin-top: 0.15rem;
+}
+
+.form-error {
+  font-size: 0.75rem;
+  color: #f87171;
+}
+
+.form-hint {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.btn-secondary {
+  background: #1e293b;
+  color: #e2e8f0;
+  border: 1px solid #475569;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background: #334155;
+  border-color: #64748b;
+}
+
+.form-image-preview-wrap {
+  margin-top: 0.5rem;
+  padding: 0.55rem;
+  background: #0b1220;
+  border: 1px solid #334155;
+  border-radius: 0.6rem;
+}
+
+.form-image-preview {
+  width: 100%;
+  max-height: 320px;
+  object-fit: contain;
+  border-radius: 0.4rem;
+  background: #020617;
 }

@@ -12,7 +12,8 @@ export default function FormGroup({
     <div className={`form-group ${className}`}>
       {label && (
         <label className="form-label">
-          {label}
+          <span>{label}</span>
+          <span className="form-label-colon">:</span>
           {required && <span className="text-red-500">*</span>}
         </label>
       )}

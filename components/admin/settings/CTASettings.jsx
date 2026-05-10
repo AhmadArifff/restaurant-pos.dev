@@ -4,10 +4,11 @@ import AccordionSection from '../form/AccordionSection';
 import TextInput from '../form/TextInput';
 import TextArea from '../form/TextArea';
 import ImageUpload from '../form/ImageUpload';
+import DynamicArray from '../form/DynamicArray';
 import { useLandingSettingsStore } from '@/store/landingSettingsStore';
 
 export default function CTASettings() {
-  const { settings, updateNestedSetting } = useLandingSettingsStore();
+  const { settings, updateNestedSetting, addArrayItem, removeArrayItem } = useLandingSettingsStore();
   const ctaSettings = settings.cta || {};
 
   return (
@@ -64,6 +65,45 @@ export default function CTASettings() {
           label="Secondary Link"
           value={ctaSettings.secondaryButton?.href}
           onChange={(val) => updateNestedSetting('cta', 'secondaryButton.href', val)}
+        />
+      </AccordionSection>
+
+      <AccordionSection title="Delivery Platforms (GoFood / GrabFood)">
+        <DynamicArray
+          items={ctaSettings.deliveryPlatforms || []}
+          label="Platform List"
+          onAdd={() =>
+            addArrayItem('cta', 'deliveryPlatforms', {
+              name: 'Platform',
+              logo: '',
+              text: 'Tersedia di Platform',
+            })
+          }
+          onRemove={(idx) => removeArrayItem('cta', 'deliveryPlatforms', idx)}
+          renderItem={(platform, idx) => (
+            <div className="space-y-2">
+              <TextInput
+                label="Platform Name"
+                value={platform.name}
+                onChange={(val) => updateNestedSetting('cta', `deliveryPlatforms.${idx}.name`, val)}
+                maxLength={40}
+              />
+              <ImageUpload
+                label="Platform Logo"
+                value={platform.logo}
+                onChange={(val) => updateNestedSetting('cta', `deliveryPlatforms.${idx}.logo`, val)}
+              />
+              <TextInput
+                label="Display Text"
+                value={platform.text}
+                onChange={(val) => updateNestedSetting('cta', `deliveryPlatforms.${idx}.text`, val)}
+                maxLength={80}
+                placeholder="Tersedia di GoFood"
+              />
+            </div>
+          )}
+          addButtonLabel="+ Add Platform"
+          maxItems={6}
         />
       </AccordionSection>
     </div>

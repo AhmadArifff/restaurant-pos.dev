@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import FormGroup from './FormGroup';
 
 export default function ImageUpload({
@@ -12,12 +11,11 @@ export default function ImageUpload({
   hint,
   className = '',
 }) {
-  const [preview, setPreview] = useState(value || null);
+  const preview = value || null;
 
   const handleChange = (e) => {
     const url = e.target.value;
     onChange(url);
-    setPreview(url);
   };
 
   const handleFileSelect = async (e) => {
@@ -26,7 +24,6 @@ export default function ImageUpload({
       // Create preview URL
       const reader = new FileReader();
       reader.onloadend = () => {
-        setPreview(reader.result);
         onChange(reader.result);
       };
       reader.readAsDataURL(file);
@@ -36,7 +33,7 @@ export default function ImageUpload({
   return (
     <FormGroup label={label} error={error} required={required} hint={hint} className={className}>
       <div className="space-y-3">
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <input
             type="file"
             accept="image/*"
@@ -46,7 +43,6 @@ export default function ImageUpload({
           <button
             type="button"
             onClick={() => {
-              setPreview(null);
               onChange('');
             }}
             className="btn-secondary"
@@ -55,7 +51,7 @@ export default function ImageUpload({
           </button>
         </div>
 
-        <div className="text-xs text-gray-400 my-2">or paste URL</div>
+        <div className="text-xs text-gray-400 my-2">or paste URL:</div>
 
         <input
           type="url"
@@ -66,8 +62,8 @@ export default function ImageUpload({
         />
 
         {preview && (
-          <div className="mt-3 p-2 bg-slate-800 rounded border border-slate-700">
-            <img src={preview} alt="Preview" className="w-full h-32 object-cover rounded" />
+          <div className="form-image-preview-wrap">
+            <img src={preview} alt="Preview" className="form-image-preview" />
           </div>
         )}
       </div>

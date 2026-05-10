@@ -8,6 +8,10 @@ const whatsappIcon = (
 
 export default function CTA({ content = ctaContent, previewMode = false }) {
   const data = content || ctaContent;
+  const deliveryPlatforms = (data.deliveryPlatforms && data.deliveryPlatforms.length > 0)
+    ? data.deliveryPlatforms
+    : (ctaContent.deliveryPlatforms || []);
+
   return (
     <section id="cta">
       <div className="cta-bg" style={{ backgroundImage: `url('${data.backgroundImage}')` }} />
@@ -34,14 +38,14 @@ export default function CTA({ content = ctaContent, previewMode = false }) {
           <a href={data.secondaryButton?.href} className="btn-outline">{data.secondaryButton?.label}</a>
         </div>
         <div style={{ marginTop: '2rem', display: 'flex', gap: '1.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/Gofood_logo.svg/200px-Gofood_logo.svg.png" alt="GoFood" style={{ height: '24px', filter: 'brightness(0) invert(1)', opacity: 0.6 }} />
-            Tersedia di GoFood
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/Grab_logo.svg/200px-Grab_logo.svg.png" alt="GrabFood" style={{ height: '24px', filter: 'brightness(0) invert(1)', opacity: 0.6 }} />
-            Tersedia di GrabFood
-          </div>
+          {deliveryPlatforms.map((platform, idx) => (
+            <div key={`${platform.name || 'platform'}-${idx}`} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+              {platform.logo && (
+                <img src={platform.logo} alt={platform.name || 'Platform'} style={{ height: '24px', filter: 'brightness(0) invert(1)', opacity: 0.6 }} />
+              )}
+              {platform.text}
+            </div>
+          ))}
         </div>
       </div>
     </section>

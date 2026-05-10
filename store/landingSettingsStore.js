@@ -156,6 +156,7 @@ const defaultLandingSettings = {
     description: ctaContent.description || '',
     whatsappUrl: ctaContent.whatsappUrl || '',
     secondaryButton: ctaContent.secondaryButton || { label: '', href: '' },
+    deliveryPlatforms: ctaContent.deliveryPlatforms || [],
   },
   footer: {
     brand: footerContent.brand || '',

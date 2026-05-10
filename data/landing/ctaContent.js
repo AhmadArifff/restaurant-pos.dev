@@ -11,4 +11,16 @@
     label: '📍 Cari Cabang',
     href: '#locations',
   },
+  deliveryPlatforms: [
+    {
+      name: 'GoFood',
+      logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/Gofood_logo.svg/200px-Gofood_logo.svg.png',
+      text: 'Tersedia di GoFood',
+    },
+    {
+      name: 'GrabFood',
+      logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/Grab_logo.svg/200px-Grab_logo.svg.png',
+      text: 'Tersedia di GrabFood',
+    },
+  ],
 };

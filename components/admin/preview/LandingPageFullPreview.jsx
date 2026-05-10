@@ -16,7 +16,7 @@ import Footer from '@/components/landing/Footer';
 import FloatButton from '@/components/landing/FloatButton';
 
 const PREVIEW_SECTIONS = [
-  { id: 'header', title: 'Header', Component: Header },
+  { id: 'header', title: 'Header Section', Component: Header },
   { id: 'hero', title: 'Hero Section', Component: Hero },
   { id: 'marquee', title: 'Marquee Section', Component: Marquee },
   { id: 'about', title: 'About Section', Component: About },
@@ -30,80 +30,6 @@ const PREVIEW_SECTIONS = [
   { id: 'footer', title: 'Footer Section', Component: Footer },
   { id: 'floatButton', title: 'Float Button Section', Component: FloatButton, previewMode: true },
 ];
-
-function toFlatText(value) {
-  if (value == null) return '';
-  return String(value).replace(/\s+/g, ' ').trim();
-}
-
-function makeCursorText(sectionId, content) {
-  switch (sectionId) {
-    case 'header':
-      return toFlatText(
-        `${content?.header?.logo || ''} ${content?.header?.logoSpan || ''} | ${(content?.header?.navLinks || [])
-          .map((item) => item.label)
-          .join(' • ')}`,
-      );
-    case 'hero':
-      return toFlatText(
-        `${content?.hero?.badge || ''} | ${content?.hero?.titleTop || ''} ${content?.hero?.titleAccent || ''} ${content?.hero?.titleBottom || ''} | ${content?.hero?.subtitle || ''}`,
-      );
-    case 'marquee':
-      return toFlatText((content?.marquee?.items || []).join(' • '));
-    case 'about':
-      return toFlatText(
-        `${content?.about?.sectionLabel || ''} | ${content?.about?.title || ''} | ${content?.about?.description || ''}`,
-      );
-    case 'bestsellers':
-      return toFlatText(
-        `${content?.bestsellers?.sectionLabel || ''} | ${(content?.bestsellers?.products || [])
-          .map((item) => item.name)
-          .join(' • ')}`,
-      );
-    case 'menuTabs':
-      return toFlatText(
-        `${content?.menuTabs?.sectionLabel || ''} | ${(content?.menuTabs?.categories || [])
-          .map((item) => item.label)
-          .join(' • ')}`,
-      );
-    case 'experience':
-      return toFlatText(
-        `${content?.experience?.sectionLabel || ''} | ${content?.experience?.title || ''} ${content?.experience?.subtitle || ''} | ${(content?.experience?.features || [])
-          .map((item) => item.title)
-          .join(' • ')}`,
-      );
-    case 'gallery':
-      return toFlatText(
-        (content?.gallery?.images || []).map((item) => item.alt || 'Gallery').join(' • '),
-      );
-    case 'locations':
-      return toFlatText(
-        `${content?.locations?.sectionLabel || ''} | ${(content?.locations?.branches || [])
-          .map((item) => item.name)
-          .join(' • ')}`,
-      );
-    case 'testimonials':
-      return toFlatText(
-        `${content?.testimonials?.sectionLabel || ''} | ${(content?.testimonials?.items || [])
-          .map((item) => item.author)
-          .join(' • ')}`,
-      );
-    case 'cta':
-      return toFlatText(
-        `${content?.cta?.sectionLabel || ''} | ${content?.cta?.title || ''} | ${content?.cta?.description || ''}`,
-      );
-    case 'footer':
-      return toFlatText(
-        `${content?.footer?.brand || ''} | ${(content?.footer?.columns || [])
-          .map((col) => col.title)
-          .join(' • ')}`,
-      );
-    case 'floatButton':
-      return toFlatText(`${content?.floatButton?.ariaLabel || ''} | ${content?.floatButton?.whatsappUrl || ''}`);
-    default:
-      return '';
-  }
-}
 
 function normalizeContent(settings) {
   const header = settings?.header || {};
@@ -186,23 +112,38 @@ export default function LandingPageFullPreview({ settings, highlightedSection })
     return () => observer.disconnect();
   }, [settings]);
 
+  useEffect(() => {
+    const root = previewRootRef.current;
+    if (!root || !highlightedSection) return;
+
+    const target = root.querySelector(`[data-preview-section="${highlightedSection}"]`);
+    if (!target) return;
+
+    target.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center',
+      inline: 'nearest',
+    });
+  }, [highlightedSection]);
+
   return (
     <div ref={previewRootRef} className="landing-page landing-admin-preview min-h-screen bg-[var(--dark)]">
       {PREVIEW_SECTIONS.map((section) => {
         const SectionComponent = section.Component;
         const isActive = highlightedSection === section.id;
-        const cursorText = makeCursorText(section.id, content);
 
         return (
-          <div key={section.id} className={isActive ? 'landing-preview-section--active' : ''}>
-            <div className="landing-preview-section-label">
-              <div className="text-slate-200">{section.title}</div>
-              <span className="landing-preview-cursor-text">{cursorText || section.title}</span>
+          <div
+            key={section.id}
+            data-preview-section={section.id}
+            className={`landing-preview-hover-block ${isActive ? 'landing-preview-section--active' : ''}`}
+          >
+            <div className="landing-preview-hover-content">
+              <SectionComponent content={content[section.id]} previewMode={section.previewMode} />
             </div>
-            <SectionComponent
-              content={content[section.id]}
-              previewMode={section.previewMode}
-            />
+            <div className="landing-preview-hover-overlay" aria-hidden="true">
+              <span className="landing-preview-hover-title">{section.title}</span>
+            </div>
           </div>
         );
       })}
