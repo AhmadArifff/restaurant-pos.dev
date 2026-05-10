@@ -13,7 +13,22 @@ import { testimonialsContent } from '@/data/landing/testimonialsContent';
 import { ctaContent } from '@/data/landing/ctaContent';
 import { footerContent } from '@/data/landing/footerContent';
 
-const LANDING_SETTINGS_DB_KEY = 'landing_page_settings';
+const LEGACY_LANDING_SETTINGS_DB_KEY = 'landing_page_settings';
+const LANDING_SECTION_DB_KEYS = {
+  header: 'landing_header',
+  hero: 'landing_hero',
+  marquee: 'landing_marquee',
+  about: 'landing_about',
+  bestsellers: 'landing_bestsellers',
+  menuTabs: 'landing_menu_tabs',
+  experience: 'landing_experience',
+  gallery: 'landing_gallery',
+  locations: 'landing_locations',
+  testimonials: 'landing_testimonials',
+  cta: 'landing_cta',
+  footer: 'landing_footer',
+  floatButton: 'landing_float_button',
+};
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
 
@@ -177,11 +192,29 @@ const normalizeFromApi = (apiSettings) => {
   const base = clone(defaultLandingSettings);
   if (!apiSettings || typeof apiSettings !== 'object') return base;
 
-  const persistedRaw = apiSettings[LANDING_SETTINGS_DB_KEY];
-  const persisted = typeof persistedRaw === 'object' ? persistedRaw : safeParse(persistedRaw);
-  if (!persisted || typeof persisted !== 'object') return base;
+  // Preferred format: one row per landing section key (same pattern as admin settings menu)
+  const perSectionMerged = clone(base);
+  let hasPerSectionData = false;
 
-  return deepMergeWithDefaults(base, persisted);
+  Object.entries(LANDING_SECTION_DB_KEYS).forEach(([section, dbKey]) => {
+    const sectionRaw = apiSettings[dbKey];
+    if (!sectionRaw) return;
+
+    const parsed = typeof sectionRaw === 'object' ? sectionRaw : safeParse(sectionRaw);
+    if (!parsed || typeof parsed !== 'object') return;
+
+    perSectionMerged[section] = deepMergeWithDefaults(base[section], parsed);
+    hasPerSectionData = true;
+  });
+
+  if (hasPerSectionData) return perSectionMerged;
+
+  // Backward compatibility: single JSON blob key
+  const legacyRaw = apiSettings[LEGACY_LANDING_SETTINGS_DB_KEY];
+  const legacyParsed = typeof legacyRaw === 'object' ? legacyRaw : safeParse(legacyRaw);
+  if (!legacyParsed || typeof legacyParsed !== 'object') return base;
+
+  return deepMergeWithDefaults(base, legacyParsed);
 };
 
 export const useLandingSettingsStore = create((set, get) => ({
@@ -223,13 +256,13 @@ export const useLandingSettingsStore = create((set, get) => ({
     set({ isSaving: true, saveError: null });
 
     try {
-      await bulkUpdateWebsiteSettings([
-        {
-          setting_key: LANDING_SETTINGS_DB_KEY,
-          setting_value: JSON.stringify(currentSettings),
-          data_type: 'json',
-        },
-      ]);
+      const payload = Object.entries(LANDING_SECTION_DB_KEYS).map(([section, dbKey]) => ({
+        setting_key: dbKey,
+        setting_value: JSON.stringify(currentSettings[section] ?? {}),
+        data_type: 'json',
+      }));
+
+      await bulkUpdateWebsiteSettings(payload);
 
       set({
         isSaving: false,
