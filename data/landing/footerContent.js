@@ -1,55 +1,49 @@
-export const footerContent = {
+﻿export const footerContent = {
   brand: 'SULTAN KEBAB',
-  brandDescription: 'Restoran Timur Tengah Premium dengan cita rasa otentik dan pelayanan terbaik sejak 2015.',
+  brandDescription:
+    'Menghadirkan cita rasa autentik Timur Tengah ke Indonesia sejak 2015. Premium, Halal, dan penuh cinta dalam setiap sajian.',
   socialLinks: [
-    { icon: 'f', label: 'Facebook', href: 'https://facebook.com/sultankebab' },
-    { icon: 'ig', label: 'Instagram', href: 'https://instagram.com/sultankebab' },
-    { icon: 'tw', label: 'Twitter', href: 'https://twitter.com/sultankebab' },
-    { icon: 'yt', label: 'YouTube', href: 'https://youtube.com/@sultankebab' },
-    { icon: 'tiktok', label: 'TikTok', href: 'https://tiktok.com/@sultankebab' },
+    { label: 'Instagram', href: '#', icon: '📸' },
+    { label: 'TikTok', href: '#', icon: '🎵' },
+    { label: 'YouTube', href: '#', icon: '▶️' },
+    { label: 'WhatsApp', href: '#', icon: '💬' },
   ],
-  sections: [
+  columns: [
     {
       title: 'Menu',
       links: [
         { label: 'Kebab & Shawarma', href: '#menu' },
-        { label: 'Main Heavy', href: '#menu' },
-        { label: 'Snacks', href: '#menu' },
+        { label: 'Makan Berat', href: '#menu' },
+        { label: 'Snack & Appetizer', href: '#menu' },
         { label: 'Minuman', href: '#menu' },
         { label: 'Dessert', href: '#menu' },
+        { label: 'Paket Spesial', href: '#menu' },
       ],
     },
     {
-      title: 'Perusahaan',
+      title: 'Cabang',
       links: [
-        { label: 'Tentang Kami', href: '#about' },
-        { label: 'Lokasi', href: '#locations' },
+        { label: 'Bandung — Dago', href: '#locations' },
+        { label: 'Bandung — Buah Batu', href: '#locations' },
+        { label: 'Jakarta — SCBD', href: '#locations' },
+        { label: 'Jakarta — Kemang', href: '#locations' },
+        { label: 'Surabaya — Pakuwon', href: '#locations' },
+        { label: '+ 7 Cabang Lainnya', href: '#locations' },
+      ],
+    },
+    {
+      title: 'Informasi',
+      links: [
+        { label: 'Tentang Kami', href: '#' },
+        { label: 'Franchise', href: '#' },
         { label: 'Karir', href: '#' },
-        { label: 'Blog', href: '#' },
-      ],
-    },
-    {
-      title: 'Layanan',
-      links: [
-        { label: 'Delivery', href: '#' },
-        { label: 'Catering', href: '#' },
-        { label: 'Private Dining', href: '#' },
-        { label: 'Banquet', href: '#' },
-      ],
-    },
-    {
-      title: 'Hubungi Kami',
-      links: [
-        { label: 'WhatsApp', href: 'https://wa.me/6281234567890' },
-        { label: 'Email: info@sultankebab.com', href: 'mailto:info@sultankebab.com' },
-        { label: 'Phone: (021) 1234-5678', href: 'tel:+62211234567890' },
+        { label: 'Catering & Event', href: '#' },
+        { label: 'Halal Certificate', href: '#' },
+        { label: 'Hubungi Kami', href: '#' },
       ],
     },
   ],
-  copyright: '© 2024 Sultan Kebab. Semua hak dilindungi. | Dibuat dengan ❤️ oleh Tim Sultan Kebab',
-  links: [
-    { label: 'Kebijakan Privasi', href: '#' },
-    { label: 'Syarat & Ketentuan', href: '#' },
-    { label: 'Sitemap', href: '#' },
-  ],
+  copyright:
+    '© 2024 Sultan Kebab. All rights reserved. | Dibuat dengan ❤️ untuk pecinta kebab Indonesia',
+  note: 'Semua gambar adalah placeholder dari Unsplash. Asset final sedang dalam proses produksi.',
 };

@@ -1,14 +1,12 @@
-export const marqueeContent = {
+﻿export const marqueeContent = {
   items: [
     'SULTAN KEBAB',
+    'AUTHENTIC HALAL',
     'PREMIUM QUALITY',
-    'TIMUR TENGAH OTENTIK',
-    'FINE DINING',
-    'HALAL CERTIFIED',
-    'SULTAN KEBAB',
-    'PREMIUM QUALITY',
-    'TIMUR TENGAH OTENTIK',
-    'FINE DINING',
-    'HALAL CERTIFIED',
+    'FINE DINING EXPERIENCE',
+    'FRESH INGREDIENTS DAILY',
+    'MIDDLE EASTERN FLAVORS',
+    'ORDER VIA WHATSAPP',
   ],
+  dot: '◆',
 };

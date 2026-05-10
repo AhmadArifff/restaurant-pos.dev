@@ -1,5 +1,7 @@
 import { create } from 'zustand';
-import { getWebsiteSettings } from '@/lib/api';const DEFAULT_SETTINGS = {
+import { getWebsiteSettings } from '@/lib/api';
+
+const DEFAULT_SETTINGS = {
   store_name: 'Lumpia Beef Bang.Han',
   store_description: 'Point of Sale System - Lumpia Beef Bang.Han',
   logo_url: '/images/branding/default-logo.svg',

@@ -1,99 +1,90 @@
-'use client';
+﻿'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { testimonialsContent } from '@/data/landing/testimonialsContent';
 
 export default function Testimonials() {
   const [activeCard, setActiveCard] = useState(null);
 
-  const handleCardClick = (idx) => {
-    setActiveCard(activeCard === idx ? null : idx);
+  useEffect(() => {
+    const closeOnOutsideTouch = (event) => {
+      if (activeCard === null) return;
+      const activeNode = document.querySelector(`[data-testi-card="${activeCard}"]`);
+      if (activeNode && !activeNode.contains(event.target)) {
+        setActiveCard(null);
+      }
+    };
+
+    document.addEventListener('touchend', closeOnOutsideTouch);
+    return () => document.removeEventListener('touchend', closeOnOutsideTouch);
+  }, [activeCard]);
+
+  const toggleCard = (id) => {
+    setActiveCard((prev) => (prev === id ? null : id));
   };
 
   return (
-    <section id="testimonials" className="py-16 md:py-24 px-6 md:px-12 bg-[var(--dark)]">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="testi-header reveal">
-          <div className="section-label" style={{ justifyContent: 'center' }}>Kata Mereka</div>
-          <h2 className="section-title" style={{ textAlign: 'center' }}>
-            Ribuan Pelanggan <span className="italic gold">Sudah Membuktikan</span>
-          </h2>
-          <p className="section-desc" style={{ margin: '0 auto', textAlign: 'center' }}>
-            {testimonialsContent.description}
-          </p>
-        </div>
+    <section id="testimonials">
+      <div className="testi-header reveal">
+        <div className="section-label">{testimonialsContent.sectionLabel}</div>
+        <h2 className="section-title">
+          Ribuan Pelanggan <span className="italic gold">Sudah Membuktikan</span>
+        </h2>
+        <p className="section-desc">{testimonialsContent.description}</p>
+      </div>
 
-        {/* Testimonial Cards Grid */}
-        <div className="testi-grid">
-          {testimonialsContent.testimonials.map((testi, idx) => (
-            <div
-              key={idx}
-              className={`testi-card reveal ${activeCard === idx ? 'tc-active' : ''}`}
-              onClick={() => handleCardClick(idx)}
-              onTouchEnd={(e) => {
-                if (!e.target.closest('.testi-card')._touchMoved) {
-                  e.preventDefault();
-                  handleCardClick(idx);
-                }
-              }}
-              onTouchStart={(e) => {
-                e.currentTarget._touchMoved = false;
-              }}
-              onTouchMove={() => {
-                const div = event.currentTarget;
-                if (div) div._touchMoved = true;
-              }}
-              tabIndex="0"
-              role="button"
-              aria-label={`Review ${testi.author}`}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  handleCardClick(idx);
-                }
-              }}
-            >
-              {/* Background Image */}
-              <img
-                src={testi.image}
-                alt={testi.author}
-                className="testi-bg-img"
-              />
+      <div className="testi-grid">
+        {testimonialsContent.items.map((item) => (
+          <div
+            key={item.id}
+            data-testid-card={item.id}
+            data-testi-card={item.id}
+            className={`testi-card reveal ${item.revealClass || ''} ${activeCard === item.id ? 'tc-active' : ''}`}
+            tabIndex={0}
+            role="button"
+            aria-label={item.ariaLabel}
+            onClick={() => toggleCard(item.id)}
+            onTouchStart={(e) => {
+              e.currentTarget.dataset.touchMoved = '0';
+            }}
+            onTouchMove={(e) => {
+              e.currentTarget.dataset.touchMoved = '1';
+            }}
+            onTouchEnd={(e) => {
+              if (e.currentTarget.dataset.touchMoved === '1') return;
+              e.preventDefault();
+              toggleCard(item.id);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                toggleCard(item.id);
+              }
+            }}
+          >
+            <img className="testi-bg-img" src={item.image} alt={item.imageAlt} />
+            {item.badge ? <span className="influencer-badge">{item.badge}</span> : null}
 
-              {/* Badge */}
-              {testi.badge && (
-                <span className="influencer-badge">{testi.badge}</span>
-              )}
+            <div className="testi-tap-hint">
+              <div className="hint-ring">👆</div>
+              <span className="hint-label">Tap untuk baca</span>
+            </div>
 
-              {/* Tap Hint (mobile only) */}
-              <div className="testi-tap-hint">
-                <div className="hint-ring">👆</div>
-                <span className="hint-label">Tap untuk baca</span>
-              </div>
+            <div className="testi-review-overlay">
+              <span className="testi-big-quote">&quot;</span>
+              <span className="testi-stars">★★★★★</span>
+              <p className="testi-text">{item.review}</p>
+            </div>
 
-              {/* Review Overlay */}
-              <div className="testi-review-overlay">
-                <span className="testi-big-quote">"</span>
-                <span className="testi-stars">{'★'.repeat(testi.rating)}</span>
-                <p className="testi-text">{testi.review}</p>
-              </div>
-
-              {/* Author Strip */}
-              <div className="testi-author-strip">
-                <img
-                  src={testi.avatarImage}
-                  alt={testi.author}
-                  className="testi-avatar"
-                />
-                <div>
-                  <div className="testi-name">{testi.author}</div>
-                  <div className="testi-role">{testi.role}</div>
-                </div>
+            <div className="testi-author-strip">
+              <img className="testi-avatar" src={item.authorAvatar} alt={item.authorAvatarAlt} />
+              <div>
+                <div className="testi-name">{item.author}</div>
+                <div className="testi-role">{item.role}</div>
               </div>
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
     </section>
   );

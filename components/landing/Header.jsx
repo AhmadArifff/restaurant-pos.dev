@@ -1,92 +1,72 @@
-'use client';
+﻿'use client';
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import { headerContent } from '@/data/landing/headerContent';
 
 export default function Header() {
   const [scrolled, setScrolled] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    const onScroll = () => setScrolled(window.scrollY > 80);
+    onScroll();
+    window.addEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  const closeMobileNav = () => setMobileOpen(false);
+
   return (
-    <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled
-          ? 'bg-[rgba(13,10,6,0.95)] backdrop-blur-md border-b border-[rgba(201,168,76,0.2)]'
-          : 'bg-transparent'
-      } px-[5%] py-3 md:py-5`}
-    >
-      <nav className="flex justify-between items-center">
-        {/* Logo */}
-        <Link
-          href="/"
-          className="font-[var(--font-brand)] text-2xl md:text-3xl tracking-widest text-[var(--gold)]"
-        >
+    <>
+      <nav id="navbar" className={scrolled ? 'scrolled' : ''}>
+        <a href="#" className="nav-logo" aria-label="Sultan Kebab">
           {headerContent.logo}
-          <span className="text-[var(--cream)]">{headerContent.logoSpan}</span>
-        </Link>
-
-        {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center gap-8">
-          {headerContent.navLinks.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              className="text-[var(--cream2)] text-sm uppercase tracking-widest font-medium hover:text-[var(--gold)] transition-colors duration-300"
-            >
-              {link.label}
-            </a>
-          ))}
-        </div>
-
-        {/* CTA Button Desktop */}
-        <a
-          href={headerContent.ctaButton.href}
-          className="hidden md:inline-block bg-[var(--gold)] text-[var(--dark)] px-4 py-2 rounded text-sm font-medium hover:bg-[var(--gold-light)] transition-colors duration-300"
-        >
-          {headerContent.ctaButton.label}
+          <span>{headerContent.logoSpan}</span>
         </a>
-
-        {/* Mobile Hamburger */}
+        <ul className="nav-links">
+          {headerContent.navLinks.map((link) => (
+            <li key={link.href}>
+              <a href={link.href}>{link.label}</a>
+            </li>
+          ))}
+          <li>
+            <a href={headerContent.adminButton.href} className="nav-login">
+              {headerContent.adminButton.label}
+            </a>
+          </li>
+          <li>
+            <a href={headerContent.ctaButton.href} className="nav-cta" target="_blank" rel="noreferrer">
+              {headerContent.ctaButton.label}
+            </a>
+          </li>
+        </ul>
         <button
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="md:hidden text-[var(--gold)] text-2xl"
-          aria-label="Toggle menu"
+          className="hamburger"
+          id="hamburgerBtn"
+          type="button"
+          aria-label="Buka menu"
+          onClick={() => setMobileOpen(true)}
         >
           ☰
         </button>
       </nav>
 
-      {/* Mobile Menu */}
-      {mobileMenuOpen && (
-        <div className="md:hidden mt-4 pb-4 space-y-3 border-t border-[rgba(201,168,76,0.2)]">
-          {headerContent.navLinks.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              className="block text-[var(--cream2)] text-sm uppercase tracking-widest hover:text-[var(--gold)] transition-colors"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              {link.label}
-            </a>
-          ))}
-          <a
-            href={headerContent.ctaButton.href}
-            className="block bg-[var(--gold)] text-[var(--dark)] px-4 py-2 rounded text-sm font-medium text-center hover:bg-[var(--gold-light)] transition-colors"
-            onClick={() => setMobileMenuOpen(false)}
-          >
-            {headerContent.ctaButton.label}
-          </a>
-        </div>
-      )}
-    </header>
+      <div className={`mobile-nav ${mobileOpen ? 'open' : ''}`} id="mobileNav">
+        <button className="mobile-nav-close" id="mobileClose" type="button" onClick={closeMobileNav}>
+          ✕
+        </button>
+        <a href="#about" onClick={closeMobileNav}>Tentang</a>
+        <a href="#bestseller" onClick={closeMobileNav}>Best Seller</a>
+        <a href="#menu" onClick={closeMobileNav}>Menu</a>
+        <a href="#locations" onClick={closeMobileNav}>Cabang</a>
+        <a href="#testimonials" onClick={closeMobileNav}>Ulasan</a>
+        <a href={headerContent.mobileAdminButton.href} onClick={closeMobileNav}>
+          {headerContent.mobileAdminButton.label}
+        </a>
+        <a href={headerContent.mobileCta.href} style={{ color: 'var(--gold)' }} target="_blank" rel="noreferrer" onClick={closeMobileNav}>
+          {headerContent.mobileCta.label}
+        </a>
+      </div>
+    </>
   );
 }

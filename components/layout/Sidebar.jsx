@@ -1,76 +1,3 @@
-// 'use client';
-// import Link from 'next/link';
-// import { usePathname } from 'next/navigation';
-// import { useAuthStore } from '@/store/authStore';
-// import { useRouter } from 'next/navigation';
-
-// const menus = [
-//   { href: '/pos',       icon: '🧾', label: 'Kasir',    roles: ['admin','kasir'] },
-//   { href: '/dashboard', icon: '📊', label: 'Dashboard', roles: ['admin'] },
-//   { href: '/products',  icon: '📦', label: 'Produk',    roles: ['admin'] },
-//   { href: '/stock',     icon: '📋', label: 'Stok',      roles: ['admin'] },
-//   { href: '/reports',   icon: '📈', label: 'Laporan',   roles: ['admin'] },
-//   { href: '/users',     icon: '👤', label: 'Kasir',     roles: ['admin'] },
-// ];
-
-// export default function Sidebar() {
-//   const pathname = usePathname();
-//   const { user, logout } = useAuthStore();
-//   const router = useRouter();
-
-//   const handleLogout = () => { logout(); router.replace('/login'); };
-//   const visible = menus.filter(m => m.roles.includes(user?.role));
-
-//   return (
-//     <aside className="w-56 bg-slate-800 flex flex-col border-r border-slate-700 shrink-0">
-//       {/* Logo */}
-//       <div className="px-4 py-5 border-b border-slate-700">
-//         <div className="flex items-center gap-3">
-//           <img
-//             src="/images/assets/logo.png"
-//             alt="Kebab Bang Han Logo"
-//             className="mx-auto mb-3 w-10 h-10 object-contain rounded-full bg-white p-2"
-//           />
-//           <div>
-//             <p className="text-white font-bold text-sm leading-tight">Kebab Bang Han</p>
-//             <p className="text-slate-400 text-xs">POS System</p>
-//           </div>
-//         </div>
-//       </div>
-
-//       {/* Nav */}
-//       <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
-//         {visible.map(m => (
-//           <Link
-//             key={m.href}
-//             href={m.href}
-//             className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-//               pathname === m.href
-//                 ? 'bg-orange-500 text-white'
-//                 : 'text-slate-300 hover:bg-slate-700 hover:text-white'
-//             }`}
-//           >
-//             <span className="text-base">{m.icon}</span>
-//             {m.label}
-//           </Link>
-//         ))}
-//       </nav>
-
-//       {/* User info + logout */}
-//       <div className="px-4 py-4 border-t border-slate-700">
-//         <p className="text-white text-sm font-medium truncate">{user?.name}</p>
-//         <p className="text-slate-400 text-xs capitalize mb-3">{user?.role}</p>
-//         <button
-//           onClick={handleLogout}
-//           className="w-full text-left text-red-400 hover:text-red-300 text-sm transition-colors"
-//         >
-//           Keluar →
-//         </button>
-//       </div>
-//     </aside>
-//   );
-// }
-
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -219,12 +146,14 @@ export default function Sidebar() {
   const [tabletExpand, setTabletExpand] = useState(false);
   const [isMobile,     setIsMobile]     = useState(false);
   const [isTablet,     setIsTablet]     = useState(false);
+  const [hydrated,     setHydrated]     = useState(false);
 
   // Load settings on mount
   useEffect(() => {
     loadSettings();
   }, [loadSettings]);
 
+  // Hydrate component — deteksi ukuran window
   useEffect(() => {
     const check = () => {
       const w = window.innerWidth;
@@ -232,6 +161,7 @@ export default function Sidebar() {
       setIsTablet(w >= 768 && w < 1024);
     };
     check();
+    setHydrated(true);
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
   }, []);
@@ -250,18 +180,18 @@ export default function Sidebar() {
     ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
     : 'U';
   
-    // PWA Install
-    const { show: showInstall } = usePWAInstall();
-    const [isInstalled, setIsInstalled] = useState(false);
+  // PWA Install
+  const { show: showInstall } = usePWAInstall();
+  const [isInstalled, setIsInstalled] = useState(false);
 
-    useEffect(() => {
-      if (typeof window !== 'undefined') {
-        setIsInstalled(
-          window.matchMedia('(display-mode: standalone)').matches
-          || window.navigator.standalone === true
-        );
-      }
-    }, []);
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setIsInstalled(
+        window.matchMedia('(display-mode: standalone)').matches
+        || window.navigator.standalone === true
+      );
+    }
+  }, []);
 
   // ── Konten sidebar (dipakai di semua breakpoint) ──
   const SidebarContent = ({ collapsed = false, noLogo = false }) => (
@@ -423,7 +353,7 @@ export default function Sidebar() {
   );
 
   // ── MOBILE: Hamburger + Drawer ────────────────────────────────
-  if (isMobile) {
+  if (hydrated && isMobile) {
     return (
       <>
         {/* Topbar mobile */}
@@ -494,7 +424,7 @@ export default function Sidebar() {
   }
 
   // ── TABLET: Collapsed icon sidebar + toggle expand ────────────
-  if (isTablet) {
+  if (hydrated && isTablet) {
     return (
       <>
         {/* Overlay saat expand */}
