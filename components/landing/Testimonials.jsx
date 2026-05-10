@@ -1,10 +1,11 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 import { testimonialsContent } from '@/data/landing/testimonialsContent';
 
-export default function Testimonials() {
+export default function Testimonials({ content = testimonialsContent }) {
   const [activeCard, setActiveCard] = useState(null);
+  const data = content || testimonialsContent;
 
   useEffect(() => {
     const closeOnOutsideTouch = (event) => {
@@ -26,15 +27,15 @@ export default function Testimonials() {
   return (
     <section id="testimonials">
       <div className="testi-header reveal">
-        <div className="section-label">{testimonialsContent.sectionLabel}</div>
+        <div className="section-label">{data.sectionLabel}</div>
         <h2 className="section-title">
-          Ribuan Pelanggan <span className="italic gold">Sudah Membuktikan</span>
+          Ribuan Pelanggan <span className="italic gold">{data.highlight}</span>
         </h2>
-        <p className="section-desc">{testimonialsContent.description}</p>
+        <p className="section-desc">{data.description}</p>
       </div>
 
       <div className="testi-grid">
-        {testimonialsContent.items.map((item) => (
+        {(data.items || []).map((item) => (
           <div
             key={item.id}
             data-testid-card={item.id}

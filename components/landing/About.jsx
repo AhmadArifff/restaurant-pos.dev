@@ -1,25 +1,26 @@
-﻿import { aboutContent } from '@/data/landing/aboutContent';
+import { aboutContent } from '@/data/landing/aboutContent';
 
-export default function About() {
+export default function About({ content = aboutContent }) {
+  const data = content || aboutContent;
   return (
     <section id="about">
       <div className="about-grid">
         <div className="about-img-wrap reveal">
-          <img className="about-img-main" src={aboutContent.mainImage} alt="Interior Sultan Kebab" />
-          <img className="about-img-accent" src={aboutContent.accentImage} alt="Kebab Premium" />
+          <img className="about-img-main" src={data.mainImage} alt="Interior Sultan Kebab" />
+          <img className="about-img-accent" src={data.accentImage} alt="Kebab Premium" />
           <div className="about-badge">
-            <span>{aboutContent.badgeTop}</span>
-            <small>{aboutContent.badgeBottom}</small>
+            <span>{data.badgeTop}</span>
+            <small>{data.badgeBottom}</small>
           </div>
         </div>
         <div className="reveal reveal-delay-1">
-          <div className="section-label">{aboutContent.sectionLabel}</div>
+          <div className="section-label">{data.sectionLabel}</div>
           <h2 className="section-title">
-            Warisan Rasa <span className="italic gold">{aboutContent.highlight}</span> Timur Tengah
+            Warisan Rasa <span className="italic gold">{data.highlight}</span> Timur Tengah
           </h2>
-          <p className="section-desc">{aboutContent.description}</p>
+          <p className="section-desc">{data.description}</p>
           <div className="about-features">
-            {aboutContent.features.map((feature) => (
+            {(data.features || []).map((feature) => (
               <div className="about-feat" key={feature.title}>
                 <span className="feat-icon">{feature.icon}</span>
                 <div>

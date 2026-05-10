@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { bestsellersContent } from '@/data/landing/bestsellersContent';
 
@@ -9,18 +9,20 @@ function orderWA(item) {
   window.open(`https://wa.me/6281234567890?text=${msg}`, '_blank');
 }
 
-export default function Bestsellers() {
+export default function Bestsellers({ content = bestsellersContent, previewMode = false }) {
+  const data = content || bestsellersContent;
+
   return (
     <section id="bestseller">
       <div className="bestseller-header reveal">
-        <div className="section-label">{bestsellersContent.sectionLabel}</div>
+        <div className="section-label">{data.sectionLabel}</div>
         <h2 className="section-title">
-          Menu <span className="italic gold">{bestsellersContent.highlight}</span>
+          Menu <span className="italic gold">{data.highlight}</span>
         </h2>
-        <p className="section-desc">{bestsellersContent.description}</p>
+        <p className="section-desc">{data.description}</p>
       </div>
       <div className="best-grid">
-        {bestsellersContent.products.map((product, idx) => (
+        {(data.products || []).map((product, idx) => (
           <div className={`best-card reveal ${idx === 1 ? 'reveal-delay-1' : idx === 2 ? 'reveal-delay-2' : ''}`} key={product.id}>
             <div className="best-img-wrap">
               <img className="best-img" src={product.image} alt={product.name} />
@@ -38,7 +40,14 @@ export default function Bestsellers() {
               </div>
             </div>
             <div className="best-overlay">
-              <button className="best-overlay-btn" type="button" onClick={() => orderWA(product.orderName)}>
+              <button
+                className="best-overlay-btn"
+                type="button"
+                onClick={() => {
+                  if (previewMode) return;
+                  orderWA(product.orderName);
+                }}
+              >
                 Pesan Sekarang
               </button>
             </div>

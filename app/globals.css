@@ -967,3 +967,92 @@ body {
 
 
 }
+
+.landing-preview-section--active {
+  position: relative;
+  outline: 2px solid #facc15;
+  outline-offset: 0;
+  box-shadow: 0 0 0 1px rgba(250, 204, 21, 0.45), 0 0 22px rgba(250, 204, 21, 0.3);
+  animation: landingPreviewPulse 1.6s ease-in-out infinite;
+}
+
+.landing-preview-section-label {
+  padding: 0.55rem 0.85rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: #0f172a;
+  color: #cbd5e1;
+  border-top: 1px solid #334155;
+  border-bottom: 1px solid #334155;
+}
+
+.landing-preview-cursor-text {
+  display: inline-block;
+  margin-top: 0.25rem;
+  overflow: hidden;
+  white-space: nowrap;
+  border-right: 2px solid #facc15;
+  width: min(100%, 64ch);
+  max-width: 64ch;
+  font-weight: 500;
+  color: #facc15;
+  text-transform: none;
+  letter-spacing: 0.02em;
+  animation: previewTyping 3s steps(64, end), previewCursorBlink 0.8s step-end infinite;
+}
+
+.landing-admin-preview {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.landing-admin-preview nav {
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  width: 100% !important;
+  z-index: 60 !important;
+}
+
+.landing-admin-preview .mobile-nav {
+  position: absolute !important;
+}
+
+.landing-admin-preview .float-btn {
+  position: absolute !important;
+  right: 1rem !important;
+  bottom: 1rem !important;
+  left: auto !important;
+  top: auto !important;
+  z-index: 70 !important;
+}
+
+.landing-admin-preview .scroll-indicator {
+  display: none !important;
+}
+
+@keyframes previewTyping {
+  from { max-width: 0; }
+  to { max-width: 64ch; }
+}
+
+@keyframes previewCursorBlink {
+  0%, 100% { border-color: #facc15; }
+  50% { border-color: transparent; }
+}
+
+@keyframes landingPreviewPulse {
+  0% {
+    box-shadow: 0 0 0 1px rgba(250, 204, 21, 0.35), 0 0 10px rgba(250, 204, 21, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 0 1px rgba(250, 204, 21, 0.65), 0 0 26px rgba(250, 204, 21, 0.45);
+  }
+  100% {
+    box-shadow: 0 0 0 1px rgba(250, 204, 21, 0.35), 0 0 10px rgba(250, 204, 21, 0.2);
+  }
+}

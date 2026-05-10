@@ -1,4 +1,4 @@
-﻿import { ctaContent } from '@/data/landing/ctaContent';
+import { ctaContent } from '@/data/landing/ctaContent';
 
 const whatsappIcon = (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -6,23 +6,32 @@ const whatsappIcon = (
   </svg>
 );
 
-export default function CTA() {
+export default function CTA({ content = ctaContent, previewMode = false }) {
+  const data = content || ctaContent;
   return (
     <section id="cta">
-      <div className="cta-bg" style={{ backgroundImage: `url('${ctaContent.backgroundImage}')` }} />
+      <div className="cta-bg" style={{ backgroundImage: `url('${data.backgroundImage}')` }} />
       <div className="cta-overlay" />
       <div className="cta-content reveal">
-        <div className="section-label" style={{ justifyContent: 'center' }}>{ctaContent.sectionLabel}</div>
+        <div className="section-label" style={{ justifyContent: 'center' }}>{data.sectionLabel}</div>
         <h2 className="cta-title">
-          Siap Merasakan <span className="italic">Cita Rasa Sultan?</span>
+          Siap Merasakan <span className="italic">{data.highlight || 'Cita Rasa Sultan?'}</span>
         </h2>
-        <p className="cta-desc">{ctaContent.description}</p>
+        <p className="cta-desc">{data.description}</p>
         <div className="cta-btns">
-          <a href={ctaContent.whatsappUrl} className="btn-wa" target="_blank" rel="noreferrer">
+          <a
+            href={data.whatsappUrl}
+            className="btn-wa"
+            target="_blank"
+            rel="noreferrer"
+            onClick={(e) => {
+              if (previewMode) e.preventDefault();
+            }}
+          >
             {whatsappIcon}
             Pesan via WhatsApp
           </a>
-          <a href={ctaContent.secondaryButton.href} className="btn-outline">{ctaContent.secondaryButton.label}</a>
+          <a href={data.secondaryButton?.href} className="btn-outline">{data.secondaryButton?.label}</a>
         </div>
         <div style={{ marginTop: '2rem', display: 'flex', gap: '1.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>

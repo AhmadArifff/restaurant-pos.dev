@@ -1,4 +1,5 @@
 import LandingPageSettingsLayout from '@/components/admin/settings/LandingPageSettingsLayout';
+import AdminLayout from '@/components/layout/AdminLayout';
 
 export const metadata = {
   title: 'Landing Page Settings | Admin',
@@ -6,5 +7,9 @@ export const metadata = {
 };
 
 export default function LandingPageSettingsPage() {
-  return <LandingPageSettingsLayout />;
+  return (
+    <AdminLayout noPadding>
+      <LandingPageSettingsLayout />
+    </AdminLayout>
+  );
 }

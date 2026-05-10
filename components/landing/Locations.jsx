@@ -1,6 +1,6 @@
-﻿'use client';
+'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { locationsContent } from '@/data/landing/locationsContent';
 
 const mapPinIcon = (
@@ -10,27 +10,34 @@ const mapPinIcon = (
   </svg>
 );
 
-export default function Locations() {
-  const [activeBranchId, setActiveBranchId] = useState(locationsContent.branches[0].id);
+export default function Locations({ content = locationsContent, previewMode = false }) {
+  const data = content || locationsContent;
+  const branches = data.branches || [];
+  const [activeBranchId, setActiveBranchId] = useState(branches[0]?.id || '');
+
+  const activeBranch = useMemo(
+    () => branches.find((branch) => branch.id === activeBranchId) || branches[0],
+    [branches, activeBranchId],
+  );
 
   return (
     <section id="locations">
       <div className="loc-header reveal">
-        <div className="section-label">{locationsContent.sectionLabel}</div>
+        <div className="section-label">{data.sectionLabel}</div>
         <h2 className="section-title">
-          Temukan <span className="italic gold">{locationsContent.highlight}</span>
+          Temukan <span className="italic gold">{data.highlight}</span>
           <br />
-          {locationsContent.subtitle}
+          {data.subtitle}
         </h2>
-        <p className="section-desc">{locationsContent.description}</p>
+        <p className="section-desc">{data.description}</p>
       </div>
 
       <div className="loc-tabs reveal">
-        {locationsContent.branches.map((branch) => (
+        {branches.map((branch) => (
           <button
             key={branch.id}
             type="button"
-            className={`loc-tab ${activeBranchId === branch.id ? 'active' : ''}`}
+            className={`loc-tab ${activeBranch?.id === branch.id ? 'active' : ''}`}
             onClick={() => setActiveBranchId(branch.id)}
           >
             {branch.tabLabel}
@@ -38,10 +45,10 @@ export default function Locations() {
         ))}
       </div>
 
-      {locationsContent.branches.map((branch) => (
-        <div key={branch.id} className={`loc-panel ${activeBranchId === branch.id ? 'active' : ''}`} id={`loc-${branch.id}`}>
+      {branches.map((branch) => (
+        <div key={branch.id} className={`loc-panel ${activeBranch?.id === branch.id ? 'active' : ''}`} id={`loc-${branch.id}`}>
           <div className="loc-gallery reveal">
-            {branch.gallery.map((image, index) => (
+            {(branch.gallery || []).map((image, index) => (
               <img key={`${branch.id}-${index}`} src={image} alt={`${branch.name} ${index + 1}`} />
             ))}
           </div>
@@ -51,11 +58,18 @@ export default function Locations() {
             <h3>{branch.name}</h3>
             <div className="loc-area">{branch.area}</div>
 
-            {branch.details.map((detail, index) => (
+            {(branch.details || []).map((detail, index) => (
               <div className="loc-detail" key={`${branch.id}-detail-${index}`}>
                 <span className="loc-detail-icon">{detail.icon}</span>
                 <span className="loc-detail-text">
-                  {detail.lines ? detail.lines.map((line, lineIndex) => <span key={`${branch.id}-${index}-${lineIndex}`}>{line}<br /></span>) : detail.text}
+                  {Array.isArray(detail.lines)
+                    ? detail.lines.map((line, lineIndex) => (
+                        <span key={`${branch.id}-${index}-${lineIndex}`}>
+                          {line}
+                          <br />
+                        </span>
+                      ))
+                    : detail.text}
                 </span>
               </div>
             ))}
@@ -67,7 +81,15 @@ export default function Locations() {
               loading="lazy"
               title={`Peta ${branch.name}`}
             />
-            <a href={branch.mapUrl} target="_blank" rel="noreferrer" className="loc-map-btn">
+            <a
+              href={branch.mapUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="loc-map-btn"
+              onClick={(e) => {
+                if (previewMode) e.preventDefault();
+              }}
+            >
               {mapPinIcon}
               Buka di Google Maps
             </a>

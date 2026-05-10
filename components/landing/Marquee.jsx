@@ -1,8 +1,9 @@
-﻿import { Fragment } from 'react';
+import { Fragment } from 'react';
 import { marqueeContent } from '@/data/landing/marqueeContent';
 
-export default function Marquee() {
-  const repeatedItems = [...marqueeContent.items, ...marqueeContent.items];
+export default function Marquee({ content = marqueeContent }) {
+  const data = content || marqueeContent;
+  const repeatedItems = [...(data.items || []), ...(data.items || [])];
 
   return (
     <div className="marquee-section">
@@ -10,7 +11,7 @@ export default function Marquee() {
         {repeatedItems.map((item, idx) => (
           <Fragment key={`${item}-${idx}`}>
             <span>{item}</span>
-            <span className="dot">{marqueeContent.dot}</span>
+            <span className="dot">{data.dot}</span>
           </Fragment>
         ))}
       </div>

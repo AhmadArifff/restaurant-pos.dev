@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useMemo, useState } from 'react';
 import { menuContent } from '@/data/landing/menuContent';
@@ -10,31 +10,33 @@ function orderWA(item) {
   window.open(`https://wa.me/6281234567890?text=${msg}`, '_blank');
 }
 
-export default function MenuTabs() {
-  const [activeCategory, setActiveCategory] = useState(menuContent.categories[0].id);
+export default function MenuTabs({ content = menuContent, previewMode = false }) {
+  const data = content || menuContent;
+  const categories = data.categories || [];
+  const [activeCategory, setActiveCategory] = useState(categories[0]?.id || '');
 
   const currentCategory = useMemo(
-    () => menuContent.categories.find((category) => category.id === activeCategory),
-    [activeCategory],
+    () => categories.find((category) => category.id === activeCategory) || categories[0],
+    [categories, activeCategory],
   );
 
   return (
     <section id="menu">
       <div className="reveal" style={{ maxWidth: '1200px', margin: '0 auto 2rem' }}>
-        <div className="section-label">{menuContent.sectionLabel}</div>
+        <div className="section-label">{data.sectionLabel}</div>
         <h2 className="section-title">
-          Menu <span className="italic gold">{menuContent.highlight}</span>
+          Menu <span className="italic gold">{data.highlight}</span>
         </h2>
-        <p className="section-desc">{menuContent.description}</p>
+        <p className="section-desc">{data.description}</p>
       </div>
 
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         <div className="menu-tabs">
-          {menuContent.categories.map((category) => (
+          {categories.map((category) => (
             <button
               key={category.id}
               type="button"
-              className={`menu-tab ${activeCategory === category.id ? 'active' : ''}`}
+              className={`menu-tab ${currentCategory?.id === category.id ? 'active' : ''}`}
               onClick={() => setActiveCategory(category.id)}
             >
               {category.label}
@@ -44,8 +46,15 @@ export default function MenuTabs() {
 
         {currentCategory && (
           <div className="menu-panel active" id={`panel-${currentCategory.id}`}>
-            {currentCategory.items.map((item) => (
-              <div className="menu-item" key={item.id} onClick={() => orderWA(item.orderName)}>
+            {(currentCategory.items || []).map((item) => (
+              <div
+                className="menu-item"
+                key={item.id}
+                onClick={() => {
+                  if (previewMode) return;
+                  orderWA(item.orderName);
+                }}
+              >
                 <img className="menu-item-img" src={item.image} alt={item.name} />
                 <div className="menu-item-info">
                   {item.tag ? (

@@ -1,15 +1,20 @@
-﻿import { ctaContent } from '@/data/landing/ctaContent';
+import { ctaContent } from '@/data/landing/ctaContent';
 
-export default function FloatButton() {
+export default function FloatButton({ content = { whatsappUrl: ctaContent.whatsappUrl }, previewMode = false }) {
+  const data = content || { whatsappUrl: ctaContent.whatsappUrl };
+
   return (
     <a
-      href={ctaContent.whatsappUrl}
+      href={data.whatsappUrl}
       className="float-btn"
       target="_blank"
       rel="noreferrer"
-      aria-label="Pesan via WhatsApp"
+      aria-label={data.ariaLabel || 'Pesan via WhatsApp'}
+      onClick={(e) => {
+        if (previewMode) e.preventDefault();
+      }}
     >
-      💬
+      {data.icon || '💬'}
     </a>
   );
 }
