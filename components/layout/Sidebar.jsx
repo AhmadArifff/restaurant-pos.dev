@@ -16,6 +16,7 @@ const menus = [
   { href: '/reports',   icon: ReportIcon,   label: 'Laporan',   roles: ['admin'] },
   { href: '/users',     icon: UserIcon,     label: 'Tim Kasir', roles: ['admin'] },
   { href: '/admin/settings', icon: SettingsIcon, label: 'Pengaturan', roles: ['admin'] },
+  { href: '/admin/landing-page-settings', icon: SettingsIcon, label: 'Landing Page', roles: ['admin'] },
 ];
 
 // ── SVG Icons (no emoji) ──────────────────────────────────────
