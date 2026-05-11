@@ -1,6 +1,6 @@
-﻿'use client';
+'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Header from '@/components/landing/Header';
 import Hero from '@/components/landing/Hero';
 import Marquee from '@/components/landing/Marquee';
@@ -14,8 +14,33 @@ import Testimonials from '@/components/landing/Testimonials';
 import CTA from '@/components/landing/CTA';
 import Footer from '@/components/landing/Footer';
 import FloatButton from '@/components/landing/FloatButton';
+import { getWebsiteSettings } from '@/lib/api';
+import { getDefaultLandingContent, resolveLandingContentFromSettings } from '@/lib/landingContent';
 
 export default function LandingPage() {
+  const [landingContent, setLandingContent] = useState(getDefaultLandingContent());
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadLandingContent = async () => {
+      try {
+        const response = await getWebsiteSettings();
+        const data = response?.data ?? response ?? {};
+        if (!isMounted) return;
+        setLandingContent(resolveLandingContentFromSettings(data));
+      } catch {
+        // Silent fallback: keep default data from /data/landing
+      }
+    };
+
+    loadLandingContent();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   useEffect(() => {
     const revealEls = document.querySelectorAll('.reveal');
     const observer = new IntersectionObserver(
@@ -37,19 +62,19 @@ export default function LandingPage() {
 
   return (
     <div className="landing-page min-h-screen bg-[var(--dark)]">
-      <Header />
-      <Hero />
-      <Marquee />
-      <About />
-      <Bestsellers />
-      <MenuTabs />
-      <Experience />
-      <Gallery />
-      <Locations />
-      <Testimonials />
-      <CTA />
-      <Footer />
-      <FloatButton />
+      <Header content={landingContent.header} />
+      <Hero content={landingContent.hero} />
+      <Marquee content={landingContent.marquee} />
+      <About content={landingContent.about} />
+      <Bestsellers content={landingContent.bestsellers} />
+      <MenuTabs content={landingContent.menuTabs} />
+      <Experience content={landingContent.experience} />
+      <Gallery content={landingContent.gallery} />
+      <Locations content={landingContent.locations} />
+      <Testimonials content={landingContent.testimonials} />
+      <CTA content={landingContent.cta} />
+      <Footer content={landingContent.footer} />
+      <FloatButton content={landingContent.floatButton} />
     </div>
   );
 }
