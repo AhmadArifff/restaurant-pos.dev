@@ -1,6 +1,8 @@
 import { Geist, Geist_Mono, Playfair_Display, DM_Sans, Bebas_Neue } from "next/font/google";
 import "./globals.css";
 import ServiceWorkerRegister from "@/components/ui/ServiceWorkerRegister";
+import WebsiteThemeRuntime from "@/components/ui/WebsiteThemeRuntime";
+import SettingsProvider from "@/components/providers/SettingsProvider";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -9,8 +11,8 @@ const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-dm-sans" });
 const bebasNeue = Bebas_Neue({ subsets: ["latin"], variable: "--font-bebas", weight: "400" });
 
 export const metadata = {
-  title: "Bang.Han POS",
-  description: "Point of Sale System - Lumpia Beef Bang.Han",
+  title: "Sultan Kebab POS",
+  description: "Point of Sale System - Sultan Kebab",
   manifest: '/manifest.json',
   icons: {
     icon: '/images/assets/logo.png',
@@ -19,14 +21,17 @@ export const metadata = {
 };
 
 export const viewport = {
-  themeColor: '#f97316',
+  themeColor: '#C9A84C',
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="id">
       <body className={`${geistSans.variable} ${geistMono.variable} ${playfairDisplay.variable} ${dmSans.variable} ${bebasNeue.variable} antialiased`}>
-        {children}
+        <SettingsProvider>
+          <WebsiteThemeRuntime />
+          {children}
+        </SettingsProvider>
         <ServiceWorkerRegister />
       </body>
     </html>

@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { useAuthStore } from '@/store/authStore';
+import SuccessModal from '@/components/stock/SuccessModal';
 import {
   getStockItems, createStockItem, updateStockItem, deleteStockItem,
   getMainStockSummary, getMainStockMonthly, getMainStockDaily,
@@ -75,7 +76,7 @@ function EmptyState({ icon = '📋', title, sub }) {
 }
 
 // ── ADMIN VIEW ────────────────────────────────────────────────
-function AdminStockPage() {
+function AdminStockPage({ successModal, setSuccessModal }) {
   const [tab,     setTab]     = useState('master');
   const [mainTab, setMainTab] = useState('summary');
 
@@ -911,13 +912,13 @@ function AdminStockPage() {
                   </div>
                 </div>
 
-                {/* Items table tetap sama */}
+                {/* Items table with approved values */}
                 {req.items?.length > 0 && (
                   <div className="overflow-x-auto px-4 py-3">
                     <table className="w-full text-xs">
                       <thead>
                         <tr className="border-b border-slate-700/40">
-                          {['Bahan','Diajukan','Disetujui','Harga/Sat','Nilai'].map(h => (
+                          {['Bahan','Diajukan','Disetujui','Harga/Sat','Nilai Diajukan','Nilai Disetujui'].map(h => (
                             <th key={h} className="text-left text-slate-600 py-1.5 pr-4 font-semibold">{h}</th>
                           ))}
                         </tr>
@@ -940,6 +941,13 @@ function AdminStockPage() {
                             <td className="py-1.5 text-orange-400">
                               Rp {(Number(item.qty_requested) * Number(item.cost_per_unit)).toLocaleString('id-ID')}
                             </td>
+                            <td className="py-1.5">
+                              {item.qty_approved != null
+                                ? <span className="text-green-400 font-semibold">
+                                    Rp {(Number(item.qty_approved) * Number(item.cost_per_unit)).toLocaleString('id-ID')}
+                                  </span>
+                                : <span className="text-slate-700">—</span>}
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -949,6 +957,11 @@ function AdminStockPage() {
                           <td className="pt-2 text-orange-400 font-bold">
                             Rp {req.items.reduce((s, i) =>
                               s + Number(i.qty_requested) * Number(i.cost_per_unit), 0
+                            ).toLocaleString('id-ID')}
+                          </td>
+                          <td className="pt-2 text-green-400 font-bold">
+                            Rp {req.items.reduce((s, i) =>
+                              s + (Number(i.qty_approved || 0) * Number(i.cost_per_unit)), 0
                             ).toLocaleString('id-ID')}
                           </td>
                         </tr>
@@ -1188,7 +1201,12 @@ function AdminStockPage() {
                 // Redirect ke tab pengajuan supaya admin bisa lihat & approve
                 setTab('requests');
                 loadRequests();
-                alert('Pengajuan pengeluaran berhasil dibuat. Silakan approve di tab Pengajuan Kasir.');
+                setSuccessModal({
+                  isOpen: true,
+                  title: 'Pengeluaran Tercatat',
+                  message: 'Pengajuan pengeluaran berhasil dibuat. Silakan approve di tab Pengajuan Kasir.',
+                  requestType: 'withdrawal',
+                });
               }}
                 className="text-slate-500 hover:text-white p-2 rounded-xl hover:bg-slate-700 transition-colors">
                 ✕
@@ -1404,7 +1422,12 @@ function AdminStockPage() {
                     // Redirect ke tab pengajuan supaya admin bisa lihat & approve
                     setTab('requests');
                     loadRequests();
-                    alert('Pengajuan pengeluaran berhasil dibuat. Silakan approve di tab Pengajuan Kasir.');
+                    setSuccessModal({
+                      isOpen: true,
+                      title: 'Pengeluaran Tercatat',
+                      message: 'Pengajuan pengeluaran berhasil dibuat. Silakan approve di tab Pengajuan Kasir.',
+                      requestType: 'withdrawal',
+                    });
                 }}
                 className="flex-1 py-3 rounded-xl bg-slate-700 text-slate-300
                   hover:bg-slate-600 text-sm font-semibold transition-colors">
@@ -1437,10 +1460,20 @@ function AdminStockPage() {
                     // Redirect ke tab pengajuan supaya admin bisa lihat & approve
                     setTab('requests');
                     loadRequests();
-                    alert('Pengajuan pengeluaran berhasil dibuat. Silakan approve di tab Pengajuan Kasir.');
+                    setSuccessModal({
+                      isOpen: true,
+                      title: 'Pengeluaran Tercatat',
+                      message: 'Pengajuan pengeluaran berhasil dibuat. Silakan approve di tab Pengajuan Kasir.',
+                      requestType: 'withdrawal',
+                    });
                     loadDaily(); loadSummary(); loadMaster(); loadRequests();
                   } catch(e) {
-                    alert(e.response?.data?.message || 'Gagal menyimpan pengeluaran');
+                    setSuccessModal({
+                      isOpen: true,
+                      title: 'Terjadi Kesalahan',
+                      message: e.response?.data?.message || 'Gagal menyimpan pengeluaran',
+                      requestType: 'withdrawal',
+                    });
                   } finally { setOutLoading(false); }
                 }}
                 disabled={
@@ -1605,7 +1638,7 @@ function AdminStockPage() {
 }
 
 // ── KASIR VIEW ────────────────────────────────────────────────
-function KasirStockPage() {
+function KasirStockPage({ successModal, setSuccessModal }) {
   const { user } = useAuthStore();
   const [tab,      setTab]      = useState('gudang');
   const [mainTab,  setMainTab]  = useState('summary');
@@ -1791,7 +1824,7 @@ function KasirStockPage() {
               <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-3 flex gap-2.5">
                 <span className="text-blue-400 shrink-0">ℹ</span>
                 <p className="text-slate-500 text-xs">
-                  Saldo stok gudang keseluruhan. Pembelian dilakukan oleh admin.
+                  Saldo stok gudang keseluruhan. Semua Stok dilakukan proses approve oleh admin.
                 </p>
               </div>
               <div className="bg-slate-800/80 rounded-2xl border border-slate-700/60 overflow-hidden">
@@ -2057,7 +2090,7 @@ function KasirStockPage() {
                     <table className="w-full text-xs">
                       <thead>
                         <tr className="border-b border-slate-700/40">
-                          {['Bahan','Diajukan','Disetujui','Harga/Sat','Nilai'].map(h => (
+                          {['Bahan','Diajukan','Disetujui','Harga/Sat','Nilai Diajukan','Nilai Disetujui'].map(h => (
                             <th key={h} className="text-left text-slate-600 py-1.5 pr-4 font-semibold">{h}</th>
                           ))}
                         </tr>
@@ -2078,6 +2111,13 @@ function KasirStockPage() {
                             <td className="py-1.5 text-orange-400">
                               Rp {(Number(item.qty_requested) * Number(item.cost_per_unit)).toLocaleString('id-ID')}
                             </td>
+                            <td className="py-1.5">
+                              {item.qty_approved != null
+                                ? <span className="text-green-400 font-semibold">
+                                    Rp {(Number(item.qty_approved) * Number(item.cost_per_unit)).toLocaleString('id-ID')}
+                                  </span>
+                                : <span className="text-slate-700">—</span>}
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -2087,6 +2127,11 @@ function KasirStockPage() {
                           <td className="pt-2 text-orange-400 font-bold">
                             Rp {req.items.reduce((s, i) =>
                               s + Number(i.qty_requested) * Number(i.cost_per_unit), 0
+                            ).toLocaleString('id-ID')}
+                          </td>
+                          <td className="pt-2 text-green-400 font-bold">
+                            Rp {req.items.reduce((s, i) =>
+                              s + (Number(i.qty_approved || 0) * Number(i.cost_per_unit)), 0
                             ).toLocaleString('id-ID')}
                           </td>
                         </tr>
@@ -2290,9 +2335,19 @@ function KasirStockPage() {
                     setOutItems([{ stock_item_id:'', qty:'', note:'' }]);
                     setTab('requests');
                     loadRequests();
-                    alert('Pengajuan pengeluaran berhasil dibuat. Menunggu persetujuan admin.');
+                    setSuccessModal({
+                      isOpen: true,
+                      title: 'Permintaan Stok Dikirim',
+                      message: 'Pengajuan pengeluaran berhasil dibuat. Menunggu persetujuan admin.',
+                      requestType: 'request',
+                    });
                   } catch(e) {
-                    alert(e.response?.data?.message || 'Gagal menyimpan pengeluaran');
+                    setSuccessModal({
+                      isOpen: true,
+                      title: 'Terjadi Kesalahan',
+                      message: e.response?.data?.message || 'Gagal menyimpan pengeluaran',
+                      requestType: 'request',
+                    });
                   } finally { setOutLoading(false); }
                 }}
                 disabled={outLoading || outItems.some(item => {
@@ -2316,6 +2371,14 @@ export default function StockPage() {
   const { user } = useAuthStore();
   const isAdmin  = user?.role === 'admin';
 
+  // ✅ Success Modal State — MOVED TO PARENT LEVEL
+  const [successModal, setSuccessModal] = useState({
+    isOpen: false,
+    title: 'Sukses',
+    message: 'Operasi berhasil dilakukan',
+    requestType: 'withdrawal',
+  });
+
   return (
     <AdminLayout>
       <div className="max-w-7xl mx-auto pb-8 space-y-5">
@@ -2331,8 +2394,17 @@ export default function StockPage() {
           </p>
         </div>
 
-        {isAdmin ? <AdminStockPage /> : <KasirStockPage />}
+        {isAdmin ? <AdminStockPage successModal={successModal} setSuccessModal={setSuccessModal} /> : <KasirStockPage successModal={successModal} setSuccessModal={setSuccessModal} />}
       </div>
+
+      {/* Success Modal */}
+      <SuccessModal
+        isOpen={successModal.isOpen}
+        onClose={() => setSuccessModal({ ...successModal, isOpen: false })}
+        title={successModal.title}
+        message={successModal.message}
+        requestType={successModal.requestType}
+      />
     </AdminLayout>
   );
 }

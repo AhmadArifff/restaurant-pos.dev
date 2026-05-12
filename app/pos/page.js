@@ -240,21 +240,8 @@ export default function PosPage() {
             <header className="bg-slate-900/95 backdrop-blur-sm border-b border-slate-800
               px-4 sm:px-5 py-3 flex items-center gap-3 shrink-0 z-10 flex-wrap">
 
-              {/* Brand */}
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-9 h-9 rounded-xl overflow-hidden bg-white/10 shrink-0 border border-white/10">
-                  <img src="/images/assets/logo.png" alt="Logo"
-                    className="w-full h-full object-contain p-1"
-                    onError={e => { e.target.style.display = 'none'; }} />
-                </div>
-                <div className="hidden sm:block min-w-0">
-                  <p className="text-white font-bold text-sm leading-tight truncate">Lumpia Beef Bang.Han</p>
-                  <p className="text-slate-500 text-xs">Point of Sale</p>
-                </div>
-              </div>
-
               {/* Clock */}
-              <div className="hidden md:flex flex-col items-center ml-2">
+              <div className="flex flex-col items-center">
                 <span className="text-white font-mono font-bold text-base leading-none">{timeStr}</span>
                 <span className="text-slate-500 text-xs capitalize mt-0.5">{dateStr}</span>
               </div>

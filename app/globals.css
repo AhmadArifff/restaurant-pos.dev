@@ -22,6 +22,108 @@ body {
   color: var(--text);
   overflow-x: hidden;
 }
+
+/* ===== ADMIN THEME (match landing + login) ===== */
+.admin-theme {
+  --admin-bg: var(--dark);
+  --admin-panel: var(--dark2);
+  --admin-panel-soft: var(--dark3);
+  --admin-panel-hover: #2C2210;
+  --admin-border: rgba(var(--gold-rgb, 201, 168, 76), 0.22);
+  --admin-text: var(--text);
+  --admin-text-soft: var(--text);
+  --admin-text-muted: var(--text-muted);
+  --admin-gold: var(--gold);
+  --admin-gold-light: var(--gold-light);
+  color: var(--admin-text);
+}
+.admin-shell {
+  position: relative;
+  background:
+    radial-gradient(circle at 8% -10%, rgba(201, 168, 76, 0.12) 0%, transparent 42%),
+    radial-gradient(circle at 100% 100%, rgba(139, 26, 26, 0.1) 0%, transparent 40%),
+    var(--admin-bg);
+}
+.admin-shell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-size: 180px;
+}
+.admin-main {
+  position: relative;
+  z-index: 1;
+}
+
+/* Warm replacements for common slate utilities in admin pages */
+.admin-theme .bg-slate-950,
+.admin-theme .bg-slate-900,
+.admin-theme .bg-slate-900\/95 {
+  background-color: var(--admin-bg) !important;
+}
+.admin-theme .bg-slate-800,
+.admin-theme .bg-slate-800\/80,
+.admin-theme .bg-slate-800\/60,
+.admin-theme .bg-slate-800\/50,
+.admin-theme .bg-slate-800\/40 {
+  background-color: var(--admin-panel) !important;
+}
+.admin-theme .bg-slate-700,
+.admin-theme .bg-slate-700\/50,
+.admin-theme .bg-slate-700\/40,
+.admin-theme .bg-slate-700\/30,
+.admin-theme .bg-slate-700\/20,
+.admin-theme .bg-slate-700\/10 {
+  background-color: var(--admin-panel-soft) !important;
+}
+.admin-theme .hover\:bg-slate-700\/30:hover,
+.admin-theme .hover\:bg-slate-700\/20:hover,
+.admin-theme .hover\:bg-slate-700\/50:hover,
+.admin-theme .hover\:bg-slate-700:hover,
+.admin-theme .hover\:bg-slate-600:hover {
+  background-color: var(--admin-panel-hover) !important;
+}
+.admin-theme .border-slate-700,
+.admin-theme .border-slate-700\/60,
+.admin-theme .border-slate-700\/50,
+.admin-theme .border-slate-700\/40,
+.admin-theme .border-slate-600,
+.admin-theme .border-slate-600\/50 {
+  border-color: var(--admin-border) !important;
+}
+.admin-theme .text-slate-600,
+.admin-theme .text-slate-500 {
+  color: var(--admin-text-muted) !important;
+}
+.admin-theme .text-slate-400,
+.admin-theme .text-slate-300 {
+  color: var(--admin-text-soft) !important;
+}
+.admin-theme .text-white {
+  color: var(--admin-text) !important;
+}
+.admin-theme .focus\:ring-orange-500:focus {
+  --tw-ring-color: rgba(201, 168, 76, 0.45) !important;
+}
+.admin-theme .bg-orange-500,
+.admin-theme .hover\:bg-orange-500:hover {
+  background-color: var(--admin-gold) !important;
+}
+.admin-theme .hover\:bg-orange-400:hover {
+  background-color: var(--admin-gold-light) !important;
+}
+.admin-theme .text-orange-400,
+.admin-theme .text-orange-500 {
+  color: var(--admin-gold) !important;
+}
+.admin-theme .border-orange-500,
+.admin-theme .border-orange-500\/20,
+.admin-theme .border-orange-500\/40 {
+  border-color: rgba(201, 168, 76, 0.35) !important;
+}
 .landing-page,
 .landing-page * {
   box-sizing: border-box;

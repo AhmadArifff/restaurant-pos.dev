@@ -1,84 +1,52 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import AdminLayout from '@/components/layout/AdminLayout';
-import { useWebsiteSettings } from '@/store/settingsStore';
-import {
-  uploadWebsiteImage,
-  bulkUpdateWebsiteSettings,
-} from '@/lib/api';
+import { useWebsiteSettings, DEFAULT_THEME_COLORS, DEFAULT_SETTINGS } from '@/store/settingsStore';
+import { uploadWebsiteImage, bulkUpdateWebsiteSettings } from '@/lib/api';
 import { resolveAssetUrl } from '@/lib/assetUrl';
+import FaviconDebugger from '@/components/ui/FaviconDebugger';
 
-// ========== VALIDATORS ==========
+const THEME_FIELDS = [
+  { key: 'gold', label: 'Gold (Primary Accent / Logo & Buttons)', fallback: DEFAULT_THEME_COLORS.gold },
+  { key: 'gold_light', label: 'Gold Light (Hover States & Highlights)', fallback: DEFAULT_THEME_COLORS.gold_light },
+  { key: 'dark', label: 'Dark (Body Background)', fallback: DEFAULT_THEME_COLORS.dark },
+  { key: 'dark2', label: 'Dark2 (Section Background)', fallback: DEFAULT_THEME_COLORS.dark2 },
+  { key: 'dark3', label: 'Dark3 (Footer & Overlay Background)', fallback: DEFAULT_THEME_COLORS.dark3 },
+  { key: 'cream', label: 'Cream (Primary Text & Logo Secondary)', fallback: DEFAULT_THEME_COLORS.cream },
+  { key: 'cream2', label: 'Cream2 (Navigation Links & Secondary Text)', fallback: DEFAULT_THEME_COLORS.cream2 },
+  { key: 'red', label: 'Red (Badge Spicy & Alert / Brand Accent)', fallback: DEFAULT_THEME_COLORS.red },
+  { key: 'text', label: 'Text (Main Paragraph Text)', fallback: DEFAULT_THEME_COLORS.text },
+  { key: 'text_muted', label: 'Text Muted (Secondary & Section Labels)', fallback: DEFAULT_THEME_COLORS.text_muted },
+];
+
 const validators = {
   store_name: (value) => {
-    if (!value || value.trim().length === 0) return 'Nama toko tidak boleh kosong';
-    if (value.length < 3) return 'Nama toko minimal 3 karakter';
+    if (!value || !value.trim()) return 'Nama toko tidak boleh kosong';
+    if (value.trim().length < 3) return 'Nama toko minimal 3 karakter';
     if (value.length > 50) return 'Nama toko maksimal 50 karakter';
     return null;
   },
-
-  store_description: (value) => {
-    if (value && value.length > 200) return 'Deskripsi maksimal 200 karakter';
+  browser_title: (value) => {
+    if (!value || !value.trim()) return 'Judul tab browser tidak boleh kosong';
+    if (value.length > 60) return 'Judul tab browser maksimal 60 karakter';
     return null;
   },
-
-  business_phone: (value) => {
-    if (!value) return null; // Optional
-    const phoneRegex = /^(\+62|62|0)[0-9]{8,12}$/;
-    if (!/^[0-9+\-\s()]*$/.test(value)) return 'Nomor telepon hanya boleh berisi angka, +, -, (), dan spasi';
-    if (value.replace(/\D/g, '').length < 8) return 'Nomor telepon minimal 8 digit';
-    if (value.replace(/\D/g, '').length > 15) return 'Nomor telepon maksimal 15 digit';
-    return null;
+  hexColor: (value) => {
+    if (!value) return 'Warna tidak boleh kosong';
+    return /^#[0-9a-fA-F]{6}$/.test(value) ? null : 'Format warna harus HEX (contoh: #C9A84C)';
   },
-
-  business_email: (value) => {
-    if (!value) return null; // Optional
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(value)) return 'Format email tidak valid (contoh: email@toko.com)';
-    return null;
-  },
-
-  business_address: (value) => {
-    if (value && value.length > 200) return 'Alamat maksimal 200 karakter';
-    return null;
-  },
-
   file_size: (file) => {
     const maxSizeInMB = 5;
     const maxSizeInBytes = maxSizeInMB * 1024 * 1024;
     if (file.size > maxSizeInBytes) return `Ukuran file maksimal ${maxSizeInMB}MB`;
     return null;
   },
-
   file_type: (file) => {
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-    if (!allowedTypes.includes(file.type)) return 'Format file harus JPG, PNG, GIF, atau WebP';
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'image/x-icon', 'image/vnd.microsoft.icon'];
+    if (!allowedTypes.includes(file.type)) return 'Format file harus JPG, PNG, GIF, WebP, SVG, atau ICO';
     return null;
-  }
-};
-
-// ========== INPUT MASKING FUNCTIONS ==========
-const inputMasking = {
-  phone: (value) => {
-    // Allow only numbers, +, -, (), and spaces
-    return value.replace(/[^0-9+\-() ]/g, '');
   },
-
-  email: (value) => {
-    // Allow alphanumeric, @, ., -, _
-    return value.replace(/[^a-zA-Z0-9@._\-]/g, '');
-  },
-
-  text: (value) => {
-    // Allow letters, numbers, spaces, basic punctuation
-    return value.replace(/[^a-zA-Z0-9\s\-.,!?()]/g, '');
-  },
-
-  number: (value) => {
-    // Allow only numbers
-    return value.replace(/[^0-9]/g, '');
-  }
 };
 
 export default function SettingsPage() {
@@ -87,13 +55,14 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [successDialogOpen, setSuccessDialogOpen] = useState(false);
   const [logoFile, setLogoFile] = useState(null);
   const [faviconFile, setFaviconFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState(null);
   const [faviconPreview, setFaviconPreview] = useState(null);
-
-  // Validation errors state
   const [fieldErrors, setFieldErrors] = useState({});
+
+  const themeFieldKeys = useMemo(() => THEME_FIELDS.map((field) => field.key), []);
 
   const buildErrorMessage = (err, fallbackMessage) => {
     if (err?.code === 'ERR_NETWORK') {
@@ -102,12 +71,11 @@ export default function SettingsPage() {
     return err?.response?.data?.error || err?.message || fallbackMessage;
   };
 
-  // Load settings on mount
   useEffect(() => {
     const init = async () => {
       try {
         await loadSettings();
-      } catch (err) {
+      } catch {
         setError('Gagal memuat pengaturan');
       } finally {
         setLoading(false);
@@ -116,139 +84,67 @@ export default function SettingsPage() {
     init();
   }, [loadSettings]);
 
-  // Validate single field
   const validateField = (fieldName, value) => {
-    if (validators[fieldName]) {
-      const error = validators[fieldName](value);
-      return error;
+    if (fieldName in DEFAULT_THEME_COLORS) {
+      return validators.hexColor(value);
     }
-    return null;
+    const fn = validators[fieldName];
+    return fn ? fn(value) : null;
   };
 
-  // Handle text input changes with validation & masking
   const handleInputChange = (key, value) => {
-    // Apply input masking based on field type
-    let maskedValue = value;
-    
-    if (key === 'business_phone') {
-      maskedValue = inputMasking.phone(value);
-    } else if (key === 'business_email') {
-      maskedValue = inputMasking.email(value);
-    } else if (key === 'store_name' || key === 'store_description' || key === 'business_address') {
-      // Allow text fields as-is (only validate length)
-      maskedValue = value;
-    }
-
-    updateSettings({ [key]: maskedValue });
-    
-    // Validate on change
-    const error = validateField(key, maskedValue);
-    setFieldErrors(prev => ({
-      ...prev,
-      [key]: error
-    }));
+    updateSettings({ [key]: value });
+    const err = validateField(key, value);
+    setFieldErrors((prev) => ({ ...prev, [key]: err }));
   };
 
-  // Handle color changes
   const handleColorChange = (key, color) => {
     updateSettings({ [key]: color });
+    const err = validateField(key, color);
+    setFieldErrors((prev) => ({ ...prev, [key]: err }));
   };
 
-  // Handle logo file selection with validation
-  const handleLogoSelect = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Validate file
-      const sizeError = validators.file_size(file);
-      const typeError = validators.file_type(file);
+  const handleImageSelect = (e, settingKey, setFile, setPreview) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-      if (sizeError) {
-        setFieldErrors(prev => ({ ...prev, logo_url: sizeError }));
-        return;
-      }
-      if (typeError) {
-        setFieldErrors(prev => ({ ...prev, logo_url: typeError }));
-        return;
-      }
-
-      setFieldErrors(prev => ({ ...prev, logo_url: null }));
-      setLogoFile(file);
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setLogoPreview(event.target.result);
-      };
-      reader.readAsDataURL(file);
+    const sizeError = validators.file_size(file);
+    const typeError = validators.file_type(file);
+    if (sizeError || typeError) {
+      setFieldErrors((prev) => ({ ...prev, [settingKey]: sizeError || typeError }));
+      return;
     }
+
+    setFieldErrors((prev) => ({ ...prev, [settingKey]: null }));
+    setFile(file);
+    const reader = new FileReader();
+    reader.onload = (event) => setPreview(event.target?.result || null);
+    reader.readAsDataURL(file);
   };
 
-  // Handle favicon file selection with validation
-  const handleFaviconSelect = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Validate file
-      const sizeError = validators.file_size(file);
-      const typeError = validators.file_type(file);
-
-      if (sizeError) {
-        setFieldErrors(prev => ({ ...prev, favicon_url: sizeError }));
-        return;
-      }
-      if (typeError) {
-        setFieldErrors(prev => ({ ...prev, favicon_url: typeError }));
-        return;
-      }
-
-      setFieldErrors(prev => ({ ...prev, favicon_url: null }));
-      setFaviconFile(file);
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setFaviconPreview(event.target.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  // Validate all fields before save
   const validateAllFields = () => {
-    const errors = {};
+    const nextErrors = {};
+    const toValidate = ['store_name', 'browser_title', ...themeFieldKeys];
 
-    // Validate text fields
-    const textFields = [
-      'store_name',
-      'store_description',
-      'business_phone',
-      'business_email',
-      'business_address',
-    ];
-
-    textFields.forEach(field => {
-      const error = validateField(field, settings[field] || '');
-      if (error) errors[field] = error;
+    toValidate.forEach((key) => {
+      const err = validateField(key, settings[key] || '');
+      if (err) nextErrors[key] = err;
     });
 
-    setFieldErrors(errors);
-    return Object.keys(errors).length === 0;
+    setFieldErrors((prev) => ({ ...prev, ...nextErrors }));
+    return Object.keys(nextErrors).length === 0;
   };
 
-  // Upload image and update settings
   const uploadImage = async (file, settingKey) => {
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('setting_key', settingKey);
-
-      const response = await uploadWebsiteImage(formData);
-      return response?.data?.setting_value || response?.data?.file_url || null;
-    } catch (err) {
-      console.error('Error uploading image:', err);
-      throw new Error(buildErrorMessage(err, 'Gagal mengupload gambar'));
-    }
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('setting_key', settingKey);
+    const response = await uploadWebsiteImage(formData);
+    return response?.data?.setting_value || response?.data?.file_url || null;
   };
 
-  // Save all settings
   const handleSaveSettings = async () => {
     try {
-      // Validate all fields first
       if (!validateAllFields()) {
         setError('Silakan perbaiki kesalahan di form sebelum menyimpan');
         setTimeout(() => setError(null), 4000);
@@ -258,88 +154,49 @@ export default function SettingsPage() {
       setSaving(true);
       setError(null);
       setSuccess(null);
+      const payload = [];
 
-      const settingsToUpdate = [];
-
-      // Add logo upload if changed
       if (logoFile) {
-        try {
-          const logoUrl = await uploadImage(logoFile, 'logo_url');
-          if (logoUrl) {
-            settingsToUpdate.push({ setting_key: 'logo_url', setting_value: logoUrl, data_type: 'string' });
-          }
-          setLogoFile(null);
-          setLogoPreview(null);
-        } catch (err) {
-          setError(`Gagal upload logo. ${err.message}`);
-          setSaving(false);
-          return;
+        const logoUrl = await uploadImage(logoFile, 'logo_url');
+        if (logoUrl) {
+          payload.push({ setting_key: 'logo_url', setting_value: logoUrl, data_type: 'string' });
         }
+        setLogoFile(null);
+        setLogoPreview(null);
       }
 
-      // Add favicon upload if changed
       if (faviconFile) {
-        try {
-          const faviconUrl = await uploadImage(faviconFile, 'favicon_url');
-          if (faviconUrl) {
-            settingsToUpdate.push({ setting_key: 'favicon_url', setting_value: faviconUrl, data_type: 'string' });
-          }
-          setFaviconFile(null);
-          setFaviconPreview(null);
-        } catch (err) {
-          setError(`Gagal upload favicon. ${err.message}`);
-          setSaving(false);
-          return;
+        const faviconUrl = await uploadImage(faviconFile, 'favicon_url');
+        if (faviconUrl) {
+          payload.push({ setting_key: 'favicon_url', setting_value: faviconUrl, data_type: 'string' });
         }
+        setFaviconFile(null);
+        setFaviconPreview(null);
       }
 
-      // Add other settings
-      const textSettings = [
-        'store_name',
-        'store_description',
-        'business_phone',
-        'business_email',
-        'business_address',
-      ];
-
-      const colorSettings = [
-        'primary_color',
-        'secondary_color',
-        'accent_color',
-      ];
-
-      textSettings.forEach(key => {
-        settingsToUpdate.push({
+      ['store_name', 'browser_title'].forEach((key) => {
+        payload.push({
           setting_key: key,
-          setting_value: settings[key] || '',
+          setting_value: settings[key] || DEFAULT_SETTINGS[key] || '',
           data_type: 'string',
         });
       });
 
-      colorSettings.forEach(key => {
-        settingsToUpdate.push({
+      THEME_FIELDS.forEach(({ key, fallback }) => {
+        payload.push({
           setting_key: key,
-          setting_value: settings[key] || '#000000',
+          setting_value: settings[key] || fallback,
           data_type: 'string',
         });
       });
 
-      // Bulk update
-      if (settingsToUpdate.length > 0) {
-        await bulkUpdateWebsiteSettings(settingsToUpdate);
-        await loadSettings();
-        
-        setSuccess('Pengaturan berhasil disimpan. Perubahan akan muncul di dashboard dan landing page.');
-        setFieldErrors({});
-        setTimeout(() => setSuccess(null), 5000);
-      } else {
-        setSuccess('Tidak ada perubahan untuk disimpan');
-        setTimeout(() => setSuccess(null), 3000);
-      }
+      await bulkUpdateWebsiteSettings(payload);
+      await loadSettings();
+      setSuccess('Pengaturan berhasil disimpan. Tema warna diterapkan ke landing page, login, dan admin panel.');
+      setSuccessDialogOpen(true);
+      setTimeout(() => setSuccess(null), 5000);
     } catch (err) {
-      const errorMsg = buildErrorMessage(err, 'Gagal menyimpan pengaturan');
-      setError(errorMsg);
-      console.error('Error saving settings:', err);
+      setError(buildErrorMessage(err, 'Gagal menyimpan pengaturan'));
       setTimeout(() => setError(null), 5000);
     } finally {
       setSaving(false);
@@ -356,172 +213,72 @@ export default function SettingsPage() {
     );
   }
 
+  const hasFieldError = Object.values(fieldErrors).some(Boolean);
+
   return (
     <AdminLayout>
       <div className="max-w-4xl mx-auto pb-8">
-        {/* Header */}
         <div className="mb-8">
-          <h1 className="text-white text-2xl font-bold">⚙️ Pengaturan Website</h1>
-          <p className="text-slate-400 text-sm mt-2">Sesuaikan branding, tema, dan informasi website Anda</p>
+          <h1 className="text-white text-2xl font-bold">Pengaturan Website</h1>
+          <p className="text-slate-400 text-sm mt-2">
+            Tema default mengikuti tampilan aplikasi saat ini. Jika ada data warna di database, sistem otomatis menggunakan data tersebut.
+          </p>
         </div>
 
-        {/* Alerts */}
         {error && (
           <div className="mb-4 p-4 bg-red-500/15 border-l-4 border-red-500 rounded-lg shadow-lg">
-            <div className="flex items-start gap-3">
-              <span className="text-xl">❌</span>
-              <div>
-                <p className="text-red-300 text-sm font-semibold">Terjadi Error</p>
-                <p className="text-red-200 text-sm mt-1">{error}</p>
-              </div>
-            </div>
+            <p className="text-red-200 text-sm">{error}</p>
           </div>
         )}
-
         {success && (
           <div className="mb-4 p-4 bg-green-500/15 border-l-4 border-green-500 rounded-lg shadow-lg">
-            <div className="flex items-start gap-3">
-              <span className="text-xl">✅</span>
-              <div>
-                <p className="text-green-300 text-sm font-semibold">Sukses</p>
-                <p className="text-green-200 text-sm mt-1">{success}</p>
-              </div>
-            </div>
+            <p className="text-green-200 text-sm">{success}</p>
           </div>
         )}
 
-        {/* Main Content */}
         <div className="space-y-6">
-          {/* Section: Informasi Toko */}
           <div className="bg-slate-800/80 rounded-2xl p-6 border border-slate-700/60">
-            <h2 className="text-white font-bold text-lg mb-4">📦 Informasi Toko</h2>
+            <h2 className="text-white font-bold text-lg mb-4">Informasi Toko</h2>
             <div className="space-y-5">
-              {/* Nama Toko */}
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <label className="block text-slate-400 text-sm font-medium">Nama Toko *</label>
+                  <label className="block text-slate-400 text-sm font-medium">Nama Toko (Sidebar Admin)</label>
                   <span className="text-xs text-slate-500">{(settings.store_name || '').length}/50</span>
                 </div>
                 <input
                   type="text"
                   value={settings.store_name || ''}
                   onChange={(e) => handleInputChange('store_name', e.target.value)}
-                  className={`w-full px-4 py-2.5 bg-slate-700/50 border rounded-lg
-                    text-white placeholder-slate-500 focus:outline-none transition-all
-                    ${fieldErrors.store_name 
-                      ? 'border-red-500/50 focus:border-red-500/70' 
-                      : 'border-slate-600/50 focus:border-orange-500/50'}`}
-                  placeholder="Nama toko Anda"
+                  className={`w-full px-4 py-2.5 bg-slate-700/50 border rounded-lg text-white placeholder-slate-500 focus:outline-none transition-all ${
+                    fieldErrors.store_name ? 'border-red-500/50 focus:border-red-500/70' : 'border-slate-600/50 focus:border-orange-500/50'
+                  }`}
+                  placeholder="Contoh: Sultan Kebab"
                 />
-                {fieldErrors.store_name && (
-                  <p className="text-red-400 text-xs mt-1.5 flex items-center">
-                    <span className="mr-1">⚠️</span> {fieldErrors.store_name}
-                  </p>
-                )}
+                {fieldErrors.store_name && <p className="text-red-400 text-xs mt-1.5">{fieldErrors.store_name}</p>}
               </div>
 
-              {/* Deskripsi */}
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <label className="block text-slate-400 text-sm font-medium">Deskripsi Toko</label>
-                  <span className="text-xs text-slate-500">{(settings.store_description || '').length}/200</span>
+                  <label className="block text-slate-400 text-sm font-medium">Judul Tab Browser (teks di samping favicon)</label>
+                  <span className="text-xs text-slate-500">{(settings.browser_title || '').length}/60</span>
                 </div>
-                <textarea
-                  value={settings.store_description || ''}
-                  onChange={(e) => handleInputChange('store_description', e.target.value)}
-                  className={`w-full px-4 py-2.5 bg-slate-700/50 border rounded-lg
-                    text-white placeholder-slate-500 focus:outline-none transition-all resize-none
-                    ${fieldErrors.store_description 
-                      ? 'border-red-500/50 focus:border-red-500/70' 
-                      : 'border-slate-600/50 focus:border-orange-500/50'}`}
-                  placeholder="Deskripsi singkat toko Anda"
-                  rows={3}
+                <input
+                  type="text"
+                  value={settings.browser_title || ''}
+                  onChange={(e) => handleInputChange('browser_title', e.target.value)}
+                  className={`w-full px-4 py-2.5 bg-slate-700/50 border rounded-lg text-white placeholder-slate-500 focus:outline-none transition-all ${
+                    fieldErrors.browser_title ? 'border-red-500/50 focus:border-red-500/70' : 'border-slate-600/50 focus:border-orange-500/50'
+                  }`}
+                  placeholder="Contoh: Sultan Kebab POS"
                 />
-                {fieldErrors.store_description && (
-                  <p className="text-red-400 text-xs mt-1.5 flex items-center">
-                    <span className="mr-1">⚠️</span> {fieldErrors.store_description}
-                  </p>
-                )}
-              </div>
-
-              {/* Kontak */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <label className="block text-slate-400 text-sm font-medium">📞 Nomor Telepon</label>
-                    <span className="text-xs text-slate-500">{(settings.business_phone || '').replace(/\D/g, '').length}/15 digit</span>
-                  </div>
-                  <input
-                    type="text"
-                    value={settings.business_phone || ''}
-                    onChange={(e) => handleInputChange('business_phone', e.target.value)}
-                    className={`w-full px-4 py-2.5 bg-slate-700/50 border rounded-lg
-                      text-white placeholder-slate-500 focus:outline-none transition-all
-                      ${fieldErrors.business_phone 
-                        ? 'border-red-500/50 focus:border-red-500/70' 
-                        : 'border-slate-600/50 focus:border-orange-500/50'}`}
-                    placeholder="+62812345678 atau 0812-345-678"
-                  />
-                  <p className="text-xs text-slate-500 mt-1.5">💡 Hanya angka, +, -, (), dan spasi diperbolehkan</p>
-                  {fieldErrors.business_phone && (
-                    <p className="text-red-400 text-xs mt-1.5 flex items-center">
-                      <span className="mr-1">⚠️</span> {fieldErrors.business_phone}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-slate-400 text-sm font-medium mb-2">✉️ Email</label>
-                  <input
-                    type="text"
-                    value={settings.business_email || ''}
-                    onChange={(e) => handleInputChange('business_email', e.target.value)}
-                    className={`w-full px-4 py-2.5 bg-slate-700/50 border rounded-lg
-                      text-white placeholder-slate-500 focus:outline-none transition-all
-                      ${fieldErrors.business_email 
-                        ? 'border-red-500/50 focus:border-red-500/70' 
-                        : 'border-slate-600/50 focus:border-orange-500/50'}`}
-                    placeholder="email@toko.com"
-                  />
-                  {fieldErrors.business_email && (
-                    <p className="text-red-400 text-xs mt-1.5 flex items-center">
-                      <span className="mr-1">⚠️</span> {fieldErrors.business_email}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Alamat */}
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <label className="block text-slate-400 text-sm font-medium">📍 Alamat</label>
-                  <span className="text-xs text-slate-500">{(settings.business_address || '').length}/200</span>
-                </div>
-                <textarea
-                  value={settings.business_address || ''}
-                  onChange={(e) => handleInputChange('business_address', e.target.value)}
-                  className={`w-full px-4 py-2.5 bg-slate-700/50 border rounded-lg
-                    text-white placeholder-slate-500 focus:outline-none transition-all resize-none
-                    ${fieldErrors.business_address 
-                      ? 'border-red-500/50 focus:border-red-500/70' 
-                      : 'border-slate-600/50 focus:border-orange-500/50'}`}
-                  placeholder="Alamat lengkap toko Anda"
-                  rows={2}
-                />
-                {fieldErrors.business_address && (
-                  <p className="text-red-400 text-xs mt-1.5 flex items-center">
-                    <span className="mr-1">⚠️</span> {fieldErrors.business_address}
-                  </p>
-                )}
+                {fieldErrors.browser_title && <p className="text-red-400 text-xs mt-1.5">{fieldErrors.browser_title}</p>}
               </div>
             </div>
           </div>
 
-          {/* Section: Branding */}
           <div className="bg-slate-800/80 rounded-2xl p-6 border border-slate-700/60">
-            <h2 className="text-white font-bold text-lg mb-4">🎨 Branding</h2>
+            <h2 className="text-white font-bold text-lg mb-4">Branding</h2>
             <div className="space-y-5">
-              {/* Logo */}
               <div>
                 <label className="block text-slate-400 text-sm font-medium mb-2">Logo Toko</label>
                 <div className="flex gap-4">
@@ -529,20 +286,12 @@ export default function SettingsPage() {
                     <input
                       type="file"
                       accept="image/*"
-                      onChange={handleLogoSelect}
-                      className={`w-full px-4 py-2.5 bg-slate-700/50 border rounded-lg
-                        text-slate-400 focus:outline-none transition-all
-                        file:mr-4 file:py-2 file:px-4 file:rounded file:border-0
-                        file:bg-orange-500 file:text-white file:cursor-pointer file:font-medium
-                        ${fieldErrors.logo_url 
-                          ? 'border-red-500/50 focus:border-red-500/70' 
-                          : 'border-slate-600/50 focus:border-orange-500/50'}`}
+                      onChange={(e) => handleImageSelect(e, 'logo_url', setLogoFile, setLogoPreview)}
+                      className={`w-full px-4 py-2.5 bg-slate-700/50 border rounded-lg text-slate-400 focus:outline-none transition-all file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-orange-500 file:text-white file:cursor-pointer file:font-medium ${
+                        fieldErrors.logo_url ? 'border-red-500/50 focus:border-red-500/70' : 'border-slate-600/50 focus:border-orange-500/50'
+                      }`}
                     />
-                    {fieldErrors.logo_url && (
-                      <p className="text-red-400 text-xs mt-1.5 flex items-center">
-                        <span className="mr-1">⚠️</span> {fieldErrors.logo_url}
-                      </p>
-                    )}
+                    {fieldErrors.logo_url && <p className="text-red-400 text-xs mt-1.5">{fieldErrors.logo_url}</p>}
                   </div>
                   {(logoPreview || settings.logo_url) && (
                     <div className="w-20 h-20 rounded-lg border border-slate-600/50 flex items-center justify-center bg-slate-700/30 overflow-hidden">
@@ -559,7 +308,6 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              {/* Favicon */}
               <div>
                 <label className="block text-slate-400 text-sm font-medium mb-2">Favicon</label>
                 <div className="flex gap-4">
@@ -567,20 +315,12 @@ export default function SettingsPage() {
                     <input
                       type="file"
                       accept="image/*"
-                      onChange={handleFaviconSelect}
-                      className={`w-full px-4 py-2.5 bg-slate-700/50 border rounded-lg
-                        text-slate-400 focus:outline-none transition-all
-                        file:mr-4 file:py-2 file:px-4 file:rounded file:border-0
-                        file:bg-orange-500 file:text-white file:cursor-pointer file:font-medium
-                        ${fieldErrors.favicon_url 
-                          ? 'border-red-500/50 focus:border-red-500/70' 
-                          : 'border-slate-600/50 focus:border-orange-500/50'}`}
+                      onChange={(e) => handleImageSelect(e, 'favicon_url', setFaviconFile, setFaviconPreview)}
+                      className={`w-full px-4 py-2.5 bg-slate-700/50 border rounded-lg text-slate-400 focus:outline-none transition-all file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-orange-500 file:text-white file:cursor-pointer file:font-medium ${
+                        fieldErrors.favicon_url ? 'border-red-500/50 focus:border-red-500/70' : 'border-slate-600/50 focus:border-orange-500/50'
+                      }`}
                     />
-                    {fieldErrors.favicon_url && (
-                      <p className="text-red-400 text-xs mt-1.5 flex items-center">
-                        <span className="mr-1">⚠️</span> {fieldErrors.favicon_url}
-                      </p>
-                    )}
+                    {fieldErrors.favicon_url && <p className="text-red-400 text-xs mt-1.5">{fieldErrors.favicon_url}</p>}
                   </div>
                   {(faviconPreview || settings.favicon_url) && (
                     <div className="w-20 h-20 rounded-lg border border-slate-600/50 flex items-center justify-center bg-slate-700/30 overflow-hidden">
@@ -599,98 +339,73 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* Section: Tema Warna */}
           <div className="bg-slate-800/80 rounded-2xl p-6 border border-slate-700/60">
-            <h2 className="text-white font-bold text-lg mb-4">🎯 Tema Warna</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              {/* Primary Color */}
-              <div>
-                <label className="block text-slate-400 text-sm font-medium mb-2">Warna Utama (Primary)</label>
-                <div className="flex gap-3 items-center">
-                  <input
-                    type="color"
-                    value={settings.primary_color || '#f97316'}
-                    onChange={(e) => handleColorChange('primary_color', e.target.value)}
-                    className="w-full h-12 rounded-lg cursor-pointer border border-slate-600/50"
-                  />
-                  <span className="text-slate-400 text-sm font-mono min-w-24 bg-slate-700/50 px-2 py-1 rounded">
-                    {settings.primary_color}
-                  </span>
+            <h2 className="text-white font-bold text-lg mb-1">Tema Warna</h2>
+            <p className="text-slate-400 text-sm mb-4">
+              Total warna tema saat ini: <span className="text-white font-semibold">{THEME_FIELDS.length}</span>
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {THEME_FIELDS.map((field) => (
+                <div key={field.key}>
+                  <label className="block text-slate-400 text-sm font-medium mb-2">{field.label}</label>
+                  <div className="flex gap-3 items-center">
+                    <input
+                      type="color"
+                      value={settings[field.key] || field.fallback}
+                      onChange={(e) => handleColorChange(field.key, e.target.value)}
+                      className="w-full h-12 rounded-lg cursor-pointer border border-slate-600/50"
+                    />
+                    <span className="text-slate-400 text-sm font-mono min-w-28 bg-slate-700/50 px-2 py-1 rounded">
+                      {settings[field.key] || field.fallback}
+                    </span>
+                  </div>
+                  {fieldErrors[field.key] && <p className="text-red-400 text-xs mt-1.5">{fieldErrors[field.key]}</p>}
                 </div>
-              </div>
-
-              {/* Secondary Color */}
-              <div>
-                <label className="block text-slate-400 text-sm font-medium mb-2">Warna Sekunder (Secondary)</label>
-                <div className="flex gap-3 items-center">
-                  <input
-                    type="color"
-                    value={settings.secondary_color || '#0f172a'}
-                    onChange={(e) => handleColorChange('secondary_color', e.target.value)}
-                    className="w-full h-12 rounded-lg cursor-pointer border border-slate-600/50"
-                  />
-                  <span className="text-slate-400 text-sm font-mono min-w-24 bg-slate-700/50 px-2 py-1 rounded">
-                    {settings.secondary_color}
-                  </span>
-                </div>
-              </div>
-
-              {/* Accent Color */}
-              <div>
-                <label className="block text-slate-400 text-sm font-medium mb-2">Warna Aksen (Accent)</label>
-                <div className="flex gap-3 items-center">
-                  <input
-                    type="color"
-                    value={settings.accent_color || '#22c55e'}
-                    onChange={(e) => handleColorChange('accent_color', e.target.value)}
-                    className="w-full h-12 rounded-lg cursor-pointer border border-slate-600/50"
-                  />
-                  <span className="text-slate-400 text-sm font-mono min-w-24 bg-slate-700/50 px-2 py-1 rounded">
-                    {settings.accent_color}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Color Preview */}
-            <div className="mt-6 p-4 bg-slate-700/30 rounded-lg border border-slate-600/30">
-              <p className="text-slate-400 text-sm mb-3 font-medium">Preview Warna:</p>
-              <div className="flex gap-3">
-                <div
-                  className="flex-1 h-20 rounded-lg border-2 border-slate-600/50 transition-all"
-                  style={{ backgroundColor: settings.primary_color }}
-                  title="Primary"
-                />
-                <div
-                  className="flex-1 h-20 rounded-lg border-2 border-slate-600/50 transition-all"
-                  style={{ backgroundColor: settings.secondary_color }}
-                  title="Secondary"
-                />
-                <div
-                  className="flex-1 h-20 rounded-lg border-2 border-slate-600/50 transition-all"
-                  style={{ backgroundColor: settings.accent_color }}
-                  title="Accent"
-                />
-              </div>
+              ))}
             </div>
           </div>
 
-          {/* Action Buttons */}
           <div className="flex gap-3">
             <button
               onClick={handleSaveSettings}
-              disabled={saving || Object.keys(fieldErrors).some(key => fieldErrors[key])}
-              className={`flex-1 px-6 py-3 font-semibold rounded-lg transition-all
-                ${saving || Object.keys(fieldErrors).some(key => fieldErrors[key])
-                  ? 'bg-orange-500/50 text-white/70 cursor-not-allowed'
-                  : 'bg-orange-500 hover:bg-orange-600 text-white'}`}
+              disabled={saving || hasFieldError}
+              className={`flex-1 px-6 py-3 font-semibold rounded-lg transition-all ${
+                saving || hasFieldError ? 'bg-orange-500/50 text-white/70 cursor-not-allowed' : 'bg-orange-500 hover:bg-orange-600 text-white'
+              }`}
             >
-              {saving ? '💾 Menyimpan...' : '💾 Simpan Pengaturan'}
+              {saving ? 'Menyimpan...' : 'Simpan Pengaturan'}
             </button>
           </div>
         </div>
-      </div>
+
+        {/* Success Dialog Modal */}
+        {successDialogOpen && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full border border-slate-700 animate-in fade-in duration-300">
+              <div className="p-6 text-center">
+                <div className="mb-4 flex justify-center">
+                  <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center">
+                    <svg className="w-8 h-8 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                </div>
+                <h3 className="text-white text-lg font-bold mb-2">Pengaturan Berhasil Disimpan!</h3>
+                <p className="text-slate-400 text-sm mb-6">
+                  Semua 10 tema warna telah diterapkan ke landing page, halaman login, dan panel admin.
+                </p>
+                <button
+                  onClick={() => setSuccessDialogOpen(false)}
+                  className="w-full px-4 py-2.5 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg transition-all"
+                >
+                  Tutup
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        {/* Favicon Debugger */}
+        <FaviconDebugger />      </div>
     </AdminLayout>
   );
 }
-

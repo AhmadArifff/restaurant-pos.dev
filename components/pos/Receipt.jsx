@@ -32,7 +32,44 @@ const Receipt = forwardRef(function Receipt({ transaction }, ref) {
   );
 
   return (
-    <div ref={ref} className="receipt-paper" style={{ position: 'relative', overflow: 'hidden' }}>
+    <>
+      <style>{`
+        @media print {
+          body {
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 58mm !important;
+            background: white !important;
+          }
+          .receipt-paper {
+            width: 58mm !important;
+            max-width: 58mm !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-sizing: border-box !important;
+            page-break-inside: avoid !important;
+          }
+          @page {
+            size: 58mm auto;
+            margin: 0;
+            padding: 0;
+          }
+        }
+      `}</style>
+      
+      <div ref={ref} className="receipt-paper" style={{
+        position: 'relative',
+        overflow: 'hidden',
+        width: '58mm',
+        maxWidth: '58mm',
+        margin: '0 auto',
+        padding: 0,
+        boxSizing: 'border-box',
+        backgroundColor: '#fff',
+        color: '#000',
+        fontFamily: 'monospace',
+        fontSize: '11px',
+      }}>
 
       {/* ── WATERMARK BACKGROUND ── */}
       {/* Layer 1: Logo gambar sebagai watermark */}
@@ -121,13 +158,13 @@ const Receipt = forwardRef(function Receipt({ transaction }, ref) {
         </div>
 
         {/* Info toko */}
-        <div style={{ textAlign:'center', fontSize:'9px', color:'#000', padding:'4px 6px 0' }}>
-          Depan Seafood B&amp;B, Padalarang
+        <div style={{ textAlign:'center', fontSize:'8px', color:'#000', padding:'4px 4px 0' }}>
+          Depan Seafood B&B, Padalarang
         </div>
-        <div style={{ textAlign:'center', fontSize:'9px', color:'#000', padding:'1px 6px' }}>
+        <div style={{ textAlign:'center', fontSize:'8px', color:'#000', padding:'1px 4px' }}>
           Bandung Barat, Jawa Barat
         </div>
-        <div style={{ textAlign:'center', fontSize:'9px', color:'#000', padding:'1px 6px 4px' }}>
+        <div style={{ textAlign:'center', fontSize:'8px', color:'#000', padding:'1px 4px 4px' }}>
           IG: @lumpiabeef_banghan
         </div>
 
@@ -151,9 +188,9 @@ const Receipt = forwardRef(function Receipt({ transaction }, ref) {
         {/* Header kolom */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: '1fr 20px 68px',
-          padding: '2px 6px',
-          fontSize: '9px',
+          gridTemplateColumns: '1fr 18px 55px',
+          padding: '2px 4px',
+          fontSize: '8px',
           fontWeight: 700,
           background: '#f0f0f0',
         }}>
@@ -167,17 +204,17 @@ const Receipt = forwardRef(function Receipt({ transaction }, ref) {
         {/* Items */}
         {transaction.items?.map((item, i) => {
           const subtotal = item.qty * Number(item.price);
-          const name     = (item.name || item.product_name || '').substring(0, 24);
+          const name     = (item.name || item.product_name || '').substring(0, 20);
           return (
-            <div key={i} style={{ padding:'3px 6px' }}>
-              <div style={{ fontWeight:700, fontSize:'10px' }}>{name}</div>
+            <div key={i} style={{ padding:'2px 4px' }}>
+              <div style={{ fontWeight:700, fontSize:'9px' }}>{name}</div>
               <div style={{
                 display:'flex', justifyContent:'space-between',
-                fontSize:'9px', color:'#444', marginTop:'1px',
+                fontSize:'8px', color:'#444', marginTop:'1px',
               }}>
                 <span>@Rp {Number(item.price).toLocaleString('id-ID')}</span>
-                <span style={{ textAlign:'center', minWidth:'20px' }}>{item.qty}x</span>
-                <span style={{ textAlign:'right', minWidth:'68px' }}>
+                <span style={{ textAlign:'center', minWidth:'18px' }}>{item.qty}x</span>
+                <span style={{ textAlign:'right', minWidth:'55px' }}>
                   Rp {subtotal.toLocaleString('id-ID')}
                 </span>
               </div>
@@ -188,14 +225,14 @@ const Receipt = forwardRef(function Receipt({ transaction }, ref) {
         <div className="receipt-dash">{dash}</div>
 
         {/* Subtotal baris */}
-        <div className="receipt-row receipt-small">
+        <div className="receipt-row receipt-small" style={{ padding:'2px 4px', fontSize:'9px' }}>
           <span>Subtotal ({transaction.items?.length} item)</span>
           <span>Rp {total.toLocaleString('id-ID')}</span>
         </div>
-        <div className="receipt-row" style={{ fontSize:'9px', color:'#888' }}>
+        <div className="receipt-row" style={{ padding:'2px 4px', fontSize:'8px', color:'#888' }}>
           <span>Diskon</span><span>Rp 0</span>
         </div>
-        <div className="receipt-row" style={{ fontSize:'9px', color:'#888' }}>
+        <div className="receipt-row" style={{ padding:'2px 4px', fontSize:'8px', color:'#888' }}>
           <span>Pajak (0%)</span><span>Rp 0</span>
         </div>
 
@@ -222,7 +259,7 @@ const Receipt = forwardRef(function Receipt({ transaction }, ref) {
               <span>Rp {tunai.toLocaleString('id-ID')}</span>
             </div>
             <div className="receipt-row" style={{
-              fontSize:'11px', fontWeight:700, color:'#166534', padding:'1px 6px',
+              fontSize:'10px', fontWeight:700, color:'#166534', padding:'1px 4px',
             }}>
               <span>Kembali</span>
               <span>Rp {kembalian.toLocaleString('id-ID')}</span>
@@ -230,7 +267,7 @@ const Receipt = forwardRef(function Receipt({ transaction }, ref) {
           </>
         )}
         {method !== 'cash' && (
-          <div className="receipt-row receipt-small" style={{ fontWeight:700 }}>
+          <div className="receipt-row receipt-small" style={{ fontWeight:700, padding:'2px 4px', fontSize:'9px' }}>
             <span>{methodLabel}</span>
             <span>Rp {total.toLocaleString('id-ID')}</span>
           </div>
@@ -239,7 +276,7 @@ const Receipt = forwardRef(function Receipt({ transaction }, ref) {
         <div className="receipt-dash">{dash2}</div>
 
         {/* Barcode */}
-        <div style={{ textAlign:'center', padding:'5px 0 2px' }}>
+        <div style={{ textAlign:'center', padding:'4px 4px 2px' }}>
           <div style={{
             display:'flex', alignItems:'flex-end',
             justifyContent:'center', gap:'1px',
@@ -335,6 +372,7 @@ const Receipt = forwardRef(function Receipt({ transaction }, ref) {
 
       </div>{/* end z-index wrapper */}
     </div>
+    </>
   );
 });
 

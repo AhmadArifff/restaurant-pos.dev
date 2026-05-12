@@ -22,11 +22,11 @@ export default function AuthGuard({ children, adminOnly = false }) {
 
   if (!hydrated) {
     return (
-      <div className="flex h-screen items-center justify-center bg-slate-950">
+      <div className="flex h-screen items-center justify-center bg-[#0D0A06]">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent
+          <div className="w-8 h-8 border-2 border-[#C9A84C] border-t-transparent
             rounded-full animate-spin" />
-          <p className="text-slate-500 text-sm">Memuat...</p>
+          <p className="text-[#9E8E6E] text-sm">Memuat...</p>
         </div>
       </div>
     );

@@ -25,9 +25,9 @@ import PWAInstallPrompt from '@/components/ui/PWAInstallPrompt';
 export default function AdminLayout({ children, noPadding = false }) {
   return (
     <AuthGuard>
-      <div className="flex h-screen bg-slate-950 overflow-hidden">
+      <div className="admin-theme admin-shell flex h-screen overflow-hidden">
         <Sidebar />
-        <main className={`flex-1 overflow-hidden ${noPadding ? '' : 'overflow-y-auto p-4 sm:p-6'}`}>
+        <main className={`admin-main flex-1 overflow-hidden ${noPadding ? '' : 'overflow-y-auto p-4 sm:p-6'}`}>
           {children}
           <PWAInstallPrompt />
         </main>
