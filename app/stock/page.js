@@ -735,14 +735,14 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-slate-700/60 bg-slate-800/30">
-                        {['Tanggal','Bahan Baku','Jumlah','Harga/Sat','Total Nilai','Sumber','Pengaju','Status','Catatan'].map(h => (
+                        {['Tanggal','Bahan Baku','Jumlah','Harga/Sat','Total Nilai','Status Sumber','Sumber Stok','Pengaju','Status','Catatan'].map(h => (
                           <th key={h} className={thC}>{h}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
                       {outData.length === 0
-                        ? <tr><td colSpan={9}><EmptyState title="Tidak ada data pengeluaran" /></td></tr>
+                        ? <tr><td colSpan={10}><EmptyState title="Tidak ada data pengeluaran" /></td></tr>
                         : outData.map((row, i) => {
                           const isPending  = row.type === 'pending_out' && row.request_status === 'pending';
                           const isRejected = row.type === 'pending_out' && row.request_status === 'rejected';
@@ -767,37 +767,30 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                                 Rp {Number(row.total_cost).toLocaleString('id-ID')}
                               </td>
 
-                              {/* Kolom Sumber */}
+                              {/* Kolom Status Sumber */}
                               <td className={tdC}>
                                 <TypeBadge type={row.type} status={row.request_status} />
                               </td>
 
-                              {/* Kolom Pengaju */}
-                              <td className={tdC}>
-                                {row.admin_name ? (
-                                  <div className="space-y-0.5">
-                                    <p className="text-xs flex items-center gap-1">
-                                      <span className="text-blue-400/80 text-[10px] font-bold bg-blue-500/10 px-1.5 py-0.5 rounded">ADM</span>
-                                      <span className="text-slate-400">{row.admin_name}</span>
-                                    </p>
-                                    <p className="text-white text-xs font-semibold flex items-center gap-1">
-                                      <span className="text-slate-600">→</span>
-                                      {row.target_user_name}
-                                    </p>
-                                  </div>
-                                ) : (
-                                  <div className="space-y-0.5">
-                                    <p className="text-white text-xs font-semibold">
-                                      {row.target_user_name || row.created_by_name}
-                                    </p>
-                                    {row.approver_name && (
-                                      <p className="text-slate-600 text-xs">
-                                        ✓ <span className="text-slate-500">{row.approver_name}</span>
-                                      </p>
-                                    )}
-                                  </div>
-                                )}
+                              {/* Kolom Sumber Stok */}
+                              <td className={`${tdC} text-slate-300 text-xs`}>
+                                {row.stock_owner_name || row.target_user_name || row.created_by_name || '—'}
                               </td>
+
+                              {/* ✅ SESUDAH */}
+<td className={tdC}>
+  {row.admin_name ? (
+    // Admin yang input transaksi menggunakan stok kasir
+    <span className="text-xs text-blue-400/80 font-bold">
+      {row.admin_name}
+    </span>
+  ) : (
+    // Kasir transaksi sendiri
+    <span className="text-xs text-slate-400">
+      {row.created_by_name || '—'}
+    </span>
+  )}
+</td>
 
                               {/* Kolom Status */}
                               <td className={tdC}>
@@ -1959,14 +1952,14 @@ function KasirStockPage({ successModal, setSuccessModal }) {
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-slate-700/60 bg-slate-800/30">
-                        {['Tanggal','Bahan Baku','Jumlah','Harga/Sat','Total Nilai','Sumber','Disetujui Oleh','Status','Catatan'].map(h =>
+                        {['Tanggal','Bahan Baku','Jumlah','Harga/Sat','Total Nilai','Status Sumber','Sumber Stok','Pengaju','Status','Catatan'].map(h =>
                           <th key={h} className={thC}>{h}</th>
                         )}
                       </tr>
                     </thead>
                     <tbody>
                       {outData.length === 0
-                        ? <tr><td colSpan={9}><EmptyState title="Tidak ada data pengeluaran pada periode ini" /></td></tr>
+                        ? <tr><td colSpan={10}><EmptyState title="Tidak ada data pengeluaran pada periode ini" /></td></tr>
                         : outData.map((row, i) => {
                           const isPending  = row.type === 'pending_out' && row.request_status === 'pending';
                           const isRejected = row.type === 'pending_out' && row.request_status === 'rejected';
@@ -1993,14 +1986,23 @@ function KasirStockPage({ successModal, setSuccessModal }) {
                               <td className={tdC}>
                                 <TypeBadge type={row.type} status={row.request_status} />
                               </td>
-                              <td className={`${tdC} text-slate-400 text-xs`}>
-                                {isTx
-                                  ? <span className="text-blue-400/80">Otomatis POS</span>
-                                  : row.approver_name
-                                    ? <span className="text-green-400/80">{row.approver_name}</span>
-                                    : <span className="text-slate-600">—</span>
-                                }
+                              <td className={`${tdC} text-slate-300 text-xs`}>
+                                {row.stock_owner_name || row.target_user_name || row.created_by_name || '—'}
                               </td>
+                              {/* ✅ SESUDAH */}
+<td className={`${tdC} text-slate-400 text-xs`}>
+  {row.admin_name ? (
+    // Admin yang pakai stok kasir ini
+    <span className="text-blue-400/80 font-semibold">
+      {row.admin_name}
+    </span>
+  ) : (
+    // Kasir itu sendiri yang transaksi
+    <span className="text-slate-300">
+      {row.created_by_name || '—'}
+    </span>
+  )}
+</td>
                               <td className={tdC}>
                                 {isTx && (
                                   <span className="text-xs px-2 py-1 rounded-full font-semibold bg-blue-500/15 text-blue-400 border border-blue-500/20">

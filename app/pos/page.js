@@ -11,6 +11,7 @@ import { useAuthStore } from '@/store/authStore';
 import Cart         from '@/components/pos/Cart';
 import PaymentModal from '@/components/pos/PaymentModal';
 import Receipt      from '@/components/pos/Receipt';
+import ProductCard  from '@/components/pos/ProductCard';
 import { useReactToPrint } from 'react-to-print';
 import AdminLayout  from '@/components/layout/AdminLayout';
 
@@ -68,7 +69,6 @@ export default function PosPage() {
   const [lastTransaction, setLastTransaction] = useState(null);
   const [loading,         setLoading]         = useState(true);
   const [showMobileCart,  setShowMobileCart]  = useState(false);
-  const [expandedProductId, setExpandedProductId] = useState(null); // Track expanded product for details
 
   // Admin: sumber stok yang dipilih
   const [selectedSourceUser, setSelectedSourceUser] = useState(null);
@@ -468,242 +468,20 @@ export default function PosPage() {
                             (u) => u.user_id === selectedSourceUser.user_id
                           )
                         : null;
-                      const ingredientStockMap = (selectedUserStock?.ingredients || []).reduce((acc, ing) => {
-                        acc[ing.stock_item_id] = ing;
-                        return acc;
-                      }, {});
 
                       return (
-                        <button key={product.id}
-                          onClick={() => handleAddItem(product)}
-                          className={`relative bg-slate-800/80 rounded-2xl text-left
-                            border overflow-hidden transition-all duration-200 group
-                            ${soldOut
-                              ? 'border-slate-700/50 cursor-pointer'
-                              : inCart
-                                ? 'border-orange-500/60 shadow-lg shadow-orange-500/10'
-                                : 'border-slate-700/60 hover:border-orange-500/40 active:scale-95'
-                            }`}>
-
-                          {/* In-cart badge */}
-                          {inCart && (
-                            <div className="absolute top-2 right-2 z-10 w-6 h-6 bg-orange-500
-                              rounded-lg flex items-center justify-center text-white text-xs font-black shadow-lg">
-                              {inCart.qty}
-                            </div>
-                          )}
-
-                          {/* Sold out overlay */}
-                          {/* Sold out overlay — ganti bagian ini */}
-                          {soldOut && (
-                            <div className="absolute inset-0 z-10 flex flex-col items-center
-                              justify-center bg-slate-900/75 backdrop-blur-sm gap-1.5">
-                              <span className="bg-red-500/90 text-white text-xs font-bold px-3 py-1 rounded-full">
-                                Stok Habis
-                              </span>
-
-                              {/* Admin: ajukan stok */}
-                              {isAdmin && (
-                                <span className="text-orange-400 text-[10px] font-semibold
-                                  bg-orange-500/20 px-2 py-0.5 rounded-full border border-orange-500/30
-                                  flex items-center gap-1">
-                                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
-                                    stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                                    <path d="M12 5v14M5 12h14"/>
-                                  </svg>
-                                  Ajukan Stok
-                                </span>
-                              )}
-
-                              {/* Kasir: ajukan pengeluaran ke admin */}
-                              {!isAdmin && (
-                                <span className="text-orange-400 text-[10px] font-semibold
-                                  bg-orange-500/20 px-2 py-0.5 rounded-full border border-orange-500/30
-                                  flex items-center gap-1">
-                                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
-                                    stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                                    <path d="M12 5v14M5 12h14"/>
-                                  </svg>
-                                  Ajukan Stok
-                                </span>
-                              )}
-                            </div>
-                          )}
-
-                          {/* Gambar */}
-                          <div className="relative w-full h-28 bg-slate-700/60 overflow-hidden">
-                            {product.image_url ? (
-                              <img
-                                src={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api','')}${product.image_url}`}
-                                alt={product.name}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                <img src="/images/assets/logo.png" alt="Logo"
-                                  className="w-12 h-12 object-contain opacity-30" />
-                              </div>
-                            )}
-                            {product.category_name && (
-                              <span className="absolute bottom-1.5 left-1.5 bg-slate-900/80
-                                text-slate-300 text-xs px-2 py-0.5 rounded-lg">
-                                {product.category_name}
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Info */}
-                          <div className="p-3">
-                            <p className="text-white font-semibold text-sm leading-tight line-clamp-2 mb-1">
-                              {product.name}
-                            </p>
-                            <p className="text-orange-400 font-bold text-sm">
-                              Rp {Number(product.price).toLocaleString('id-ID')}
-                            </p>
-
-                            {/* Stok indicator */}
-                            <div className="flex items-center gap-1.5 mt-1.5">
-                              <div className={`w-1.5 h-1.5 rounded-full ${
-                                soldOut ? 'bg-red-500' : lowStock ? 'bg-yellow-500' : 'bg-green-500'
-                              }`} />
-                              {/* Stok indicator — ganti baris teks soldOut */}
-                              <span className={`text-xs ${
-                                soldOut ? 'text-red-400' : lowStock ? 'text-yellow-400' : 'text-slate-500'
-                              }`}>
-                                {soldOut
-                                  ? (isAdmin ? 'Tap untuk ajukan' : 'Tap untuk minta stok') // ← update kasir
-                                  : `${stock} porsi`
-                                }
-                              </span>
-                            </div>
-
-                            {/* Admin: Expandable kasir info + ingredients */}
-                            {isAdmin && selectedSourceUser && (
-                              <div className="mt-2 space-y-1">
-                                {/* Header - Always visible - Expandable Div */}
-                                <div
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setExpandedProductId(
-                                      expandedProductId === product.id ? null : product.id
-                                    );
-                                  }}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter' || e.key === ' ') {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                      setExpandedProductId(
-                                        expandedProductId === product.id ? null : product.id
-                                      );
-                                    }
-                                  }}
-                                  role="button"
-                                  tabIndex={0}
-                                  className="w-full text-left px-1.5 py-1 rounded-lg bg-slate-700/50
-                                    border border-slate-600/40 text-slate-400 text-[10px]
-                                    hover:bg-slate-700/70 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-orange-500/30">
-                                  <div className="flex items-center justify-between gap-1">
-                                    <div className="flex items-center gap-1 flex-1">
-                                      <span className="text-blue-400 font-semibold">👤</span>
-                                      <span>{selectedSourceUser.user_name}</span>
-                                      <span className="text-amber-400 font-bold">
-                                        {stock} porsi
-                                      </span>
-                                    </div>
-                                    <svg className={`w-3 h-3 transition-transform shrink-0 pointer-events-none ${
-                                      expandedProductId === product.id ? 'rotate-180' : ''
-                                    }`} fill="currentColor" viewBox="0 0 20 20">
-                                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                                    </svg>
-                                  </div>
-                                </div>
-
-                                {/* Expanded Details */}
-                                {expandedProductId === product.id && (
-                                  <div
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="px-1.5 py-1.5 rounded-lg bg-slate-800/60
-                                    border border-slate-600/30 text-[9px] text-slate-300 space-y-1.5 animate-in fade-in duration-200">
-                                    
-                                    {/* Ingredients Requested */}
-                                    {product.ingredients?.length > 0 && (
-                                      <div>
-                                        <div className="text-amber-400 font-semibold mb-0.5 flex items-center gap-1">
-                                          <span>📦</span> Bahan yang Dibutuhkan
-                                        </div>
-                                        <div className="space-y-0.5 pl-4">
-                                          {product.ingredients.map((ing, idx) => {
-                                            const availableQty = Number(
-                                              ingredientStockMap[ing.stock_item_id]?.available_qty || 0
-                                            );
-                                            const requiredPerPortion = Number(ing.qty || 1);
-                                            const canMakePortion = Math.floor(availableQty / requiredPerPortion);
-                                            const statusColor = availableQty === 0 
-                                              ? 'text-red-400' 
-                                              : canMakePortion <= 3 
-                                              ? 'text-yellow-400' 
-                                              : 'text-green-400';
-                                            
-                                            return (
-                                              <div key={idx} className="flex justify-between items-start gap-2">
-                                                <span className="text-slate-300">
-                                                  {ing.ingredient_name}
-                                                </span>
-                                                <span className={`font-semibold whitespace-nowrap ${statusColor}`}>
-                                                  {availableQty} {ing.unit}
-                                                </span>
-                                              </div>
-                                            );
-                                          })}
-                                        </div>
-                                      </div>
-                                    )}
-
-                                    {/* Stock Availability Summary */}
-                                    <div className="pt-0.5 border-t border-slate-600/40">
-                                      <div className="text-blue-400 font-semibold mb-0.5 flex items-center gap-1">
-                                        <span>📊</span> Ketersediaan
-                                      </div>
-                                      <div className="space-y-0.5 pl-4">
-                                        <div className="flex justify-between">
-                                          <span>Dari Pengajuan:</span>
-                                          <span className="text-green-400 font-semibold">
-                                            {(() => {
-                                              const firstIng = product.ingredients?.[0];
-                                              if (!firstIng) return '0';
-                                              const firstAvailable = Number(
-                                                ingredientStockMap[firstIng.stock_item_id]?.available_qty || 0
-                                              );
-                                              return `${firstAvailable} ${firstIng.unit || ''}`;
-                                            })()}
-                                          </span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                          <span>Komponen Resep:</span>
-                                          <span className="text-orange-400 font-semibold">
-                                            {product.ingredients?.length || 0} bahan
-                                          </span>
-                                        </div>
-                                        <div className="flex justify-between border-t border-slate-600/30 pt-0.5 mt-0.5">
-                                          <span className="font-semibold">Bisa Buat:</span>
-                                          <span className="text-amber-400 font-bold">
-                                            {stock} porsi
-                                          </span>
-                                        </div>
-                                      </div>
-                                    </div>
-
-                                    {/* Request Status */}
-                                    <div className="pt-0.5 text-[8px] italic text-slate-500 flex items-center gap-1">
-                                      <span className="text-green-400 text-xs">OK</span>
-                                      <span>Stok dihitung dari pengajuan yang disetujui</span>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </button>
+                        <ProductCard
+                          key={product.id}
+                          product={product}
+                          inCart={inCart}
+                          stock={stock}
+                          soldOut={soldOut}
+                          lowStock={lowStock}
+                          isAdmin={isAdmin}
+                          selectedSourceUser={selectedSourceUser}
+                          selectedUserStock={selectedUserStock}
+                          onAddItem={handleAddItem}
+                        />
                       );
                     })
                 }
