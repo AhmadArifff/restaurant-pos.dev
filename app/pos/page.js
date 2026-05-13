@@ -68,9 +68,7 @@ export default function PosPage() {
   const [lastTransaction, setLastTransaction] = useState(null);
   const [loading,         setLoading]         = useState(true);
   const [showMobileCart,  setShowMobileCart]  = useState(false);
-  const [allStockUsers, setAllStockUsers] = useState([]); // All users with stock
   const [expandedProductId, setExpandedProductId] = useState(null); // Track expanded product for details
-  const [requestDetailsCache, setRequestDetailsCache] = useState({}); // Cache request details
 
   // Admin: sumber stok yang dipilih
   const [selectedSourceUser, setSelectedSourceUser] = useState(null);
@@ -94,7 +92,6 @@ export default function PosPage() {
       .then(([p, c]) => {
         const prods = p.data || [];
         setProducts(prods);
-        setAllStockUsers(prods);
         setCategories(c.data || []);
 
         // Admin: pilih user pertama yang punya stok sebagai default
@@ -148,8 +145,20 @@ export default function PosPage() {
   }, [isAdmin, selectedSourceUser]);
 
   // ── Semua user dengan stok (FILTERED: hanya yang can_make > 0) ────────────────────────────────
-  const stockUsersList = isAdmin 
-    ? (products[0]?.stock_by_user || []).filter(u => Number(u.can_make || 0) > 0)
+  const stockUsersList = isAdmin
+    ? Object.values(
+        products.reduce((acc, p) => {
+          (p.stock_by_user || []).forEach((u) => {
+            const canMake = Number(u.can_make || 0);
+            if (canMake <= 0) return;
+            const prev = acc[u.user_id];
+            if (!prev || canMake > prev.can_make) {
+              acc[u.user_id] = { ...u, can_make: canMake };
+            }
+          });
+          return acc;
+        }, {})
+      )
     : [];
 
   // ── Add to cart ────────────────────────────────────────────
@@ -454,6 +463,15 @@ export default function PosPage() {
                       const inCart   = items.find(i => i.id === product.id);
                       const soldOut  = stock === 0;
                       const lowStock = stock > 0 && stock <= 3;
+                      const selectedUserStock = isAdmin && selectedSourceUser
+                        ? product.stock_by_user?.find(
+                            (u) => u.user_id === selectedSourceUser.user_id
+                          )
+                        : null;
+                      const ingredientStockMap = (selectedUserStock?.ingredients || []).reduce((acc, ing) => {
+                        acc[ing.stock_item_id] = ing;
+                        return acc;
+                      }, {});
 
                       return (
                         <button key={product.id}
@@ -589,7 +607,7 @@ export default function PosPage() {
                                       <span className="text-blue-400 font-semibold">👤</span>
                                       <span>{selectedSourceUser.user_name}</span>
                                       <span className="text-amber-400 font-bold">
-                                        {selectedSourceUser.can_make} porsi
+                                        {stock} porsi
                                       </span>
                                     </div>
                                     <svg className={`w-3 h-3 transition-transform shrink-0 pointer-events-none ${
@@ -615,7 +633,9 @@ export default function PosPage() {
                                         </div>
                                         <div className="space-y-0.5 pl-4">
                                           {product.ingredients.map((ing, idx) => {
-                                            const availableQty = Number(ing.stock || 0);
+                                            const availableQty = Number(
+                                              ingredientStockMap[ing.stock_item_id]?.available_qty || 0
+                                            );
                                             const requiredPerPortion = Number(ing.qty || 1);
                                             const canMakePortion = Math.floor(availableQty / requiredPerPortion);
                                             const statusColor = availableQty === 0 
@@ -646,21 +666,28 @@ export default function PosPage() {
                                       </div>
                                       <div className="space-y-0.5 pl-4">
                                         <div className="flex justify-between">
-                                          <span>Dari Gudang:</span>
+                                          <span>Dari Pengajuan:</span>
                                           <span className="text-green-400 font-semibold">
-                                            {product.ingredients?.[0]?.stock || 0} {product.ingredients?.[0]?.unit || ''}
+                                            {(() => {
+                                              const firstIng = product.ingredients?.[0];
+                                              if (!firstIng) return '0';
+                                              const firstAvailable = Number(
+                                                ingredientStockMap[firstIng.stock_item_id]?.available_qty || 0
+                                              );
+                                              return `${firstAvailable} ${firstIng.unit || ''}`;
+                                            })()}
                                           </span>
                                         </div>
                                         <div className="flex justify-between">
-                                          <span>Per Porsi Butuh:</span>
+                                          <span>Komponen Resep:</span>
                                           <span className="text-orange-400 font-semibold">
-                                            {product.ingredients?.[0]?.qty || 0} {product.ingredients?.[0]?.unit || ''}
+                                            {product.ingredients?.length || 0} bahan
                                           </span>
                                         </div>
                                         <div className="flex justify-between border-t border-slate-600/30 pt-0.5 mt-0.5">
                                           <span className="font-semibold">Bisa Buat:</span>
                                           <span className="text-amber-400 font-bold">
-                                            {selectedSourceUser.can_make} porsi
+                                            {stock} porsi
                                           </span>
                                         </div>
                                       </div>
@@ -668,17 +695,8 @@ export default function PosPage() {
 
                                     {/* Request Status */}
                                     <div className="pt-0.5 text-[8px] italic text-slate-500 flex items-center gap-1">
-                                      {selectedSourceUser.request_id ? (
-                                        <>
-                                          <span className="text-green-400 text-xs">✓</span>
-                                          <span>Ada pengajuan stok terkonfirmasi</span>
-                                        </>
-                                      ) : (
-                                        <>
-                                          <span className="text-orange-400 text-xs">⚠</span>
-                                          <span>Menggunakan stok gudang umum</span>
-                                        </>
-                                      )}
+                                      <span className="text-green-400 text-xs">OK</span>
+                                      <span>Stok dihitung dari pengajuan yang disetujui</span>
                                     </div>
                                   </div>
                                 )}

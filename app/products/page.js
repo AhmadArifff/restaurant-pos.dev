@@ -119,6 +119,13 @@ export default function ProductsPage() {
   const filtered = products.filter(p =>
     p.name.toLowerCase().includes(search.toLowerCase())
   );
+  const getAdminCanMake = (product) => {
+    const perKasir = stockByKasir?.[product.id];
+    if (!Array.isArray(perKasir) || perKasir.length === 0) {
+      return Number(product.stock || 0);
+    }
+    return perKasir.reduce((sum, row) => sum + Number(row.can_make || 0), 0);
+  };
 
   // Hitung HPP (Harga Pokok Produksi) dari ingredients yang dipilih
   // const hitungHPP = (ingredients, stockItems) => {
@@ -223,13 +230,13 @@ export default function ProductsPage() {
                     </div>
                   ) : (
                     <div>
-                      {/* Total bisa buat (gudang) + tombol expand */}
+                      {/* Total bisa buat dari akumulasi per kasir + tombol expand */}
                       <div className="flex items-center justify-between">
                         <span className={`text-xs font-bold ${
-                          p.stock === 0 ? 'text-red-400' :
-                          p.stock <= 5  ? 'text-yellow-400' : 'text-green-400'
+                          getAdminCanMake(p) === 0 ? 'text-red-400' :
+                          getAdminCanMake(p) <= 5  ? 'text-yellow-400' : 'text-green-400'
                         }`}>
-                          {p.stock === 0 ? '⚠ Habis' : `Bisa buat: ${p.stock}`}
+                          {getAdminCanMake(p) === 0 ? '⚠ Habis' : `Bisa buat: ${getAdminCanMake(p)}`}
                         </span>
 
                         {stockByKasir[p.id]?.length > 0 && (
