@@ -11,6 +11,7 @@ import { resolveAssetUrl } from '@/lib/assetUrl';
 // ── Definisi menu dengan animasi unik tiap item ───────────────
 const menus = [
   { href: '/pos',                       label: 'Kasir',        roles: ['admin','kasir'], anim: 'pop'    },
+  { href: '/pos/history',               label: 'Riwayat POS',   roles: ['admin'],        anim: 'slide'  },
   { href: '/dashboard',                 label: 'Dashboard',    roles: ['admin'],          anim: 'bounce' },
   { href: '/products',                  label: 'Produk',       roles: ['admin'],          anim: 'flip'   },
   { href: '/stock',                     label: 'Stok',         roles: ['admin','kasir'],  anim: 'wave'   },
@@ -29,6 +30,16 @@ function PosIcon({ active }) {
       <rect x="2" y="3" width="20" height="14" rx="2"/>
       <path d="M8 21h8M12 17v4"/>
       <path d="M7 8h2M11 8h6M7 12h2M11 12h4"/>
+    </svg>
+  );
+}
+function HistoryIcon({ active }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+      stroke={active ? '#fff' : 'currentColor'} strokeWidth="1.8"
+      strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="9"/>
+      <polyline points="12 6 12 12 16 14"/>
     </svg>
   );
 }
@@ -155,6 +166,7 @@ function InstallIcon() {
 // Map href ke icon component
 const iconMap = {
   '/pos':                         PosIcon,
+  '/pos/history':                 HistoryIcon,
   '/dashboard':                   DashIcon,
   '/products':                    ProductIcon,
   '/stock':                       StockIcon,
@@ -173,6 +185,7 @@ const ICON_KEYFRAMES = `
   @keyframes iconShake  { 0%,100%{transform:rotate(0)} 20%{transform:rotate(-14deg)} 40%{transform:rotate(14deg)} 60%{transform:rotate(-8deg)} 80%{transform:rotate(8deg)} }
   @keyframes iconWave   { 0%{transform:scaleY(1)} 25%{transform:scaleY(0.65)} 50%{transform:scaleY(1.2)} 75%{transform:scaleY(0.85)} 100%{transform:scaleY(1)} }
   @keyframes iconFlip   { 0%{transform:rotateY(0)} 50%{transform:rotateY(180deg)} 100%{transform:rotateY(360deg)} }
+  @keyframes iconSlide  { 0%{transform:translateX(-8px);opacity:0} 100%{transform:translateX(0);opacity:1} }
   @keyframes rippleBurst{ 0%{transform:scale(0.6);opacity:0.5} 100%{transform:scale(2.4);opacity:0} }
   @keyframes activeBarIn{ from{height:0;opacity:0} to{height:20px;opacity:1} }
   @keyframes sidebarLabelIn{ from{opacity:0;transform:translateX(-6px)} to{opacity:1;transform:translateX(0)} }

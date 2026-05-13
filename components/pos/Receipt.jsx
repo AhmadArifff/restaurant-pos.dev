@@ -175,6 +175,9 @@ const Receipt = forwardRef(function Receipt({ transaction }, ref) {
           ['No. Struk', transaction.invoice_number],
           ['Tanggal',   `${date} ${time}`],
           ['Kasir',     transaction.kasir_name || 'Admin'],
+          ['Dibuat Oleh', transaction.created_by_type === 'admin' 
+            ? `Admin (${transaction.kasir_name})` 
+            : transaction.kasir_name || 'Admin'],
           ['Bayar',     methodLabel],
         ].map(([label, val]) => (
           <div key={label} className="receipt-row receipt-small">

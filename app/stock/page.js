@@ -181,15 +181,28 @@ function AdminStockPage({ successModal, setSuccessModal }) {
     );
   }
 
-  // Di AdminStockPage, merge stockItems dengan summary untuk tampilkan stok yang akurat
+  // 📊 CONSOLIDATED BALANCE SOURCE: Use main_stock summary as single source of truth
+  // ✓ Reason: main_stock table contains immutable audit trail of all stock movements
+  // ✓ Calculation: balance = SUM(IN movements) - SUM(OUT movements) from main_stock
+  // ✓ Fallback: If summary unavailable, show "Loading..." instead of stale stock_items.stock
   const stockItemsWithSummary = stockItems.map(item => {
     const sum = summary.find(s => s.id === item.id);
+    
+    // If summary exists (API returned calculated balance from main_stock), use it
+    // Otherwise, mark as pending/loading (do NOT fallback to item.stock which may be out of sync)
+    const currentStock = sum 
+      ? Number(sum.current_stock)
+      : null; // null indicates we're waiting for the calculated value
+
+    const costPerUnit = sum && Number(sum.total_in) > 0
+      ? Math.round(Number(sum.total_cost_in) / Number(sum.total_in))
+      : Number(item.price_per_unit || 0);
+
     return {
       ...item,
-      display_stock:     sum ? Number(sum.current_stock)  : Number(item.stock),
-      display_price_per: sum && Number(sum.total_in) > 0
-        ? Math.round(Number(sum.total_cost_in) / Number(sum.total_in))
-        : Number(item.price_per_unit || 0),
+      display_stock: currentStock,
+      display_price_per: costPerUnit,
+      stock_from_main: !!sum, // Track if this came from main_stock (reliable) or is pending
     };
   });
 
@@ -393,13 +406,18 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                           <td className={`${tdC} text-slate-400`}>{item.unit}</td>
                           <td className={`${tdC} text-slate-400`}>{item.min_stock} {item.unit}</td>
                           <td className={tdC}>
-                            <span className={
-                              item.display_stock === 0              ? 'text-red-400 font-bold' :
-                              item.display_stock <= item.min_stock  ? 'text-yellow-400 font-bold'
-                                                                    : 'text-white font-bold'
-                            }>
-                              {item.display_stock} {item.unit}
-                            </span>
+                            {item.display_stock === null ? (
+                              // Still loading from main_stock query
+                              <span className="text-slate-500 text-xs italic">Loading...</span>
+                            ) : (
+                              <span className={
+                                item.display_stock === 0              ? 'text-red-400 font-bold' :
+                                item.display_stock <= item.min_stock  ? 'text-yellow-400 font-bold'
+                                                                      : 'text-white font-bold'
+                              }>
+                                {item.display_stock} {item.unit}
+                              </span>
+                            )}
                           </td>
                           <td className={`${tdC} text-slate-300`}>
                             {item.display_price_per > 0
@@ -408,14 +426,18 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                             }
                           </td>
                           <td className={tdC}>
-                            <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
-                              item.display_stock === 0             ? 'bg-red-500/15 text-red-400' :
-                              item.display_stock <= item.min_stock ? 'bg-yellow-500/15 text-yellow-400' :
-                                                                    'bg-green-500/15 text-green-400'
-                            }`}>
-                              {item.display_stock === 0 ? 'Habis' :
-                              item.display_stock <= item.min_stock ? 'Menipis' : 'Aman'}
-                            </span>
+                            {item.display_stock === null ? (
+                              <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-slate-700 text-slate-400">⏳ Menunggu</span>
+                            ) : (
+                              <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
+                                item.display_stock === 0             ? 'bg-red-500/15 text-red-400' :
+                                item.display_stock <= item.min_stock ? 'bg-yellow-500/15 text-yellow-400' :
+                                                                      'bg-green-500/15 text-green-400'
+                              }`}>
+                                {item.display_stock === 0 ? 'Habis' :
+                                item.display_stock <= item.min_stock ? 'Menipis' : 'Aman'}
+                              </span>
+                            )}
                           </td>
                           <td className={tdC}>
                             <div className="flex gap-2">

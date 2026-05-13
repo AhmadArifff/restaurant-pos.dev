@@ -68,6 +68,9 @@ export default function PosPage() {
   const [lastTransaction, setLastTransaction] = useState(null);
   const [loading,         setLoading]         = useState(true);
   const [showMobileCart,  setShowMobileCart]  = useState(false);
+  const [allStockUsers, setAllStockUsers] = useState([]); // All users with stock
+  const [expandedProductId, setExpandedProductId] = useState(null); // Track expanded product for details
+  const [requestDetailsCache, setRequestDetailsCache] = useState({}); // Cache request details
 
   // Admin: sumber stok yang dipilih
   const [selectedSourceUser, setSelectedSourceUser] = useState(null);
@@ -84,20 +87,28 @@ export default function PosPage() {
   // ── Load data ──────────────────────────────────────────────
   const loadData = useCallback(() => {
     setLoading(true);
+    // 🔄 Using getStockAllUsers for admin - awaiting /stock-requests/approved-for-pos backend implementation
     const fetchProducts = isAdmin ? getStockAllUsers : getMyStockProducts;
 
     Promise.all([fetchProducts(), getCategories()])
       .then(([p, c]) => {
         const prods = p.data || [];
         setProducts(prods);
+        setAllStockUsers(prods);
         setCategories(c.data || []);
 
         // Admin: pilih user pertama yang punya stok sebagai default
-        if (isAdmin && !selectedSourceUser) {
-          const allUsers = prods[0]?.stock_by_user || [];
-          const first = allUsers.find(u => u.can_make > 0);
-          if (first) setSelectedSourceUser(first);
-          else if (allUsers.length > 0) setSelectedSourceUser(allUsers[0]);
+        if (isAdmin && !selectedSourceUser && prods.length > 0) {
+          const firstProduct = prods[0];
+          const firstUser = firstProduct.stock_by_user?.[0];
+          if (firstUser) {
+            setSelectedSourceUser({
+              user_id: firstUser.user_id,
+              user_name: firstUser.user_name,
+              role: firstUser.role,
+              can_make: firstUser.can_make,
+            });
+          }
         }
       })
       .finally(() => setLoading(false));
@@ -130,14 +141,16 @@ export default function PosPage() {
   const getProductStock = useCallback((product) => {
     if (!isAdmin) return product.stock ?? 0;
     if (!selectedSourceUser) return 0;
-    const found = product.stock_by_user?.find(
+    const userStock = product.stock_by_user?.find(
       u => u.user_id === selectedSourceUser.user_id
     );
-    return found?.can_make ?? 0;
+    return userStock ? (Number(userStock.can_make || 0)) : 0;
   }, [isAdmin, selectedSourceUser]);
 
-  // ── Semua user dari produk pertama ────────────────────────
-  const allStockUsers = isAdmin ? (products[0]?.stock_by_user || []) : [];
+  // ── Semua user dengan stok (FILTERED: hanya yang can_make > 0) ────────────────────────────────
+  const stockUsersList = isAdmin 
+    ? (products[0]?.stock_by_user || []).filter(u => Number(u.can_make || 0) > 0)
+    : [];
 
   // ── Add to cart ────────────────────────────────────────────
   const handleAddItem = (product) => {
@@ -181,15 +194,16 @@ export default function PosPage() {
   };
 
   // ── Transaksi ──────────────────────────────────────────────
+  // ✅ CHANGED: Track admin execution dan request_id yang digunakan
   const handlePayment = async (paymentMethod, tunai = 0) => {
     try {
       const sourceUserId = isAdmin
-        ? (selectedSourceUser?.user_id || user?.id)
-        : user?.id;
+        ? (selectedSourceUser?.user_id || null)
+        : null;
 
       const res = await createTransaction({
         payment_method: paymentMethod,
-        source_user_id: sourceUserId,
+        sourceUserId: sourceUserId,
         items: items.map(i => ({ product_id: i.id, price: i.price, qty: i.qty })),
       });
 
@@ -201,8 +215,9 @@ export default function PosPage() {
         tunai,
         kembalian:  paymentMethod === 'cash' ? tunai - total : 0,
         kasir_name: isAdmin
-          ? `Admin → ${selectedSourceUser?.user_name || 'Gudang'}`
+          ? `Admin (${user?.name}) → ${selectedSourceUser?.user_name || 'Gudang'}`
           : user?.name,
+        created_by_type: isAdmin ? 'admin' : 'kasir',
       });
 
       clearCart();
@@ -249,17 +264,22 @@ export default function PosPage() {
               <div className="flex-1" />
 
               {/* ── ADMIN: Pilih sumber stok ── */}
-              {isAdmin && allStockUsers.length > 0 && (
+              {isAdmin && stockUsersList.length > 0 && (
                 <div className="hidden sm:flex items-center gap-2 flex-wrap">
                   <span className="text-slate-500 text-xs shrink-0">Stok dari:</span>
-                  {allStockUsers.map(u => {
+                  {stockUsersList.map(u => {
                     const isSelected = selectedSourceUser?.user_id === u.user_id;
-                    const hasStock   = u.can_make > 0;
+                    const hasStock   = Number(u.can_make || 0) > 0;
                     return (
                       <button key={u.user_id}
                         onClick={() => {
                           if (selectedSourceUser?.user_id === u.user_id) return;
-                          setSelectedSourceUser(u);
+                          setSelectedSourceUser({
+                            user_id: u.user_id,
+                            user_name: u.user_name,
+                            role: u.role,
+                            can_make: u.can_make,
+                          });
                           clearCart();
                         }}
                         className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl
@@ -273,16 +293,10 @@ export default function PosPage() {
                         <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
                           hasStock ? 'bg-green-400' : 'bg-red-400'
                         }`} />
-                        {u.user_name}
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
-                          isSelected
-                            ? 'bg-white/20 text-white'
-                            : hasStock
-                              ? 'bg-slate-600 text-slate-300'
-                              : 'bg-slate-700/60 text-slate-600'
-                        }`}>
-                          {u.can_make}
-                        </span>
+                        <div className="flex flex-col gap-0.5">
+                          <span>{u.user_name}</span>
+                          <span className="text-[10px] opacity-70">{u.can_make} porsi</span>
+                        </div>
                       </button>
                     );
                   })}
@@ -336,21 +350,26 @@ export default function PosPage() {
             </header>
 
             {/* ── ADMIN MOBILE: source selector ── */}
-            {isAdmin && allStockUsers.length > 0 && (
+            {isAdmin && stockUsersList.length > 0 && (
               <div className="sm:hidden px-4 py-2 bg-slate-900 border-b border-slate-800
                 flex gap-2 overflow-x-auto scrollbar-hide items-center">
                 <span className="text-slate-500 text-xs shrink-0">Stok:</span>
-                {allStockUsers.map(u => {
+                {stockUsersList.map(u => {
                   const isSelected = selectedSourceUser?.user_id === u.user_id;
-                  const hasStock   = u.can_make > 0;
+                  const hasStock   = Number(u.can_make || 0) > 0;
                   return (
                     <button key={u.user_id}
                       onClick={() => {
                         if (selectedSourceUser?.user_id === u.user_id) return;
-                        setSelectedSourceUser(u);
+                        setSelectedSourceUser({
+                          user_id: u.user_id,
+                          user_name: u.user_name,
+                          role: u.role,
+                          can_make: u.can_make,
+                        });
                         clearCart();
                       }}
-                      className={`shrink-0 flex items-center gap-1.5 px-2.5 py-1.5
+                      className={`shrink-0 flex flex-col gap-0.5 px-2.5 py-1.5
                         rounded-xl text-xs font-semibold transition-all ${
                         isSelected
                           ? 'bg-orange-500 text-white'
@@ -358,10 +377,8 @@ export default function PosPage() {
                             ? 'bg-slate-700 text-slate-300 border border-slate-600'
                             : 'bg-slate-800/60 text-slate-600 border border-slate-700/40'
                       }`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${
-                        hasStock ? 'bg-green-400' : 'bg-red-400'
-                      }`} />
-                      {u.user_name} ({u.can_make})
+                      <span className="text-xs">{u.user_name}</span>
+                      <span className="text-[10px] opacity-70">{u.can_make} porsi</span>
                     </button>
                   );
                 })}
@@ -413,9 +430,10 @@ export default function PosPage() {
                 <p className="text-slate-600 text-xs mb-3">
                   {filtered.length} menu tersedia
                   {search && ` · "${search}"`}
+                  {/* ✅ CHANGED: Tampilkan pengajuan dari kasir bukan stok */}
                   {isAdmin && selectedSourceUser && (
                     <span className="text-orange-400/70">
-                      {' '}· stok {selectedSourceUser.user_name}
+                      {' '}· pengajuan dari {selectedSourceUser.user_name}
                     </span>
                   )}
                 </p>
@@ -541,32 +559,129 @@ export default function PosPage() {
                               </span>
                             </div>
 
-                            {/* Admin: mini breakdown stok per user */}
-                            {isAdmin && product.stock_by_user && (
-                              <div className="mt-2 flex flex-wrap gap-1">
-                                {product.stock_by_user
-                                  .filter(u => u.can_make > 0)
-                                  .map(u => (
-                                    <div  // ← GANTI button → div
-                                      key={u.user_id}
-                                      role="button"
-                                      onClick={e => {
-                                        e.stopPropagation();
-                                        if (selectedSourceUser?.user_id !== u.user_id) {
-                                          setSelectedSourceUser(u);
-                                          clearCart();
-                                        }
-                                      }}
-                                      className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold
-                                        cursor-pointer transition-all select-none ${
-                                        selectedSourceUser?.user_id === u.user_id
-                                          ? 'bg-orange-500/30 text-orange-300 border border-orange-500/40'
-                                          : 'bg-slate-700 text-slate-400 border border-slate-600 hover:border-slate-500'
-                                      }`}>
-                                      {u.user_name}: {u.can_make}
+                            {/* Admin: Expandable kasir info + ingredients */}
+                            {isAdmin && selectedSourceUser && (
+                              <div className="mt-2 space-y-1">
+                                {/* Header - Always visible - Expandable Div */}
+                                <div
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setExpandedProductId(
+                                      expandedProductId === product.id ? null : product.id
+                                    );
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      setExpandedProductId(
+                                        expandedProductId === product.id ? null : product.id
+                                      );
+                                    }
+                                  }}
+                                  role="button"
+                                  tabIndex={0}
+                                  className="w-full text-left px-1.5 py-1 rounded-lg bg-slate-700/50
+                                    border border-slate-600/40 text-slate-400 text-[10px]
+                                    hover:bg-slate-700/70 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-orange-500/30">
+                                  <div className="flex items-center justify-between gap-1">
+                                    <div className="flex items-center gap-1 flex-1">
+                                      <span className="text-blue-400 font-semibold">👤</span>
+                                      <span>{selectedSourceUser.user_name}</span>
+                                      <span className="text-amber-400 font-bold">
+                                        {selectedSourceUser.can_make} porsi
+                                      </span>
                                     </div>
-                                  ))
-                                }
+                                    <svg className={`w-3 h-3 transition-transform shrink-0 pointer-events-none ${
+                                      expandedProductId === product.id ? 'rotate-180' : ''
+                                    }`} fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                                    </svg>
+                                  </div>
+                                </div>
+
+                                {/* Expanded Details */}
+                                {expandedProductId === product.id && (
+                                  <div
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="px-1.5 py-1.5 rounded-lg bg-slate-800/60
+                                    border border-slate-600/30 text-[9px] text-slate-300 space-y-1.5 animate-in fade-in duration-200">
+                                    
+                                    {/* Ingredients Requested */}
+                                    {product.ingredients?.length > 0 && (
+                                      <div>
+                                        <div className="text-amber-400 font-semibold mb-0.5 flex items-center gap-1">
+                                          <span>📦</span> Bahan yang Dibutuhkan
+                                        </div>
+                                        <div className="space-y-0.5 pl-4">
+                                          {product.ingredients.map((ing, idx) => {
+                                            const availableQty = Number(ing.stock || 0);
+                                            const requiredPerPortion = Number(ing.qty || 1);
+                                            const canMakePortion = Math.floor(availableQty / requiredPerPortion);
+                                            const statusColor = availableQty === 0 
+                                              ? 'text-red-400' 
+                                              : canMakePortion <= 3 
+                                              ? 'text-yellow-400' 
+                                              : 'text-green-400';
+                                            
+                                            return (
+                                              <div key={idx} className="flex justify-between items-start gap-2">
+                                                <span className="text-slate-300">
+                                                  {ing.ingredient_name}
+                                                </span>
+                                                <span className={`font-semibold whitespace-nowrap ${statusColor}`}>
+                                                  {availableQty} {ing.unit}
+                                                </span>
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {/* Stock Availability Summary */}
+                                    <div className="pt-0.5 border-t border-slate-600/40">
+                                      <div className="text-blue-400 font-semibold mb-0.5 flex items-center gap-1">
+                                        <span>📊</span> Ketersediaan
+                                      </div>
+                                      <div className="space-y-0.5 pl-4">
+                                        <div className="flex justify-between">
+                                          <span>Dari Gudang:</span>
+                                          <span className="text-green-400 font-semibold">
+                                            {product.ingredients?.[0]?.stock || 0} {product.ingredients?.[0]?.unit || ''}
+                                          </span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                          <span>Per Porsi Butuh:</span>
+                                          <span className="text-orange-400 font-semibold">
+                                            {product.ingredients?.[0]?.qty || 0} {product.ingredients?.[0]?.unit || ''}
+                                          </span>
+                                        </div>
+                                        <div className="flex justify-between border-t border-slate-600/30 pt-0.5 mt-0.5">
+                                          <span className="font-semibold">Bisa Buat:</span>
+                                          <span className="text-amber-400 font-bold">
+                                            {selectedSourceUser.can_make} porsi
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    {/* Request Status */}
+                                    <div className="pt-0.5 text-[8px] italic text-slate-500 flex items-center gap-1">
+                                      {selectedSourceUser.request_id ? (
+                                        <>
+                                          <span className="text-green-400 text-xs">✓</span>
+                                          <span>Ada pengajuan stok terkonfirmasi</span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <span className="text-orange-400 text-xs">⚠</span>
+                                          <span>Menggunakan stok gudang umum</span>
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             )}
                           </div>
