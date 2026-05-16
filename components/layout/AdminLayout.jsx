@@ -21,6 +21,7 @@
 import Sidebar from './Sidebar';
 import AuthGuard from '@/components/ui/AuthGuard';
 import PWAInstallPrompt from '@/components/ui/PWAInstallPrompt';
+import FloatingChatButton from '@/components/ui/FloatingChatButton';
 
 export default function AdminLayout({ children, noPadding = false }) {
   return (
@@ -31,6 +32,7 @@ export default function AdminLayout({ children, noPadding = false }) {
           {children}
           <PWAInstallPrompt />
         </main>
+        <FloatingChatButton />
       </div>
     </AuthGuard>
   );
