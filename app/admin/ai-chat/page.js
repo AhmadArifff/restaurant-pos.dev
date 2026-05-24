@@ -90,7 +90,7 @@ export default function AIChatPage() {
           {process.env.NODE_ENV === 'development' && (
             <div className="bg-gray-100 rounded-lg p-4 text-xs text-gray-600 border border-gray-300">
               <p className="font-mono">
-                🔧 Backend: <code>POST /api/ai-chat/query</code> | Powered by Google Gemini
+                🔧 Backend: <code>POST /api/ai-chat/query</code> | Powered by OpenRouter (multi-model)
               </p>
             </div>
           )}

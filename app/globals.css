@@ -1310,3 +1310,173 @@ body {
   border-radius: 0.4rem;
   background: #020617;
 }
+
+/* ===== NOT FOUND ===== */
+.not-found-page {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: clamp(1.5rem, 5vw, 3rem) 1.25rem;
+  background:
+    radial-gradient(circle at 20% 15%, rgba(201, 168, 76, 0.16), transparent 42%),
+    radial-gradient(circle at 80% 85%, rgba(139, 26, 26, 0.2), transparent 40%),
+    radial-gradient(circle at 50% 120%, rgba(201, 168, 76, 0.08), transparent 38%),
+    var(--dark);
+}
+
+.not-found-noise {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  opacity: 0.18;
+  pointer-events: none;
+  background-image:
+    radial-gradient(rgba(245, 237, 216, 0.08) 0.6px, transparent 0.6px),
+    radial-gradient(rgba(245, 237, 216, 0.06) 0.6px, transparent 0.6px);
+  background-size: 24px 24px, 30px 30px;
+  background-position: 0 0, 12px 12px;
+}
+
+.not-found-orb {
+  position: absolute;
+  z-index: -1;
+  border-radius: 50%;
+  filter: blur(70px);
+  pointer-events: none;
+  animation: notFoundDrift 9s ease-in-out infinite alternate;
+}
+
+.not-found-orb--one {
+  width: clamp(180px, 32vw, 380px);
+  height: clamp(180px, 32vw, 380px);
+  top: -7%;
+  left: -4%;
+  background: rgba(201, 168, 76, 0.28);
+}
+
+.not-found-orb--two {
+  width: clamp(180px, 28vw, 340px);
+  height: clamp(180px, 28vw, 340px);
+  right: -4%;
+  bottom: -10%;
+  background: rgba(139, 26, 26, 0.26);
+  animation-delay: 0.6s;
+}
+
+.not-found-card {
+  position: relative;
+  z-index: 2;
+  width: min(760px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: clamp(1.4rem, 2.5vw, 2rem) clamp(1rem, 3vw, 2rem) clamp(1.6rem, 3vw, 2.2rem);
+  border: 1px solid rgba(201, 168, 76, 0.24);
+  border-radius: 26px;
+  background:
+    linear-gradient(155deg, rgba(26, 20, 9, 0.84) 0%, rgba(13, 10, 6, 0.78) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(245, 237, 216, 0.08),
+    0 18px 60px rgba(0, 0, 0, 0.44);
+  backdrop-filter: blur(10px);
+}
+
+.not-found-fuzzy {
+  display: block;
+  width: min(100%, 640px);
+  max-width: 100%;
+  height: auto;
+  margin-bottom: 0.6rem;
+  filter:
+    drop-shadow(0 8px 30px rgba(201, 168, 76, 0.3))
+    drop-shadow(0 0 18px rgba(201, 168, 76, 0.24));
+}
+
+.not-found-title {
+  margin: 0 0 0.6rem;
+  font-family: var(--font-playfair), 'Playfair Display', serif;
+  font-size: clamp(1.55rem, 3.6vw, 2.3rem);
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  color: var(--cream);
+}
+
+.not-found-description {
+  margin: 0;
+  color: var(--cream2);
+  font-size: clamp(0.95rem, 2.1vw, 1.05rem);
+  line-height: 1.75;
+  max-width: 56ch;
+}
+
+.not-found-help {
+  margin: 0.5rem 0 1.6rem;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  letter-spacing: 0.01em;
+}
+
+.not-found-home-link {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 215px;
+  padding: 0.82rem 1.34rem;
+  border: 1px solid rgba(201, 168, 76, 0.55);
+  color: var(--gold);
+  background: linear-gradient(120deg, rgba(201, 168, 76, 0.14), rgba(201, 168, 76, 0.03));
+  text-decoration: none;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border-radius: 12px;
+  transition: transform 0.25s ease, background 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.not-found-home-link::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-120%);
+  background: linear-gradient(100deg, transparent 20%, rgba(245, 237, 216, 0.22) 50%, transparent 80%);
+  transition: transform 0.45s ease;
+}
+
+.not-found-home-link:hover {
+  background: var(--gold);
+  color: var(--dark);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px rgba(201, 168, 76, 0.28);
+}
+
+.not-found-home-link:hover::before {
+  transform: translateX(120%);
+}
+
+@keyframes notFoundDrift {
+  from {
+    transform: translateY(0) scale(1);
+  }
+  to {
+    transform: translateY(-16px) scale(1.04);
+  }
+}
+
+@media (max-width: 640px) {
+  .not-found-card {
+    border-radius: 20px;
+    padding: 1.2rem 0.95rem 1.5rem;
+  }
+
+  .not-found-home-link {
+    width: 100%;
+    max-width: 280px;
+  }
+}

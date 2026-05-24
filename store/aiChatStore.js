@@ -12,6 +12,7 @@ export const useAIChatStore = create(
       messages: [],
       isLoading: false,
       error: null,
+      selectedModelId: null,
 
       /**
        * Tambah message ke chat history
@@ -42,6 +43,11 @@ export const useAIChatStore = create(
       setError: (error) => set({ error }),
 
       /**
+       * Set selected model
+       */
+      setSelectedModelId: (selectedModelId) => set({ selectedModelId }),
+
+      /**
        * Get formatted chat history untuk context
        */
       getChatHistory: () => {
@@ -67,11 +73,16 @@ export const useAIChatStore = create(
           messages: [],
           isLoading: false,
           error: null,
+          selectedModelId: null,
         }),
     }),
     {
       name: 'ai-chat-store', // localStorage key
-      version: 1,
+      version: 2,
+      migrate: (persistedState) => ({
+        ...persistedState,
+        selectedModelId: null,
+      }),
     }
   )
 );

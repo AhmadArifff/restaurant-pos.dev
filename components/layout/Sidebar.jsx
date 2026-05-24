@@ -17,8 +17,9 @@ const menus = [
   { href: '/stock',                     label: 'Stok',         roles: ['admin','kasir'],  anim: 'wave'   },
   { href: '/reports',                   label: 'Laporan',      roles: ['admin'],          anim: 'pulse'  },
   { href: '/users',                     label: 'Tim Kasir',    roles: ['admin'],          anim: 'shake'  },
-  { href: '/admin/settings',            label: 'Pengaturan',   roles: ['admin'],          anim: 'spin'   },
   { href: '/admin/landing-page-settings', label: 'Landing Page', roles: ['admin'],        anim: 'bounce' },
+  { href: '/admin/login-page-settings', label: 'Login Page',   roles: ['admin'],          anim: 'slide'  },
+  { href: '/admin/settings',            label: 'Pengaturan',   roles: ['admin'],          anim: 'spin'   },
 ];
 
 // ── Unique SVG icons ──────────────────────────────────────────
@@ -124,6 +125,18 @@ function LandingIcon({ active }) {
     </svg>
   );
 }
+function LoginPageIcon({ active }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+      stroke={active ? '#fff' : 'currentColor'} strokeWidth="1.8"
+      strokeLinecap="round" strokeLinejoin="round">
+      <rect x="4" y="3" width="16" height="18" rx="2"/>
+      <path d="M8 8h8"/>
+      <path d="M8 12h5"/>
+      <circle cx="12" cy="16.5" r="1.5"/>
+    </svg>
+  );
+}
 
 function LogoutIcon() {
   return (
@@ -175,6 +188,7 @@ const iconMap = {
   '/users':                       UserIcon,
   '/admin/settings':              SettingsIcon,
   '/admin/landing-page-settings': LandingIcon,
+  '/admin/login-page-settings':   LoginPageIcon,
 };
 
 // ── Global keyframes (inject sekali) ─────────────────────────
@@ -448,7 +462,7 @@ export default function Sidebar() {
   const handleLogout = () => { logout(); router.replace('/login'); };
   const visible      = menus.filter(m => m.roles.includes(user?.role));
   const logoSrc      = resolveAssetUrl(settings?.logo_url, '/images/assets/logo.png');
-  const primaryColor = settings?.primary_color || DEFAULT_SETTINGS.primary_color;
+  const primaryColor = settings?.gold || DEFAULT_SETTINGS.gold;
   const initials     = user?.name
     ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
     : 'U';

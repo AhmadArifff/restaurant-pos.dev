@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { login } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import { useWebsiteSettings } from '@/store/settingsStore';
+import { useLoginPageSettingsStore } from '@/store/loginSettingsStore';
 import { resolveAssetUrl } from '@/lib/assetUrl';
 
 const createSeededRandom = (seed) => {
@@ -120,9 +121,17 @@ export default function LoginPage() {
   const toastTimer  = useRef(null);
   const { setAuth } = useAuthStore();
   const { settings, loadSettings } = useWebsiteSettings();
+  const { settings: loginPageSettings, loadSettings: loadLoginPageSettings } = useLoginPageSettingsStore();
   const router      = useRouter();
   const logoSrc     = resolveAssetUrl(settings?.logo_url, '/images/assets/logo.png');
   const storeName   = settings?.store_name || 'Sultan Kebab';
+  const loginMedia  = loginPageSettings.media || {};
+  const loginHero   = loginPageSettings.hero || {};
+  const loginBrand  = loginPageSettings.brand || {};
+  const loginForm   = loginPageSettings.form || {};
+  const loginValidation = loginPageSettings.validation || {};
+  const loginFooter = loginPageSettings.footer || {};
+  const floatingImages = loginMedia.floatingImages || [];
 
   /* mount animation */
   useEffect(() => {
@@ -132,7 +141,8 @@ export default function LoginPage() {
 
   useEffect(() => {
     loadSettings().catch(() => {});
-  }, [loadSettings]);
+    loadLoginPageSettings().catch(() => {});
+  }, [loadSettings, loadLoginPageSettings]);
 
   /* cursor glow */
   useEffect(() => {
@@ -146,7 +156,7 @@ export default function LoginPage() {
     return () => window.removeEventListener('mousemove', fn);
   }, []);
 
-  function showToast(msg, icon = '✅') {
+  function showToast(msg, icon = 'OK') {
     clearTimeout(toastTimer.current);
     setToast({ show: true, msg, icon });
     toastTimer.current = setTimeout(() => setToast(t => ({ ...t, show: false })), 3500);
@@ -156,10 +166,10 @@ export default function LoginPage() {
   function validate() {
     const errs = { email: '', password: '' };
     const re   = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!form.email.trim())         errs.email    = 'Email tidak boleh kosong';
-    else if (!re.test(form.email))  errs.email    = 'Format email tidak valid';
-    if (!form.password)             errs.password = 'Password tidak boleh kosong';
-    else if (form.password.length < 6) errs.password = 'Password minimal 6 karakter';
+    if (!form.email.trim())         errs.email    = loginValidation.emailRequired || 'Email tidak boleh kosong';
+    else if (!re.test(form.email))  errs.email    = loginValidation.emailInvalid || 'Format email tidak valid';
+    if (!form.password)             errs.password = loginValidation.passwordRequired || 'Password tidak boleh kosong';
+    else if (form.password.length < 6) errs.password = loginValidation.passwordMinLength || 'Password minimal 6 karakter';
     setFieldErr(errs);
     return !errs.email && !errs.password;
   }
@@ -174,7 +184,9 @@ export default function LoginPage() {
     try {
       const res = await login({ email: form.email, password: form.password });
       setAuth(res.data.user, res.data.token);
-      showToast(`Selamat datang, ${res.data.user.name}! 🎉`, '🎉');
+      const successMessage = (loginForm.successToast || 'Selamat datang, {name}!')
+        .replace('{name}', res.data.user.name);
+      showToast(successMessage, 'OK');
       setTimeout(() => {
         setTransition(true);
         setTimeout(() => {
@@ -183,7 +195,7 @@ export default function LoginPage() {
       }, 700);
     } catch (err) {
       setLoading(false);
-      const msg = err.response?.data?.message || 'Email atau password salah. Silakan coba lagi.';
+      const msg = err.response?.data?.message || loginForm.errorMessage || 'Email atau password salah. Silakan coba lagi.';
       setError(msg);
     }
   }
@@ -395,7 +407,7 @@ export default function LoginPage() {
         }}>
           {/* BG image */}
           <img
-            src="https://images.unsplash.com/photo-1544025162-d76694265947?w=1200&q=85"
+            src={loginMedia.backgroundImage || 'https://images.unsplash.com/photo-1544025162-d76694265947?w=1200&q=85'}
             alt="Sultan Kebab"
             style={{
               position:   'absolute',
@@ -442,14 +454,14 @@ export default function LoginPage() {
           ))}
 
           {/* Floating food */}
-          <FloatingFoodImg src="https://images.unsplash.com/photo-1561651188-d207bbec4ec3?w=200&q=80" alt="Kebab"
+          <FloatingFoodImg src={floatingImages[0]?.src || 'https://images.unsplash.com/photo-1561651188-d207bbec4ec3?w=200&q=80'} alt={floatingImages[0]?.alt || 'Kebab'}
             style={{ width:'90px', height:'90px', top:'12%', right:'15%', animation:'floatFood 7s ease-in-out infinite' }} />
-          <FloatingFoodImg src="https://images.unsplash.com/photo-1519676867240-f03562e64548?w=200&q=80" alt="Baklava"
+          <FloatingFoodImg src={floatingImages[1]?.src || 'https://images.unsplash.com/photo-1519676867240-f03562e64548?w=200&q=80'} alt={floatingImages[1]?.alt || 'Baklava'}
             style={{ width:'65px', height:'65px', top:'28%', right:'8%', animation:'floatFood 5s -2s ease-in-out infinite' }} />
-          <FloatingFoodImg src="https://images.unsplash.com/photo-1593001872095-7d5b3868fb1d?w=200&q=80" alt="Falafel"
+          <FloatingFoodImg src={floatingImages[2]?.src || 'https://images.unsplash.com/photo-1593001872095-7d5b3868fb1d?w=200&q=80'} alt={floatingImages[2]?.alt || 'Falafel'}
             style={{ width:'80px', height:'80px', top:'45%', right:'20%', animation:'floatFood 8s -4s ease-in-out infinite' }}
             className="food-float-3" />
-          <FloatingFoodImg src="https://images.unsplash.com/photo-1547592180-85f173990554?w=200&q=80" alt="Hummus"
+          <FloatingFoodImg src={floatingImages[3]?.src || 'https://images.unsplash.com/photo-1547592180-85f173990554?w=200&q=80'} alt={floatingImages[3]?.alt || 'Hummus'}
             style={{ width:'55px', height:'55px', top:'62%', right:'6%', animation:'floatFood 6s -1s ease-in-out infinite' }}
             className="food-float-4" />
 
@@ -477,7 +489,7 @@ export default function LoginPage() {
               marginBottom:   '1.5rem',
             }}>
               <span style={{ width:'6px', height:'6px', borderRadius:'50%', background:'var(--gold)', display:'inline-block', animation:'goldPulse 2s infinite' }} />
-              Sultan Kebab Admin Panel
+              {loginHero.badge || 'Sultan Kebab Admin Panel'}
             </div>
 
             {/* Title */}
@@ -489,8 +501,8 @@ export default function LoginPage() {
               marginBottom:'1.2rem',
               color:       'var(--text)',
             }}>
-              Kelola Restoran<br />
-              <span style={{ fontStyle:'italic', fontWeight:400, color:'var(--gold)' }}>Dengan Mudah</span>
+              {loginHero.titleTop || 'Kelola Restoran'}<br />
+              <span style={{ fontStyle:'italic', fontWeight:400, color:'var(--gold)' }}>{loginHero.titleAccent || 'Dengan Mudah'}</span>
             </h1>
 
             {/* Desc */}
@@ -501,15 +513,15 @@ export default function LoginPage() {
               maxWidth:     '380px',
               marginBottom: '2rem',
             }}>
-              Panel admin eksklusif untuk mengelola menu, pesanan, stok, dan laporan Sultan Kebab secara real-time.
+              {loginHero.description || 'Panel admin eksklusif untuk mengelola menu, pesanan, stok, dan laporan Sultan Kebab secara real-time.'}
             </p>
 
             {/* Stats */}
             <div className="login-stats" style={{ display:'flex', gap:'2rem' }}>
-              {[['12+','Cabang'],['50K+','Pelanggan'],['4.9★','Rating']].map(([num,lbl])=>(
-                <div key={lbl}>
-                  <span style={{ fontFamily:"'Playfair Display',serif", fontSize:'1.8rem', color:'var(--gold)', fontWeight:700, display:'block', lineHeight:1 }}>{num}</span>
-                  <span style={{ fontSize:'0.65rem', letterSpacing:'2px', textTransform:'uppercase', color:'var(--text-muted)' }}>{lbl}</span>
+              {(loginHero.stats || []).map((stat, index)=>(
+                <div key={`${stat.label}-${index}`}>
+                  <span style={{ fontFamily:"'Playfair Display',serif", fontSize:'1.8rem', color:'var(--gold)', fontWeight:700, display:'block', lineHeight:1 }}>{stat.value}</span>
+                  <span style={{ fontSize:'0.65rem', letterSpacing:'2px', textTransform:'uppercase', color:'var(--text-muted)' }}>{stat.label}</span>
                 </div>
               ))}
             </div>
@@ -565,7 +577,7 @@ export default function LoginPage() {
               </div>
               <div>
                 <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:'1.4rem', letterSpacing:'3px', color:'var(--gold)', lineHeight:1 }}>{storeName}</div>
-                <div style={{ fontSize:'0.65rem', letterSpacing:'2px', textTransform:'uppercase', color:'var(--text-muted)' }}>Admin Dashboard</div>
+                <div style={{ fontSize:'0.65rem', letterSpacing:'2px', textTransform:'uppercase', color:'var(--text-muted)' }}>{loginBrand.subtitle || 'Admin Dashboard'}</div>
               </div>
             </div>
 
@@ -576,10 +588,10 @@ export default function LoginPage() {
               opacity:      mounted ? undefined : 0,
             }}>
               <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:'2rem', fontWeight:700, marginBottom:'0.4rem', lineHeight:1.2, color:'var(--text)' }}>
-                Selamat <span style={{ color:'var(--gold)', fontStyle:'italic' }}>Datang</span>
+                {loginForm.title || 'Selamat'} <span style={{ color:'var(--gold)', fontStyle:'italic' }}>{loginForm.titleAccent || 'Datang'}</span>
               </h2>
               <p style={{ fontSize:'0.85rem', color:'var(--text-muted)' }}>
-                Masuk ke panel admin untuk mengelola operasional restoran
+                {loginForm.subtitle || 'Masuk ke panel admin untuk mengelola operasional restoran'}
               </p>
             </div>
 
@@ -616,7 +628,7 @@ export default function LoginPage() {
                 {/* Email */}
                 <div>
                   <label style={{ display:'block', fontSize:'0.72rem', letterSpacing:'1.5px', textTransform:'uppercase', color:'var(--text-muted)', marginBottom:'0.5rem', fontWeight:600 }}>
-                    Email
+                    {loginForm.emailLabel || 'Email'}
                   </label>
                   <div style={{ position:'relative' }}>
                     <span style={{ position:'absolute', left:'1rem', top:'50%', transform:'translateY(-50%)', fontSize:'1rem', opacity: form.email ? 1 : 0.5, pointerEvents:'none', zIndex:2 }}>✉️</span>
@@ -626,7 +638,7 @@ export default function LoginPage() {
                       value={form.email}
                       onChange={e => { setForm(f=>({...f,email:e.target.value})); if(fieldErr.email) setFieldErr(fe=>({...fe,email:''})); if(error) setError(''); }}
                       onKeyDown={e => e.key === 'Enter' && document.getElementById('passField')?.focus()}
-                      placeholder="admin@sultankebab.com"
+                      placeholder={loginForm.emailPlaceholder || 'admin@sultankebab.com'}
                       autoComplete="username email"
                       inputMode="email"
                       className="login-field-input"
@@ -654,7 +666,7 @@ export default function LoginPage() {
                 {/* Password */}
                 <div>
                   <label style={{ display:'block', fontSize:'0.72rem', letterSpacing:'1.5px', textTransform:'uppercase', color:'var(--text-muted)', marginBottom:'0.5rem', fontWeight:600 }}>
-                    Password
+                    {loginForm.passwordLabel || 'Password'}
                   </label>
                   <div style={{ position:'relative' }}>
                     <span style={{ position:'absolute', left:'1rem', top:'50%', transform:'translateY(-50%)', fontSize:'1rem', opacity: form.password ? 1 : 0.5, pointerEvents:'none', zIndex:2 }}>🔒</span>
@@ -663,7 +675,7 @@ export default function LoginPage() {
                       type={showPass ? 'text' : 'password'}
                       value={form.password}
                       onChange={e => { setForm(f=>({...f,password:e.target.value})); if(fieldErr.password) setFieldErr(fe=>({...fe,password:''})); if(error) setError(''); }}
-                      placeholder="Masukkan password Anda"
+                      placeholder={loginForm.passwordPlaceholder || 'Masukkan password Anda'}
                       autoComplete="current-password"
                       className="login-field-input"
                       style={{ ...inputBase(!!fieldErr.password), paddingLeft:'2.8rem', paddingRight:'2.8rem' }}
@@ -705,16 +717,16 @@ export default function LoginPage() {
                       onChange={e=>setRemember(e.target.checked)}
                       style={{ accentColor:'var(--gold)', width:'15px', height:'15px', cursor:'pointer' }}
                     />
-                    <span style={{ fontSize:'0.8rem', color:'var(--text-muted)' }}>Ingat saya</span>
+                    <span style={{ fontSize:'0.8rem', color:'var(--text-muted)' }}>{loginForm.rememberLabel || 'Ingat saya'}</span>
                   </label>
                   <button
                     type="button"
-                    onClick={() => showToast('Hubungi admin untuk reset password: admin@sultankebab.com', '📧')}
+                    onClick={() => showToast(loginForm.forgotPasswordToast || 'Hubungi admin untuk reset password: admin@sultankebab.com', 'Info')}
                     style={{ fontSize:'0.8rem', color:'var(--gold)', background:'none', border:'none', cursor:'pointer', fontFamily:"'DM Sans',sans-serif", padding:0 }}
                     onMouseEnter={e=>e.currentTarget.style.color='var(--gold-light)'}
                     onMouseLeave={e=>e.currentTarget.style.color='var(--gold)'}
                   >
-                    Lupa password?
+                    {loginForm.forgotPasswordLabel || 'Lupa password?'}
                   </button>
                 </div>
 
@@ -755,13 +767,13 @@ export default function LoginPage() {
                       animation:'spin 0.7s linear infinite',
                     }} />
                   )}
-                  {loading ? 'Memverifikasi...' : 'Masuk ke Dashboard'}
+                  {loading ? (loginForm.loadingLabel || 'Memverifikasi...') : (loginForm.submitLabel || 'Masuk ke Dashboard')}
                 </button>
 
                 {/* Divider */}
                 <div style={{ display:'flex', alignItems:'center', gap:'1rem', color:'var(--text-muted)', fontSize:'0.75rem', letterSpacing:'1px' }}>
                   <div style={{ flex:1, height:'1px', background:'rgba(201,168,76,0.15)' }} />
-                  atau kembali ke
+                  {loginForm.dividerText || 'atau kembali ke'}
                   <div style={{ flex:1, height:'1px', background:'rgba(201,168,76,0.15)' }} />
                 </div>
 
@@ -783,7 +795,7 @@ export default function LoginPage() {
                   onMouseLeave={e=>{e.currentTarget.style.color='var(--text-muted)';}}
                 >
                   <ArrowLeft />
-                  Halaman Utama Sultan Kebab
+                  {loginForm.backLinkLabel || 'Halaman Utama Sultan Kebab'}
                 </Link>
 
               </div>
@@ -797,8 +809,8 @@ export default function LoginPage() {
               opacity:    mounted ? undefined : 0,
             }}>
               <p style={{ fontSize:'0.75rem', color:'var(--text-muted)', lineHeight:1.7 }}>
-                © 2024 <span style={{ color:'var(--gold)' }}>Sultan Kebab</span>. Hak cipta dilindungi.<br />
-                Sistem POS & Admin Panel v2.0
+                {loginFooter.text || '2024 Sultan Kebab. Hak cipta dilindungi.'}<br />
+                {loginFooter.version || 'Sistem POS & Admin Panel v2.0'}
               </p>
             </div>
 

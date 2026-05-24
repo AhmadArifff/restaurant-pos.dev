@@ -1,464 +1,94 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { sendAIQuery } from '@/lib/api';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { getAIChatModels, sendAIQuery } from '@/lib/api';
 import { useAIChatStore } from '@/store/aiChatStore';
+import ElectricBorder from '@/components/ui/ElectricBorder';
 
-/* ─── CSS Animations (injected once) ─────────────────────────────────────── */
-const STYLES = `
-  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
-
-  .ai-chat-root {
-    font-family: 'Space Grotesk', sans-serif;
-    --c-brand: #f97316;
-    --c-brand-dim: rgba(249,115,22,0.15);
-    --c-brand-glow: rgba(249,115,22,0.35);
-    --c-surface: rgba(10,10,14,0.97);
-    --c-glass: rgba(255,255,255,0.04);
-    --c-border: rgba(255,255,255,0.08);
-    --c-border-accent: rgba(249,115,22,0.4);
-    --c-text: rgba(255,255,255,0.92);
-    --c-muted: rgba(255,255,255,0.45);
-    --c-user-bg: linear-gradient(135deg, #f97316 0%, #ef4444 100%);
-  }
-
-  /* Scanline overlay */
-  .ai-chat-root::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(0,0,0,0.03) 2px,
-      rgba(0,0,0,0.03) 4px
-    );
-    pointer-events: none;
-    z-index: 0;
-    border-radius: inherit;
-  }
-
-  /* Ambient glow top */
-  .ai-chat-root::after {
-    content: '';
-    position: absolute;
-    top: -60px; left: 50%;
-    transform: translateX(-50%);
-    width: 340px; height: 120px;
-    background: radial-gradient(ellipse, rgba(249,115,22,0.18) 0%, transparent 70%);
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  /* ── Header ── */
-  .chat-header {
-    position: relative;
-    z-index: 2;
-    padding: 1.1rem 1.25rem 1rem;
-    border-bottom: 1px solid var(--c-border);
-    background: linear-gradient(180deg, rgba(249,115,22,0.06) 0%, transparent 100%);
-  }
-
-  .header-status-dot {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    background: #22c55e;
-    box-shadow: 0 0 0 3px rgba(34,197,94,0.2);
-    animation: pulse-green 2s ease-in-out infinite;
-  }
-
-  @keyframes pulse-green {
-    0%, 100% { box-shadow: 0 0 0 3px rgba(34,197,94,0.2); }
-    50%       { box-shadow: 0 0 0 6px rgba(34,197,94,0.05); }
-  }
-
-  .ai-logo-ring {
-    width: 38px; height: 38px;
-    border-radius: 50%;
-    border: 1.5px solid var(--c-brand);
-    box-shadow: 0 0 12px var(--c-brand-glow), inset 0 0 8px rgba(249,115,22,0.08);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 16px;
-    animation: logo-breathe 4s ease-in-out infinite;
-  }
-
-  @keyframes logo-breathe {
-    0%, 100% { box-shadow: 0 0 12px var(--c-brand-glow), inset 0 0 8px rgba(249,115,22,0.08); }
-    50%       { box-shadow: 0 0 22px rgba(249,115,22,0.5), inset 0 0 14px rgba(249,115,22,0.15); }
-  }
-
-  /* ── Messages ── */
-  .chat-messages {
-    position: relative;
-    z-index: 2;
-    flex: 1;
-    overflow-y: auto;
-    padding: 1.25rem 1rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(249,115,22,0.3) transparent;
-  }
-
-  .chat-messages::-webkit-scrollbar { width: 3px; }
-  .chat-messages::-webkit-scrollbar-track { background: transparent; }
-  .chat-messages::-webkit-scrollbar-thumb { background: rgba(249,115,22,0.4); border-radius: 8px; }
-
-  /* Message enter animation */
-  .msg-enter {
-    animation: msg-slide-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-  }
-
-  @keyframes msg-slide-in {
-    from { opacity: 0; transform: translateY(14px) scale(0.97); }
-    to   { opacity: 1; transform: translateY(0) scale(1); }
-  }
-
-  /* User bubble */
-  .bubble-user {
-    background: var(--c-user-bg);
-    color: #fff;
-    border-radius: 18px 18px 4px 18px;
-    padding: 0.65rem 1rem;
-    font-size: 13.5px;
-    line-height: 1.6;
-    max-width: 78%;
-    word-break: break-word;
-    box-shadow: 0 4px 20px rgba(249,115,22,0.25);
-    position: relative;
-  }
-
-  /* AI bubble */
-  .bubble-ai {
-    background: var(--c-glass);
-    border: 1px solid var(--c-border);
-    color: var(--c-text);
-    border-radius: 18px 18px 18px 4px;
-    padding: 0.7rem 1rem;
-    font-size: 13.5px;
-    line-height: 1.7;
-    max-width: 82%;
-    word-break: break-word;
-    position: relative;
-    backdrop-filter: blur(8px);
-  }
-
-  .bubble-ai::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    background: linear-gradient(135deg, rgba(249,115,22,0.05) 0%, transparent 60%);
-    pointer-events: none;
-  }
-
-  /* Error bubble */
-  .bubble-error {
-    background: rgba(239,68,68,0.08);
-    border: 1px solid rgba(239,68,68,0.25);
-    color: #fca5a5;
-    border-radius: 18px 18px 18px 4px;
-    padding: 0.7rem 1rem;
-    font-size: 13px;
-    max-width: 82%;
-    word-break: break-word;
-  }
-
-  /* Avatar */
-  .avatar {
-    width: 30px; height: 30px;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 11px; font-weight: 600;
-    flex-shrink: 0;
-    letter-spacing: 0.5px;
-  }
-
-  .avatar-ai {
-    background: rgba(249,115,22,0.12);
-    border: 1px solid var(--c-brand-glow);
-    color: var(--c-brand);
-    box-shadow: 0 0 8px rgba(249,115,22,0.2);
-  }
-
-  .avatar-user {
-    background: rgba(255,255,255,0.1);
-    border: 1px solid rgba(255,255,255,0.15);
-    color: rgba(255,255,255,0.8);
-  }
-
-  .avatar-err {
-    background: rgba(239,68,68,0.12);
-    border: 1px solid rgba(239,68,68,0.3);
-    color: #f87171;
-  }
-
-  /* Timestamp */
-  .ts {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 10px;
-    margin-top: 4px;
-    opacity: 0.45;
-  }
-
-  /* ── Typing indicator ── */
-  .typing-dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: var(--c-brand);
-    animation: typing 1.2s ease-in-out infinite;
-  }
-
-  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
-  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
-
-  @keyframes typing {
-    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
-    30%            { transform: translateY(-6px); opacity: 1; }
-  }
-
-  /* ── Empty state ── */
-  .empty-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    margin-top: 1rem;
-    width: 100%;
-  }
-
-  .suggestion-chip {
-    background: var(--c-glass);
-    border: 1px solid var(--c-border);
-    color: var(--c-muted);
-    border-radius: 12px;
-    padding: 0.55rem 0.75rem;
-    font-size: 11.5px;
-    font-family: 'Space Grotesk', sans-serif;
-    text-align: left;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    line-height: 1.4;
-  }
-
-  .suggestion-chip:hover {
-    border-color: var(--c-brand-glow);
-    color: var(--c-text);
-    background: var(--c-brand-dim);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(249,115,22,0.15);
-  }
-
-  /* ── Input bar ── */
-  .chat-input-bar {
-    position: relative;
-    z-index: 2;
-    padding: 0.85rem 1rem;
-    border-top: 1px solid var(--c-border);
-    background: rgba(0,0,0,0.3);
-    display: flex;
-    gap: 8px;
-    align-items: center;
-  }
-
-  .chat-input {
-    flex: 1;
-    background: var(--c-glass);
-    border: 1px solid var(--c-border);
-    color: var(--c-text);
-    border-radius: 14px;
-    padding: 0.6rem 1rem;
-    font-size: 13.5px;
-    font-family: 'Space Grotesk', sans-serif;
-    outline: none;
-    transition: border-color 0.25s, box-shadow 0.25s;
-    line-height: 1.5;
-    resize: none;
-  }
-
-  .chat-input::placeholder { color: var(--c-muted); }
-
-  .chat-input:focus {
-    border-color: var(--c-brand-glow);
-    box-shadow: 0 0 0 3px rgba(249,115,22,0.1);
-  }
-
-  .chat-input:disabled { opacity: 0.5; cursor: not-allowed; }
-
-  .send-btn {
-    width: 40px; height: 40px;
-    border-radius: 12px;
-    border: none;
-    background: linear-gradient(135deg, #f97316, #ef4444);
-    color: #fff;
-    font-size: 16px;
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
-    transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
-    box-shadow: 0 4px 14px rgba(249,115,22,0.35);
-    position: relative;
-    overflow: hidden;
-  }
-
-  .send-btn::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 60%);
-    border-radius: inherit;
-  }
-
-  .send-btn:hover:not(:disabled) {
-    transform: scale(1.06);
-    box-shadow: 0 6px 20px rgba(249,115,22,0.5);
-  }
-
-  .send-btn:active:not(:disabled) { transform: scale(0.95); }
-  .send-btn:disabled { opacity: 0.35; cursor: not-allowed; box-shadow: none; }
-
-  /* ── Clear button ── */
-  .clear-btn {
-    width: 100%;
-    background: transparent;
-    border: 1px solid var(--c-border);
-    color: var(--c-muted);
-    font-size: 11.5px;
-    font-family: 'Space Grotesk', sans-serif;
-    border-radius: 10px;
-    padding: 0.4rem;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .clear-btn:hover {
-    border-color: rgba(239,68,68,0.4);
-    color: #fca5a5;
-    background: rgba(239,68,68,0.06);
-  }
-
-  /* ── Error banner ── */
-  .error-banner {
-    position: relative;
-    z-index: 2;
-    background: rgba(239,68,68,0.07);
-    border-top: 1px solid rgba(239,68,68,0.2);
-    padding: 0.5rem 1rem;
-    font-size: 12px;
-    color: #fca5a5;
-  }
-
-  /* ── Char counter ── */
-  .char-counter {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 10px;
-    color: var(--c-muted);
-    padding: 0 0.25rem 0.5rem 1rem;
-    position: relative; z-index: 2;
-  }
-
-  /* ── Orbit animation on empty state ── */
-  @keyframes orbit-slow {
-    from { transform: rotate(0deg) translateX(24px) rotate(0deg); }
-    to   { transform: rotate(360deg) translateX(24px) rotate(-360deg); }
-  }
-
-  .orbit-dot {
-    width: 5px; height: 5px;
-    border-radius: 50%;
-    position: absolute;
-    animation: orbit-slow 3s linear infinite;
-  }
-`;
-
-let stylesInjected = false;
-function injectStyles() {
-  if (stylesInjected || typeof document === 'undefined') return;
-  const el = document.createElement('style');
-  el.textContent = STYLES;
-  document.head.appendChild(el);
-  stylesInjected = true;
-}
-
-/* ─── Sub-components ──────────────────────────────────────────────────────── */
-
-function AILogo() {
-  return (
-    <div className="ai-logo-ring">
-      <span style={{ fontSize: 16 }}>⚡</span>
-    </div>
-  );
-}
-
-function TypingIndicator() {
-  return (
-    <div className="msg-enter" style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
-      <div className="avatar avatar-ai">AI</div>
-      <div className="bubble-ai" style={{ padding: '0.65rem 1rem' }}>
-        <div style={{ display: 'flex', gap: 5, alignItems: 'center', height: 16 }}>
-          <div className="typing-dot" />
-          <div className="typing-dot" />
-          <div className="typing-dot" />
-        </div>
-      </div>
-    </div>
-  );
-}
+const MAX_MESSAGE_LENGTH = 500;
 
 const SUGGESTIONS = [
-  { icon: '💰', text: 'Revenue hari ini berapa?' },
-  { icon: '🔥', text: 'Produk paling laris minggu ini?' },
-  { icon: '📦', text: 'Stok mana yang perlu dipesan ulang?' },
-  { icon: '📊', text: 'Bandingkan penjualan bulan ini vs bulan lalu' },
+  'Berapa revenue kita hari ini?',
+  'Produk apa yang paling laris minggu ini?',
+  'Stok mana yang perlu segera dipesan?',
+  'Analisis performa penjualan bulan ini',
 ];
+
+function AIMark({ compact = false }) {
+  return (
+    <svg className={`ai-orb-mark ${compact ? 'ai-orb-mark-compact' : ''}`} viewBox="0 0 64 64" fill="none" aria-hidden="true">
+      <circle className="ai-orb-ring" cx="32" cy="32" r="21" />
+      <circle className="ai-orb-core" cx="32" cy="32" r="12" />
+      <path className="ai-orb-bolt" d="M34 10L23 35H33L29 54L43 27H32L34 10Z" />
+      <path className="ai-orb-wave" d="M15 35C20 42 26 45 32 45C38 45 44 42 49 35" />
+      <circle className="ai-orb-dot ai-orb-dot-one" cx="17" cy="18" r="2.6" />
+      <circle className="ai-orb-dot ai-orb-dot-two" cx="49" cy="45" r="2.2" />
+    </svg>
+  );
+}
+
+function formatCompactNumber(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return '-';
+  if (number >= 1_000_000_000) return `${(number / 1_000_000_000).toFixed(2)}B`;
+  if (number >= 1_000_000) return `${(number / 1_000_000).toFixed(2)}M`;
+  if (number >= 1_000) return `${(number / 1_000).toFixed(1)}K`;
+  return number.toLocaleString('id-ID');
+}
+
+function escapeHtml(text) {
+  return String(text || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function renderMarkdown(text) {
+  let html = escapeHtml(text);
+  html = html.replace(/((?:^\|.+\|\n?)+)/gm, (tableBlock) => {
+    const rows = tableBlock
+      .trim()
+      .split('\n')
+      .map((row) => row.trim())
+      .filter((row) => row.startsWith('|') && row.endsWith('|'));
+
+    if (rows.length < 2) return tableBlock;
+
+    const header = rows[0].split('|').slice(1, -1).map((cell) => cell.trim());
+    const separator = rows[1];
+    if (!/^\|[\s:-]+\|/.test(separator)) return tableBlock;
+
+    const body = rows.slice(2).map((row) => row.split('|').slice(1, -1).map((cell) => cell.trim()));
+    const headHtml = header.map((cell) => `<th>${cell}</th>`).join('');
+    const bodyHtml = body
+      .map((row) => `<tr>${row.map((cell) => `<td>${cell}</td>`).join('')}</tr>`)
+      .join('');
+
+    return `<div class="ai-table-wrap"><table><thead><tr>${headHtml}</tr></thead><tbody>${bodyHtml}</tbody></table></div>`;
+  });
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+  html = html.replace(/^[-*] (.+)$/gm, '<div class="ai-list-item"><span></span><p>$1</p></div>');
+  html = html.replace(/^(\d+)\. (.+)$/gm, '<div class="ai-list-item"><b>$1.</b><p>$2</p></div>');
+  html = html.replace(/\n/g, '<br />');
+  html = html.replace(/(<\/div>)<br \/>/g, '$1');
+  return html;
+}
 
 function EmptyState({ onSelect }) {
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      flex: 1,
-      padding: '1.5rem 1rem',
-      textAlign: 'center',
-    }}>
-      {/* Orbiting logo */}
-      <div style={{ position: 'relative', width: 72, height: 72, marginBottom: '1.25rem' }}>
-        <div style={{
-          width: 72, height: 72,
-          borderRadius: '50%',
-          border: '1.5px solid rgba(249,115,22,0.25)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 28,
-        }}>⚡</div>
-        <div className="orbit-dot" style={{
-          background: '#f97316',
-          top: '50%', left: '50%',
-          marginTop: -2.5, marginLeft: -2.5,
-          animationDuration: '2.5s',
-        }} />
-        <div className="orbit-dot" style={{
-          background: '#ef4444',
-          top: '50%', left: '50%',
-          marginTop: -2.5, marginLeft: -2.5,
-          animationDuration: '4s',
-          animationDelay: '-2s',
-        }} />
+    <div className="ai-empty">
+      <div className="ai-empty-mark">
+        <AIMark />
       </div>
-
-      <p style={{ color: 'rgba(255,255,255,0.8)', fontWeight: 600, fontSize: 14, marginBottom: 4 }}>
-        AI Business Assistant
-      </p>
-      <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 12, marginBottom: '1.25rem', lineHeight: 1.6 }}>
-        Tanya apapun tentang data<br />bisnis, stok, atau revenue Anda
-      </p>
-
-      <div className="empty-grid" style={{ maxWidth: 320 }}>
-        {SUGGESTIONS.map((s, i) => (
-          <button key={i} className="suggestion-chip" onClick={() => onSelect(s.text)}>
-            <span style={{ marginRight: 5 }}>{s.icon}</span>{s.text}
+      <div>
+        <h3>Mulai analisis bisnis</h3>
+        <p>Tanyakan revenue, stok, produk terlaris, profit, atau performa transaksi.</p>
+      </div>
+      <div className="ai-suggestions">
+        {SUGGESTIONS.map((text) => (
+          <button key={text} type="button" onClick={() => onSelect(text)}>
+            {text}
           </button>
         ))}
       </div>
@@ -466,208 +96,1036 @@ function EmptyState({ onSelect }) {
   );
 }
 
-function Message({ msg, idx }) {
-  const isUser = msg.role === 'user';
-  const isError = msg.role === 'error';
-  const isAI = msg.role === 'assistant';
-
-  const formatTime = (ts) => new Date(ts).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-
+function TypingIndicator() {
   return (
-    <div
-      className="msg-enter"
-      style={{
-        display: 'flex',
-        justifyContent: isUser ? 'flex-end' : 'flex-start',
-        animationDelay: `${Math.min(idx * 0.05, 0.3)}s`,
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, flexDirection: isUser ? 'row-reverse' : 'row', maxWidth: '88%' }}>
-        <div className={`avatar ${isUser ? 'avatar-user' : isError ? 'avatar-err' : 'avatar-ai'}`}>
-          {isUser ? 'U' : isError ? '!' : 'AI'}
-        </div>
-        <div>
-          <div className={isUser ? 'bubble-user' : isError ? 'bubble-error' : 'bubble-ai'}>
-            <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{msg.content}</p>
-          </div>
-          <p className="ts" style={{ textAlign: isUser ? 'right' : 'left', marginTop: 4, marginLeft: isUser ? 0 : 4 }}>
-            {formatTime(msg.timestamp)}
-          </p>
-        </div>
+    <div className="ai-message-row ai-message-row-left">
+      <div className="ai-avatar">
+        <AIMark compact />
+      </div>
+      <div className="ai-bubble ai-bubble-assistant ai-typing" aria-label="AI sedang mengetik">
+        <span />
+        <span />
+        <span />
       </div>
     </div>
   );
 }
 
-/* ─── Main Component ──────────────────────────────────────────────────────── */
+function StatusCard({ type, title, message, onRetry }) {
+  const isOffline = type === 'offline';
+
+  return (
+    <div className="ai-message-row ai-message-row-left">
+      <div className="ai-avatar ai-avatar-warning">!</div>
+      <div className={`ai-status-card ${isOffline ? 'ai-status-offline' : 'ai-status-error'}`}>
+        <strong>{title}</strong>
+        <p>{message}</p>
+        {onRetry && (
+          <button type="button" onClick={onRetry}>
+            Coba lagi
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Message({ message, onRetry }) {
+  if (message.role === 'offline') {
+    return (
+      <StatusCard
+        type="offline"
+        title="Koneksi ke AI terputus"
+        message="Server atau jaringan tidak dapat dijangkau. Periksa backend dan koneksi internet, lalu coba lagi."
+        onRetry={onRetry}
+      />
+    );
+  }
+
+  const isUser = message.role === 'user';
+  const isError = message.role === 'error';
+  const timestamp = message.timestamp
+    ? new Date(message.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+    : '';
+
+  return (
+    <div className={`ai-message-row ${isUser ? 'ai-message-row-right' : 'ai-message-row-left'}`}>
+      <div className={`ai-avatar ${isUser ? 'ai-avatar-user' : isError ? 'ai-avatar-warning' : ''}`}>
+        {isUser ? 'U' : isError ? '!' : <AIMark compact />}
+      </div>
+      <div className="ai-message-stack">
+        <div className={`ai-bubble ${isUser ? 'ai-bubble-user' : isError ? 'ai-bubble-error' : 'ai-bubble-assistant'}`}>
+          {isUser || isError ? (
+            <p>{message.content}</p>
+          ) : (
+            <div dangerouslySetInnerHTML={{ __html: renderMarkdown(message.content) }} />
+          )}
+        </div>
+        {timestamp && <time>{timestamp}</time>}
+      </div>
+    </div>
+  );
+}
+
 export default function AIChatBox({ isModal = false }) {
   const chatContainerRef = useRef(null);
   const inputRef = useRef(null);
   const [inputValue, setInputValue] = useState('');
+  const [models, setModels] = useState([]);
+  const [modelsLoading, setModelsLoading] = useState(true);
+  const [recommendedModel, setRecommendedModel] = useState(null);
+  const [sessionId] = useState(() => `session-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`);
 
-  const { messages, isLoading, error, addMessage, setLoading, setError, clearMessages } =
-    useAIChatStore();
+  const {
+    messages,
+    isLoading,
+    error,
+    selectedModelId,
+    addMessage,
+    clearMessages,
+    setError,
+    setLoading,
+    setSelectedModelId,
+  } = useAIChatStore();
 
-  useEffect(() => { injectStyles(); }, []);
+  const selectedModel = useMemo(
+    () => models.find((model) => model.id === selectedModelId) || null,
+    [models, selectedModelId]
+  );
 
-  // Auto-scroll
   useEffect(() => {
-    if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTo({
-        top: chatContainerRef.current.scrollHeight,
-        behavior: 'smooth',
-      });
+    let mounted = true;
+
+    async function loadModels() {
+      try {
+        setModelsLoading(true);
+        const response = await getAIChatModels();
+        const data = response?.data || response;
+        const modelList = Array.isArray(data?.models) ? data.models : [];
+
+        if (!mounted) return;
+
+        setModels(modelList);
+        setRecommendedModel(data?.recommendedModel || null);
+
+        if (!selectedModelId) {
+          const nextModel = data?.recommendedModel || modelList.find((model) => model.chatCapable)?.id || '';
+          if (nextModel) setSelectedModelId(nextModel);
+        }
+      } catch (loadError) {
+        if (!mounted) return;
+        setError('Gagal memuat daftar model AI.');
+        console.error('[AI Chat] gagal memuat model:', loadError);
+      } finally {
+        if (mounted) setModelsLoading(false);
+      }
     }
+
+    loadModels();
+
+    return () => {
+      mounted = false;
+    };
+  }, [selectedModelId, setError, setSelectedModelId]);
+
+  useEffect(() => {
+    const container = chatContainerRef.current;
+    if (!container) return;
+
+    const timer = setTimeout(() => {
+      container.scrollTop = container.scrollHeight;
+    }, 30);
+
+    return () => clearTimeout(timer);
   }, [messages, isLoading]);
 
   const handleSend = useCallback(async (text) => {
     const userMessage = (text ?? inputValue).trim();
-    if (!userMessage) return;
+    if (!userMessage || isLoading || !selectedModelId) return;
 
     setInputValue('');
+    setError(null);
+    setLoading(true);
     inputRef.current?.focus();
 
-    addMessage({ role: 'user', content: userMessage, timestamp: new Date().toISOString() });
-    setLoading(true);
-    setError(null);
+    addMessage({
+      role: 'user',
+      content: userMessage,
+      timestamp: new Date().toISOString(),
+    });
 
     try {
-      const response = await sendAIQuery(userMessage);
-      if (!response.data.success) throw new Error(response.data.error || 'Gagal mendapatkan response');
+      const response = await sendAIQuery(userMessage, messages, sessionId, {
+        modelId: selectedModelId,
+      });
+      const data = response?.data || response;
 
-      addMessage({ role: 'assistant', content: response.data.response, timestamp: new Date().toISOString() });
-    } catch (err) {
-      const msg = err.response?.data?.message || err.message || 'Terjadi kesalahan saat memproses query';
-      setError(msg);
-      addMessage({ role: 'error', content: `❌ ${msg}`, timestamp: new Date().toISOString() });
+      if (!data?.success) {
+        const errorMessage = data?.message || data?.error || 'AI tidak dapat memproses pertanyaan saat ini.';
+        setError(errorMessage);
+        addMessage({
+          role: 'error',
+          content: errorMessage,
+          timestamp: new Date().toISOString(),
+        });
+        return;
+      }
+
+      addMessage({
+        role: 'assistant',
+        content: data.response || 'AI tidak memberikan respons.',
+        timestamp: new Date().toISOString(),
+      });
+
+      if (data.message) {
+        setError(data.message);
+      }
+    } catch (sendError) {
+      const hasNoResponse = !navigator.onLine || !sendError?.response;
+      const errorMessage =
+        sendError?.response?.data?.message ||
+        sendError?.response?.data?.error ||
+        sendError?.message ||
+        'Terjadi kesalahan saat memproses pertanyaan.';
+
+      setError(errorMessage);
+      addMessage({
+        role: hasNoResponse ? 'offline' : 'error',
+        content: errorMessage,
+        timestamp: new Date().toISOString(),
+      });
     } finally {
       setLoading(false);
     }
-  }, [inputValue, addMessage, setLoading, setError]);
+  }, [
+    addMessage,
+    inputValue,
+    isLoading,
+    messages,
+    selectedModelId,
+    sessionId,
+    setError,
+    setLoading,
+  ]);
 
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
+  const retryLastQuestion = useCallback(() => {
+    const lastUserMessage = [...messages].reverse().find((message) => message.role === 'user');
+    if (lastUserMessage?.content) handleSend(lastUserMessage.content);
+  }, [handleSend, messages]);
+
+  const handleKeyDown = (event) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
       handleSend();
     }
   };
 
-  const charsLeft = 500 - inputValue.length;
+  const handleClear = () => {
+    clearMessages();
+    setError(null);
+  };
+
+  const charsLeft = MAX_MESSAGE_LENGTH - inputValue.length;
 
   return (
-    <div
-      className="ai-chat-root"
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: isModal ? '100%' : '100vh',
-        minHeight: isModal ? 450 : 500,
-        background: 'var(--c-surface)',
-        borderRadius: isModal ? 16 : 0,
-        overflow: 'hidden',
-        position: 'relative',
-        border: '1px solid var(--c-border)',
-        boxShadow: isModal ? '0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2)' : 'none',
-      }}
+    <ElectricBorder
+      className={`ai-chat-electric ${isModal ? 'ai-chat-electric-modal' : ''}`}
+      color="#7df9ff"
+      speed={1.05}
+      chaos={0.1}
+      thickness={2}
+      borderRadius={14}
+      style={{ borderRadius: 14 }}
     >
-      {/* ── Header ─────────────────────────────────────────── */}
-      <div className="chat-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative', zIndex: 1 }}>
-          <AILogo />
-          <div style={{ flex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ color: 'rgba(255,255,255,0.92)', fontWeight: 700, fontSize: 15, letterSpacing: '-0.2px' }}>
-                AI Assistant
-              </span>
-              <div className="header-status-dot" />
-            </div>
-            <p style={{ color: 'rgba(255,255,255,0.38)', fontSize: 11.5, margin: 0, fontFamily: "'JetBrains Mono', monospace" }}>
-              v2.4 · online · query database bisnis
-            </p>
+      <section className={`ai-chat-shell ${isModal ? 'ai-chat-modal' : ''}`}>
+      <header className="ai-chat-header">
+        <div className="ai-title-group">
+          <div className="ai-title-mark">
+            <AIMark compact />
           </div>
+          <div>
+            <h2>AI Assistant</h2>
+            <p>Jawaban ringkas, data bisnis, dan rekomendasi tindakan.</p>
+          </div>
+        </div>
 
-          {/* Clear icon button */}
+        <div className="ai-header-actions">
+          <select
+            aria-label="Pilih model AI"
+            value={selectedModelId || ''}
+            onChange={(event) => setSelectedModelId(event.target.value)}
+            disabled={isLoading || modelsLoading}
+          >
+            {modelsLoading && <option value="">Memuat model...</option>}
+            {!modelsLoading &&
+              models
+                .filter((model) => model.chatCapable)
+                .map((model) => (
+                  <option key={model.id} value={model.id}>
+                    {model.name}{model.id === recommendedModel ? ' (Recommended)' : ''}
+                  </option>
+                ))}
+          </select>
+
           {messages.length > 0 && (
-            <button
-              onClick={clearMessages}
-              title="Hapus riwayat"
-              style={{
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid var(--c-border)',
-                borderRadius: 10,
-                width: 32, height: 32,
-                color: 'rgba(255,255,255,0.35)',
-                fontSize: 15,
-                cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                transition: 'all 0.2s',
-                flexShrink: 0,
-              }}
-              onMouseEnter={e => { e.currentTarget.style.color = '#fca5a5'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.4)'; }}
-              onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.35)'; e.currentTarget.style.borderColor = 'var(--c-border)'; }}
-            >
-              🗑
+            <button type="button" className="ai-icon-button" onClick={handleClear} aria-label="Hapus riwayat chat">
+              X
             </button>
           )}
         </div>
+      </header>
+
+      <div className="ai-model-strip">
+        <span>{selectedModel?.name || 'Pilih model AI'}</span>
+        <span>Context {formatCompactNumber(selectedModel?.contextLength)}</span>
+        <span>Token tidak dibatasi dari riwayat chat</span>
       </div>
 
-      {/* ── Messages ───────────────────────────────────────── */}
-      <div ref={chatContainerRef} className="chat-messages">
+      <main ref={chatContainerRef} className="ai-message-list">
         {messages.length === 0 ? (
-          <EmptyState onSelect={(txt) => { setInputValue(txt); inputRef.current?.focus(); }} />
+          <EmptyState
+            onSelect={(text) => {
+              setInputValue(text);
+              inputRef.current?.focus();
+            }}
+          />
         ) : (
-          messages.map((msg, idx) => <Message key={idx} msg={msg} idx={idx} />)
+          messages.map((message, index) => (
+            <Message key={`${message.timestamp || index}-${index}`} message={message} onRetry={retryLastQuestion} />
+          ))
         )}
-
         {isLoading && <TypingIndicator />}
-      </div>
+      </main>
 
-      {/* ── Error Banner ────────────────────────────────────── */}
-      {error && (
-        <div className="error-banner">
-          <span style={{ fontWeight: 600 }}>Error · </span>{error}
+      {error && <div className="ai-error-line">{error}</div>}
+
+      <ElectricBorder
+        className="ai-composer-electric"
+        color="#7df9ff"
+        speed={1.25}
+        chaos={0.08}
+        thickness={1.6}
+        borderRadius={12}
+        style={{ borderRadius: 12 }}
+      >
+        <footer className="ai-composer">
+          <textarea
+            ref={inputRef}
+            value={inputValue}
+            onChange={(event) => setInputValue(event.target.value.slice(0, MAX_MESSAGE_LENGTH))}
+            onInput={(event) => {
+              event.currentTarget.style.height = 'auto';
+              event.currentTarget.style.height = `${Math.min(event.currentTarget.scrollHeight, 108)}px`;
+            }}
+            onKeyDown={handleKeyDown}
+            placeholder="Tanya revenue, stok, profit, atau performa produk..."
+            rows={1}
+            disabled={isLoading || !selectedModelId}
+          />
+          <button type="button" onClick={() => handleSend()} disabled={isLoading || !inputValue.trim() || !selectedModelId}>
+            {isLoading ? '...' : 'Kirim'}
+          </button>
+        </footer>
+      </ElectricBorder>
+
+      {inputValue.length > 420 && (
+        <div className={`ai-char-count ${charsLeft < 40 ? 'ai-char-danger' : ''}`}>
+          {charsLeft} karakter tersisa
         </div>
       )}
 
-      {/* ── Input Bar ─────────────────────────────────────── */}
-      <div className="chat-input-bar">
-        <textarea
-          ref={inputRef}
-          className="chat-input"
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value.slice(0, 500))}
-          onKeyDown={handleKeyDown}
-          placeholder="Tanya tentang sales, stok, revenue…"
-          disabled={isLoading}
-          rows={1}
-          style={{ maxHeight: 96 }}
-          onInput={(e) => {
-            e.target.style.height = 'auto';
-            e.target.style.height = Math.min(e.target.scrollHeight, 96) + 'px';
-          }}
-        />
-        <button
-          className="send-btn"
-          onClick={() => handleSend()}
-          disabled={isLoading || !inputValue.trim()}
-          aria-label="Kirim pesan"
-        >
-          {isLoading
-            ? <span style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.7s linear infinite' }} />
-            : '↑'}
-        </button>
-      </div>
+      <style jsx global>{`
+        .ai-chat-electric {
+          height: 100%;
+          min-height: 520px;
+          width: 100%;
+        }
 
-      {/* Char counter */}
-      {inputValue.length > 400 && (
-        <p className="char-counter" style={{ color: charsLeft < 50 ? '#f87171' : 'var(--c-muted)' }}>
-          {charsLeft} karakter tersisa
-        </p>
-      )}
+        .ai-chat-electric-modal {
+          height: min(90dvh, 720px);
+        }
 
-      {/* spin keyframe */}
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-    </div>
+        .ai-chat-electric > .eb-content {
+          height: 100%;
+        }
+
+        .ai-chat-shell {
+          --ai-bg: #101216;
+          --ai-panel: #171a20;
+          --ai-panel-soft: #1e222a;
+          --ai-line: #2f3540;
+          --ai-text: #f4f6f8;
+          --ai-muted: #9aa3af;
+          --ai-subtle: #707a87;
+          --ai-accent: #2dd4bf;
+          --ai-accent-strong: #14b8a6;
+          --ai-warn: #f59e0b;
+          --ai-danger: #ef4444;
+          --ai-user: #2563eb;
+          background:
+            linear-gradient(180deg, rgba(45, 212, 191, 0.06), rgba(16, 18, 22, 0) 180px),
+            var(--ai-bg);
+          border: 1px solid var(--ai-line);
+          color: var(--ai-text);
+          display: flex;
+          flex-direction: column;
+          font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+          height: 100%;
+          min-height: 520px;
+          overflow: hidden;
+          border-radius: 14px;
+          box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.05),
+            0 24px 70px rgba(2, 6, 23, 0.32);
+        }
+
+        .ai-chat-modal {
+          height: min(90dvh, 720px);
+        }
+
+        .ai-chat-header {
+          align-items: flex-start;
+          border-bottom: 1px solid var(--ai-line);
+          display: flex;
+          gap: 12px;
+          justify-content: space-between;
+          padding: 14px;
+        }
+
+        .ai-title-group {
+          align-items: center;
+          display: flex;
+          gap: 10px;
+          min-width: 0;
+        }
+
+        .ai-title-mark,
+        .ai-avatar {
+          align-items: center;
+          background: var(--ai-panel-soft);
+          border: 1px solid var(--ai-line);
+          border-radius: 8px;
+          color: var(--ai-accent);
+          display: flex;
+          flex: 0 0 auto;
+          font-size: 11px;
+          font-weight: 700;
+          height: 34px;
+          justify-content: center;
+          width: 34px;
+        }
+
+        .ai-title-mark,
+        .ai-empty-mark {
+          background:
+            radial-gradient(circle at 50% 30%, rgba(125, 249, 255, 0.22), transparent 42%),
+            linear-gradient(145deg, rgba(12, 74, 110, 0.7), rgba(15, 23, 42, 0.92));
+          box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.12),
+            0 0 26px rgba(45, 212, 191, 0.22);
+        }
+
+        .ai-avatar .ai-orb-mark {
+          height: 24px;
+          width: 24px;
+        }
+
+        .ai-orb-mark {
+          display: block;
+          height: 30px;
+          overflow: visible;
+          width: 30px;
+          filter: drop-shadow(0 0 8px rgba(125, 249, 255, 0.45));
+        }
+
+        .ai-orb-mark-compact {
+          height: 24px;
+          width: 24px;
+        }
+
+        .ai-orb-ring {
+          fill: none;
+          stroke: rgba(125, 249, 255, 0.52);
+          stroke-dasharray: 10 7;
+          stroke-linecap: round;
+          stroke-width: 2.2;
+          transform-origin: 32px 32px;
+          animation: aiOrbSpin 7s linear infinite;
+        }
+
+        .ai-orb-core {
+          fill: rgba(125, 249, 255, 0.12);
+          stroke: #7df9ff;
+          stroke-width: 2;
+          transform-origin: 32px 32px;
+          animation: aiOrbPulse 2.8s ease-in-out infinite;
+        }
+
+        .ai-orb-bolt {
+          fill: #fef08a;
+          stroke: #fff7ad;
+          stroke-linejoin: round;
+          stroke-width: 1.2;
+        }
+
+        .ai-orb-wave {
+          fill: none;
+          stroke: rgba(209, 250, 229, 0.78);
+          stroke-linecap: round;
+          stroke-width: 2.4;
+        }
+
+        .ai-orb-dot {
+          fill: #99f6e4;
+          transform-origin: center;
+          animation: aiOrbDot 2s ease-in-out infinite;
+        }
+
+        .ai-orb-dot-two {
+          animation-delay: 0.35s;
+        }
+
+        .ai-title-group h2 {
+          font-size: 16px;
+          font-weight: 700;
+          letter-spacing: 0;
+          line-height: 1.2;
+          margin: 0;
+        }
+
+        .ai-title-group p {
+          color: var(--ai-muted);
+          font-size: 12px;
+          line-height: 1.35;
+          margin: 2px 0 0;
+        }
+
+        .ai-header-actions {
+          align-items: center;
+          display: flex;
+          gap: 8px;
+          min-width: min(360px, 50%);
+        }
+
+        .ai-header-actions select {
+          appearance: none;
+          background: var(--ai-panel);
+          border: 1px solid var(--ai-line);
+          border-radius: 8px;
+          color: var(--ai-text);
+          flex: 1;
+          font-size: 12px;
+          height: 36px;
+          min-width: 0;
+          outline: none;
+          padding: 0 10px;
+        }
+
+        .ai-header-actions select:focus,
+        .ai-composer textarea:focus {
+          border-color: var(--ai-accent);
+          box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.12);
+        }
+
+        .ai-icon-button {
+          background: transparent;
+          border: 1px solid var(--ai-line);
+          border-radius: 8px;
+          color: var(--ai-muted);
+          cursor: pointer;
+          flex: 0 0 auto;
+          font-size: 12px;
+          font-weight: 700;
+          height: 36px;
+          width: 36px;
+        }
+
+        .ai-icon-button:hover {
+          border-color: rgba(239, 68, 68, 0.5);
+          color: #fecaca;
+        }
+
+        .ai-model-strip {
+          align-items: center;
+          border-bottom: 1px solid rgba(47, 53, 64, 0.75);
+          color: var(--ai-muted);
+          display: flex;
+          flex-wrap: wrap;
+          font-size: 11px;
+          gap: 8px;
+          padding: 8px 14px;
+        }
+
+        .ai-model-strip span:first-child {
+          color: var(--ai-text);
+          font-weight: 600;
+          max-width: 100%;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .ai-message-list {
+          display: flex;
+          flex: 1;
+          flex-direction: column;
+          gap: 14px;
+          min-height: 0;
+          overflow-y: auto;
+          padding: 16px 14px;
+        }
+
+        .ai-empty {
+          align-items: center;
+          display: flex;
+          flex: 1;
+          flex-direction: column;
+          justify-content: center;
+          margin: 0 auto;
+          max-width: 460px;
+          text-align: center;
+          width: 100%;
+        }
+
+        .ai-empty-mark {
+          align-items: center;
+          border: 1px solid rgba(45, 212, 191, 0.28);
+          border-radius: 8px;
+          color: var(--ai-accent);
+          display: flex;
+          font-weight: 800;
+          height: 48px;
+          justify-content: center;
+          margin-bottom: 12px;
+          width: 48px;
+        }
+
+        .ai-empty-mark .ai-orb-mark {
+          height: 40px;
+          width: 40px;
+        }
+
+        .ai-empty h3 {
+          font-size: 16px;
+          margin: 0 0 4px;
+        }
+
+        .ai-empty p {
+          color: var(--ai-muted);
+          font-size: 13px;
+          line-height: 1.5;
+          margin: 0;
+        }
+
+        .ai-suggestions {
+          display: grid;
+          gap: 8px;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          margin-top: 18px;
+          width: 100%;
+        }
+
+        .ai-suggestions button {
+          background: var(--ai-panel);
+          border: 1px solid var(--ai-line);
+          border-radius: 8px;
+          color: var(--ai-text);
+          cursor: pointer;
+          font-size: 12px;
+          line-height: 1.35;
+          min-height: 44px;
+          padding: 10px;
+          text-align: left;
+        }
+
+        .ai-suggestions button:hover {
+          border-color: rgba(45, 212, 191, 0.45);
+          background: #1c252b;
+        }
+
+        .ai-message-row {
+          align-items: flex-start;
+          display: flex;
+          gap: 9px;
+          width: 100%;
+        }
+
+        .ai-message-row-right {
+          flex-direction: row-reverse;
+        }
+
+        .ai-avatar-user {
+          color: #bfdbfe;
+        }
+
+        .ai-avatar-warning {
+          color: #fecaca;
+        }
+
+        .ai-message-stack {
+          max-width: min(78%, 680px);
+          min-width: 0;
+        }
+
+        .ai-message-row-right .ai-message-stack {
+          align-items: flex-end;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .ai-bubble {
+          border-radius: 8px;
+          font-size: 13px;
+          line-height: 1.65;
+          overflow-wrap: anywhere;
+          padding: 10px 12px;
+        }
+
+        .ai-bubble p {
+          margin: 0;
+          white-space: pre-wrap;
+        }
+
+        .ai-bubble strong {
+          color: #ffffff;
+        }
+
+        .ai-bubble code {
+          background: rgba(45, 212, 191, 0.1);
+          border: 1px solid rgba(45, 212, 191, 0.25);
+          border-radius: 6px;
+          color: #99f6e4;
+          font-family: "JetBrains Mono", ui-monospace, monospace;
+          font-size: 12px;
+          padding: 1px 5px;
+        }
+
+        .ai-table-wrap {
+          border: 1px solid var(--ai-line);
+          border-radius: 8px;
+          margin: 8px 0;
+          max-width: 100%;
+          overflow-x: auto;
+        }
+
+        .ai-table-wrap table {
+          border-collapse: collapse;
+          font-size: 12px;
+          min-width: 360px;
+          width: 100%;
+        }
+
+        .ai-table-wrap th,
+        .ai-table-wrap td {
+          border-bottom: 1px solid rgba(47, 53, 64, 0.8);
+          padding: 8px 9px;
+          text-align: left;
+          vertical-align: top;
+        }
+
+        .ai-table-wrap th {
+          background: rgba(45, 212, 191, 0.08);
+          color: #ccfbf1;
+          font-weight: 700;
+        }
+
+        .ai-table-wrap tr:last-child td {
+          border-bottom: none;
+        }
+
+        .ai-bubble-user {
+          background: var(--ai-user);
+          color: #ffffff;
+        }
+
+        .ai-bubble-assistant {
+          background: var(--ai-panel);
+          border: 1px solid var(--ai-line);
+          color: var(--ai-text);
+        }
+
+        .ai-bubble-error {
+          background: rgba(239, 68, 68, 0.09);
+          border: 1px solid rgba(239, 68, 68, 0.3);
+          color: #fecaca;
+        }
+
+        .ai-list-item {
+          display: flex;
+          gap: 7px;
+          margin: 3px 0;
+        }
+
+        .ai-list-item span {
+          background: var(--ai-accent);
+          border-radius: 99px;
+          flex: 0 0 auto;
+          height: 5px;
+          margin-top: 9px;
+          width: 5px;
+        }
+
+        .ai-list-item b {
+          color: var(--ai-accent);
+          flex: 0 0 auto;
+        }
+
+        .ai-list-item p {
+          margin: 0;
+        }
+
+        .ai-message-stack time {
+          color: var(--ai-subtle);
+          display: block;
+          font-family: "JetBrains Mono", ui-monospace, monospace;
+          font-size: 10px;
+          margin-top: 4px;
+        }
+
+        .ai-typing {
+          align-items: center;
+          display: flex;
+          gap: 5px;
+          min-height: 40px;
+          width: 58px;
+        }
+
+        .ai-typing span {
+          animation: aiTyping 1s ease-in-out infinite;
+          background: var(--ai-accent);
+          border-radius: 999px;
+          height: 6px;
+          opacity: 0.5;
+          width: 6px;
+        }
+
+        .ai-typing span:nth-child(2) {
+          animation-delay: 120ms;
+        }
+
+        .ai-typing span:nth-child(3) {
+          animation-delay: 240ms;
+        }
+
+        @keyframes aiTyping {
+          0%, 100% {
+            transform: translateY(0);
+            opacity: 0.4;
+          }
+          50% {
+            transform: translateY(-4px);
+            opacity: 1;
+          }
+        }
+
+        @keyframes aiOrbSpin {
+          to {
+            transform: rotate(360deg);
+          }
+        }
+
+        @keyframes aiOrbPulse {
+          0%, 100% {
+            transform: scale(1);
+            opacity: 0.78;
+          }
+          50% {
+            transform: scale(1.08);
+            opacity: 1;
+          }
+        }
+
+        @keyframes aiOrbDot {
+          0%, 100% {
+            opacity: 0.42;
+            transform: scale(0.85);
+          }
+          50% {
+            opacity: 1;
+            transform: scale(1.2);
+          }
+        }
+
+        .ai-status-card {
+          border-radius: 8px;
+          font-size: 13px;
+          line-height: 1.5;
+          max-width: min(78%, 560px);
+          padding: 11px 12px;
+        }
+
+        .ai-status-card strong {
+          display: block;
+          margin-bottom: 4px;
+        }
+
+        .ai-status-card p {
+          margin: 0;
+        }
+
+        .ai-status-card button {
+          background: transparent;
+          border: 1px solid currentColor;
+          border-radius: 8px;
+          color: inherit;
+          cursor: pointer;
+          font-size: 12px;
+          margin-top: 10px;
+          padding: 6px 10px;
+        }
+
+        .ai-status-error {
+          background: rgba(239, 68, 68, 0.09);
+          border: 1px solid rgba(239, 68, 68, 0.28);
+          color: #fecaca;
+        }
+
+        .ai-status-offline {
+          background: rgba(245, 158, 11, 0.1);
+          border: 1px solid rgba(245, 158, 11, 0.3);
+          color: #fde68a;
+        }
+
+        .ai-error-line {
+          background: rgba(239, 68, 68, 0.08);
+          border-top: 1px solid rgba(239, 68, 68, 0.22);
+          color: #fecaca;
+          flex: 0 0 auto;
+          font-size: 12px;
+          line-height: 1.4;
+          padding: 8px 14px;
+        }
+
+        .ai-composer-electric {
+          flex: 0 0 auto;
+          margin: 12px 14px 14px;
+        }
+
+        .ai-composer-electric > .eb-content {
+          height: auto;
+        }
+
+        .ai-composer {
+          align-items: flex-end;
+          background:
+            radial-gradient(circle at 14% 0%, rgba(125, 249, 255, 0.12), transparent 34%),
+            #0c0e12;
+          border: 1px solid rgba(125, 249, 255, 0.18);
+          border-radius: 12px;
+          display: flex;
+          flex: 0 0 auto;
+          gap: 10px;
+          padding: 9px;
+        }
+
+        .ai-composer textarea {
+          background: var(--ai-panel);
+          border: 1px solid var(--ai-line);
+          border-radius: 8px;
+          color: var(--ai-text);
+          flex: 1;
+          font-size: 13px;
+          line-height: 1.5;
+          max-height: 108px;
+          min-height: 40px;
+          outline: none;
+          padding: 10px 11px;
+          resize: none;
+        }
+
+        .ai-composer textarea::placeholder {
+          color: var(--ai-subtle);
+        }
+
+        .ai-composer button {
+          position: relative;
+          overflow: hidden;
+          background:
+            linear-gradient(135deg, #99f6e4 0%, #2dd4bf 42%, #0f766e 100%);
+          border: none;
+          border-radius: 8px;
+          color: #042f2e;
+          cursor: pointer;
+          flex: 0 0 auto;
+          font-size: 13px;
+          font-weight: 800;
+          height: 40px;
+          min-width: 74px;
+          padding: 0 14px;
+          box-shadow: 0 10px 22px rgba(20, 184, 166, 0.22);
+          transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
+        }
+
+        .ai-composer button:not(:disabled):hover {
+          transform: translateY(-1px);
+          filter: saturate(1.12);
+          box-shadow: 0 14px 28px rgba(20, 184, 166, 0.3);
+        }
+
+        .ai-composer button:disabled,
+        .ai-composer textarea:disabled,
+        .ai-header-actions select:disabled {
+          cursor: not-allowed;
+          opacity: 0.55;
+        }
+
+        .ai-char-count {
+          background: #0c0e12;
+          color: var(--ai-muted);
+          flex: 0 0 auto;
+          font-size: 11px;
+          padding: 0 14px 10px;
+          text-align: right;
+        }
+
+        .ai-char-danger {
+          color: #fecaca;
+        }
+
+        @media (max-width: 760px) {
+          .ai-chat-shell {
+            min-height: 560px;
+          }
+
+          .ai-chat-electric {
+            min-height: 560px;
+          }
+
+          .ai-chat-header {
+            flex-direction: column;
+          }
+
+          .ai-header-actions {
+            min-width: 0;
+            width: 100%;
+          }
+
+          .ai-model-strip {
+            align-items: flex-start;
+            flex-direction: column;
+            gap: 3px;
+          }
+
+          .ai-message-stack,
+          .ai-status-card {
+            max-width: calc(100% - 44px);
+          }
+
+          .ai-suggestions {
+            grid-template-columns: 1fr;
+          }
+
+          .ai-composer {
+            align-items: stretch;
+            flex-direction: column;
+          }
+
+          .ai-composer button {
+            width: 100%;
+          }
+        }
+      `}</style>
+      </section>
+    </ElectricBorder>
   );
 }
