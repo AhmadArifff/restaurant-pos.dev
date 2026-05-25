@@ -11,6 +11,7 @@ import { resolveAssetUrl } from '@/lib/assetUrl';
 // ── Definisi menu dengan animasi unik tiap item ───────────────
 const menus = [
   { href: '/pos',                       label: 'Kasir',        roles: ['admin','kasir'], anim: 'pop'    },
+  { href: '/customer-orders',           label: 'Pesanan Meja', roles: ['admin','kasir'], anim: 'pulse'  },
   { href: '/pos/history',               label: 'Riwayat POS',   roles: ['admin'],        anim: 'slide'  },
   { href: '/dashboard',                 label: 'Dashboard',    roles: ['admin'],          anim: 'bounce' },
   { href: '/products',                  label: 'Produk',       roles: ['admin'],          anim: 'flip'   },
@@ -41,6 +42,18 @@ function HistoryIcon({ active }) {
       strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="9"/>
       <polyline points="12 6 12 12 16 14"/>
+    </svg>
+  );
+}
+function TableOrderIcon({ active }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+      stroke={active ? '#fff' : 'currentColor'} strokeWidth="1.8"
+      strokeLinecap="round" strokeLinejoin="round">
+      <rect x="4" y="3" width="16" height="7" rx="2"/>
+      <path d="M7 10v9M17 10v9M5 19h14"/>
+      <path d="M9 14h6"/>
+      <path d="M8 6.5h.01M12 6.5h.01M16 6.5h.01"/>
     </svg>
   );
 }
@@ -180,6 +193,7 @@ function InstallIcon() {
 // Map href ke icon component
 const iconMap = {
   '/pos':                         PosIcon,
+  '/customer-orders':             TableOrderIcon,
   '/pos/history':                 HistoryIcon,
   '/dashboard':                   DashIcon,
   '/products':                    ProductIcon,

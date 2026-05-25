@@ -7,8 +7,8 @@
   subtitle:
     'Kebab premium dengan cita rasa Timur Tengah otentik, dipadukan dengan sentuhan modern fine dining yang memanjakan selera.',
   ctaPrimary: {
-    label: '🗺 Lihat Menu',
-    href: '#menu',
+    label: 'Pesan Sekarang',
+    href: '/order',
   },
   ctaSecondary: {
     label: '📍 Temukan Cabang',

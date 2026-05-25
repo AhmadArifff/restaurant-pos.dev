@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import Link from 'next/link';
 import { heroContent } from '@/data/landing/heroContent';
 
 function animateCounter(el, target, suffix) {
@@ -57,7 +58,11 @@ export default function Hero({ content = heroContent }) {
         </h1>
         <p className="hero-sub">{data.subtitle}</p>
         <div className="hero-btns">
-          <a href={data.ctaPrimary?.href} className="btn-primary">{data.ctaPrimary?.label}</a>
+          {data.ctaPrimary?.href?.startsWith('/') ? (
+            <Link href={data.ctaPrimary.href} className="btn-primary">{data.ctaPrimary?.label}</Link>
+          ) : (
+            <a href={data.ctaPrimary?.href} className="btn-primary">{data.ctaPrimary?.label}</a>
+          )}
           <a href={data.ctaSecondary?.href} className="btn-outline">{data.ctaSecondary?.label}</a>
         </div>
       </div>

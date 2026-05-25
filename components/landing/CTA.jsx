@@ -1,4 +1,5 @@
 import { ctaContent } from '@/data/landing/ctaContent';
+import Link from 'next/link';
 
 const whatsappIcon = (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -23,6 +24,9 @@ export default function CTA({ content = ctaContent, previewMode = false }) {
         </h2>
         <p className="cta-desc">{data.description}</p>
         <div className="cta-btns">
+          <Link href="/order" className="btn-primary">
+            Pesan Sekarang
+          </Link>
           <a
             href={data.whatsappUrl}
             className="btn-wa"
