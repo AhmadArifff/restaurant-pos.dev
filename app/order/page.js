@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { getPublicDiningTables } from '@/lib/api';
+import { getPublicBranches, getPublicDiningTables } from '@/lib/api';
 import QRCodeCard from '@/components/customer/QRCodeCard';
 
 const getOrderUrl = (token) => {
@@ -13,18 +13,32 @@ const getOrderUrl = (token) => {
 
 export default function SelectDiningTablePage() {
   const [tables, setTables] = useState([]);
+  const [branches, setBranches] = useState([]);
+  const [selectedBranch, setSelectedBranch] = useState(null);
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getPublicDiningTables()
+    getPublicBranches()
+      .then((res) => {
+        const rows = res.data || [];
+        setBranches(rows);
+        setSelectedBranch(rows[0] || null);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    if (!selectedBranch?.id) return;
+    setLoading(true);
+    getPublicDiningTables({ branch_id: selectedBranch.id })
       .then((res) => {
         const rows = res.data || [];
         setTables(rows);
         setSelected(rows[0] || null);
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [selectedBranch?.id]);
 
   const selectedUrl = useMemo(() => selected ? getOrderUrl(selected.qr_token) : '', [selected]);
 
@@ -46,6 +60,30 @@ export default function SelectDiningTablePage() {
               Setiap meja punya QR unik. Pelanggan bisa membuka menu, mengirim pesanan, memantau status, lalu memberi review untuk mendapat potongan 5%.
             </p>
           </motion.div>
+
+          <div className="mt-8">
+            <p className="mb-3 text-xs font-black uppercase tracking-[0.28em] text-[#C9A84C]">Pilih Cabang</p>
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {branches.map((branch) => {
+                const active = Number(selectedBranch?.id) === Number(branch.id);
+                return (
+                  <button
+                    key={branch.id}
+                    type="button"
+                    onClick={() => setSelectedBranch(branch)}
+                    className={`rounded-3xl border p-4 text-left transition ${
+                      active
+                        ? 'border-[#C9A84C] bg-[#C9A84C]/15 text-[#F5EDD8]'
+                        : 'border-[#C9A84C]/18 bg-[#1A1409]/70 text-[#EDE0C4]/75 hover:border-[#C9A84C]/60'
+                    }`}
+                  >
+                    <strong className="block text-lg">{branch.name}</strong>
+                    <span className="mt-1 block text-xs opacity-70">{branch.area || branch.address || 'Cabang aktif'}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
           <div className="mt-9 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
             {loading
@@ -94,7 +132,7 @@ export default function SelectDiningTablePage() {
                 <div className="mb-5 rounded-3xl bg-[#241C0E] p-5">
                   <p className="text-xs font-black uppercase tracking-[0.28em] text-[#C9A84C]">QR Aktif</p>
                   <h2 className="mt-2 text-3xl font-black">Meja {selected.table_number}</h2>
-                  <p className="mt-2 text-sm text-[#EDE0C4]/70">{selected.table_name || 'Siap menerima pesanan pelanggan.'}</p>
+                  <p className="mt-2 text-sm text-[#EDE0C4]/70">{selectedBranch?.name || selected.table_name || 'Siap menerima pesanan pelanggan.'}</p>
                 </div>
                 <QRCodeCard value={selectedUrl} />
                 <Link

@@ -45,19 +45,19 @@ export default function CustomerOrderPage() {
     if (!token) return;
     let mounted = true;
 
-    const savedOrderCode = storageKey ? localStorage.getItem(storageKey) : null;
-    Promise.all([
-      getDiningTableByToken(token),
-      getCustomerMenu(),
-      savedOrderCode ? getCustomerOrder(savedOrderCode).catch(() => null) : Promise.resolve(null),
-    ])
-      .then(([tableRes, menuRes, orderRes]) => {
-        if (!mounted) return;
-        setTable(tableRes.data);
-        setProducts(menuRes.data || []);
-        if (orderRes?.data) setOrder(orderRes.data);
-      })
-      .finally(() => mounted && setLoading(false));
+    const load = async () => {
+      const savedOrderCode = storageKey ? localStorage.getItem(storageKey) : null;
+      const tableRes = await getDiningTableByToken(token);
+      const menuRes = await getCustomerMenu({ branch_id: tableRes.data?.branch_id });
+      const orderRes = savedOrderCode ? await getCustomerOrder(savedOrderCode).catch(() => null) : null;
+      if (!mounted) return;
+      setTable(tableRes.data);
+      setProducts(menuRes.data || []);
+      if (orderRes?.data) setOrder(orderRes.data);
+      setLoading(false);
+    };
+
+    load().catch(() => mounted && setLoading(false));
 
     return () => {
       mounted = false;

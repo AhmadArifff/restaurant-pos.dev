@@ -6,12 +6,29 @@ export const useAuthStore = create(
     (set, get) => ({
       user:  null,
       token: null,
+      selectedBranchId: null,
 
       setAuth: (user, token) => {
         // Simpan juga di key 'token' untuk kompatibilitas axios interceptor lama
         localStorage.setItem('token', token);
-        set({ user, token });
+        set({
+          user,
+          token,
+          selectedBranchId: user?.default_branch_id || user?.branch_id || get().selectedBranchId || null,
+        });
       },
+
+      setBranch: (branchId, branch = null) => set((state) => ({
+        selectedBranchId: branchId ? Number(branchId) : null,
+        user: state.user
+          ? {
+              ...state.user,
+              default_branch_id: branchId ? Number(branchId) : null,
+              branch_name: branch?.name || state.user.branch_name,
+              branch_key: branch?.branch_key || state.user.branch_key,
+            }
+          : state.user,
+      })),
 
       logout: async () => {
         try {
@@ -29,7 +46,7 @@ export const useAuthStore = create(
           }
         } catch (_) {}
         localStorage.removeItem('token');
-        set({ user: null, token: null });
+        set({ user: null, token: null, selectedBranchId: null });
       },
     }),
     {

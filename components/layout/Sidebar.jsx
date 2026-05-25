@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useWebsiteSettings, DEFAULT_SETTINGS } from '@/store/settingsStore';
 import { usePWAInstall } from '@/components/ui/PWAInstallPrompt';
 import { resolveAssetUrl } from '@/lib/assetUrl';
+import { getBranches, setMyBranch } from '@/lib/api';
 
 // ── Definisi menu dengan animasi unik tiap item ───────────────
 const menus = [
@@ -190,6 +191,47 @@ function InstallIcon() {
   );
 }
 
+function BranchSelector({ collapsed, branches, selectedBranchId, onChange }) {
+  const selected = branches.find((branch) => Number(branch.id) === Number(selectedBranchId));
+
+  if (!branches.length) return null;
+
+  if (collapsed) {
+    return (
+      <div className="px-2 pb-2">
+        <button
+          type="button"
+          title={selected?.name || 'Pilih Cabang'}
+          className="flex h-10 w-full items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-[11px] font-black text-orange-300"
+        >
+          {(selected?.branch_key || selected?.name || 'CB').slice(0, 2).toUpperCase()}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="px-2 pb-3">
+      <label className="mb-1 block px-2 text-[10px] font-bold uppercase tracking-[0.18em] text-white/35">
+        Cabang Aktif
+      </label>
+      <select
+        value={selectedBranchId || ''}
+        onChange={(event) => onChange(event.target.value)}
+        className="w-full rounded-xl border border-white/10 bg-[#1E1A14] px-3 py-2 text-xs font-semibold text-white outline-none transition hover:border-orange-400/40 focus:border-orange-400"
+      >
+        <option value="" disabled>Pilih cabang</option>
+        {branches.map((branch) => (
+          <option key={branch.id} value={branch.id}>
+            {branch.name}
+          </option>
+        ))}
+      </select>
+      {selected?.area && <p className="mt-1 px-2 text-[10px] text-white/35">{selected.area}</p>}
+    </div>
+  );
+}
+
 // Map href ke icon component
 const iconMap = {
   '/pos':                         PosIcon,
@@ -304,7 +346,8 @@ function NavItem({ menu, active, collapsed, primaryColor, onClick }) {
 
 // ── Sidebar content (shared) ──────────────────────────────────
 function SidebarContent({ collapsed, noLogo, pathname, user, settings, visible,
-  logoSrc, initials, primaryColor, onLogout, showInstall, isInstalled }) {
+  logoSrc, initials, primaryColor, onLogout, showInstall, isInstalled,
+  branches, selectedBranchId, onBranchChange }) {
 
   return (
     <>
@@ -351,6 +394,13 @@ function SidebarContent({ collapsed, noLogo, pathname, user, settings, visible,
           />
         ))}
       </nav>
+
+      <BranchSelector
+        collapsed={collapsed}
+        branches={branches}
+        selectedBranchId={selectedBranchId}
+        onChange={onBranchChange}
+      />
 
       {/* Install PWA */}
       {!isInstalled && (
@@ -435,7 +485,7 @@ function SidebarContent({ collapsed, noLogo, pathname, user, settings, visible,
 // ── Main Sidebar Component ────────────────────────────────────
 export default function Sidebar() {
   const pathname            = usePathname();
-  const { user, logout }    = useAuthStore();
+  const { user, logout, selectedBranchId, setBranch } = useAuthStore();
   const router              = useRouter();
   const { settings, loadSettings } = useWebsiteSettings();
 
@@ -445,6 +495,7 @@ export default function Sidebar() {
   const [isMobile,      setIsMobile]      = useState(false);
   const [isTablet,      setIsTablet]      = useState(false);
   const [hydrated,      setHydrated]      = useState(false);
+  const [branches, setBranches] = useState([]);
 
   // Inject keyframes once
   useEffect(() => {
@@ -456,6 +507,17 @@ export default function Sidebar() {
   }, []);
 
   useEffect(() => { loadSettings(); }, [loadSettings]);
+
+  useEffect(() => {
+    if (!user) return;
+    getBranches()
+      .then((res) => {
+        const rows = res.data || [];
+        setBranches(rows);
+        if (!selectedBranchId && rows[0]) setBranch(rows[0].id, rows[0]);
+      })
+      .catch(() => setBranches([]));
+  }, [selectedBranchId, setBranch, user]);
 
   useEffect(() => {
     const check = () => {
@@ -474,6 +536,14 @@ export default function Sidebar() {
   }, [pathname]);
 
   const handleLogout = () => { logout(); router.replace('/login'); };
+  const handleBranchChange = async (branchId) => {
+    const branch = branches.find((item) => Number(item.id) === Number(branchId));
+    setBranch(branchId, branch);
+    try {
+      await setMyBranch(Number(branchId));
+    } catch (_) {}
+    router.refresh?.();
+  };
   const visible      = menus.filter(m => m.roles.includes(user?.role));
   const logoSrc      = resolveAssetUrl(settings?.logo_url, '/images/assets/logo.png');
   const primaryColor = settings?.gold || DEFAULT_SETTINGS.gold;
@@ -487,7 +557,8 @@ export default function Sidebar() {
   );
 
   const sharedProps = { pathname, user, settings, visible, logoSrc, initials,
-    primaryColor, onLogout: handleLogout, showInstall, isInstalled };
+    primaryColor, onLogout: handleLogout, showInstall, isInstalled,
+    branches, selectedBranchId, onBranchChange: handleBranchChange };
 
   // ── MOBILE ──────────────────────────────────────────────────
   if (hydrated && isMobile) {

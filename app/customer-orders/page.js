@@ -21,6 +21,7 @@ const emptyTable = {
   capacity: 2,
   status: 'active',
   note: '',
+  branch_id: '',
 };
 
 const statusLabels = {
@@ -114,6 +115,7 @@ export default function CustomerOrdersPage() {
       capacity: table.capacity || 2,
       status: table.status || 'active',
       note: table.note || '',
+      branch_id: table.branch_id || '',
     });
     setSelectedTable(table);
   };
@@ -333,6 +335,7 @@ export default function CustomerOrdersPage() {
                         <p className="text-xs text-slate-500">Meja</p>
                         <strong className="text-lg text-white">{table.table_number}</strong>
                         <p className="text-xs capitalize text-slate-400">{table.status}</p>
+                        {table.branch_name && <p className="mt-1 text-[10px] text-orange-300/80">{table.branch_name}</p>}
                       </button>
                     ))}
                   </div>
