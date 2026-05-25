@@ -1,6 +1,7 @@
 ﻿'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { headerContent } from '@/data/landing/headerContent';
 
 export default function Header({ content = headerContent }) {
@@ -9,6 +10,14 @@ export default function Header({ content = headerContent }) {
   const data = content || headerContent;
   const navLinks = Array.isArray(data.navLinks) ? data.navLinks : [];
   const mobileNavLinks = navLinks.slice(0, 5);
+  const navCta = {
+    ...(data.ctaButton || headerContent.ctaButton),
+    href: '/order',
+  };
+  const mobileCta = {
+    ...(data.mobileCta || headerContent.mobileCta),
+    href: '/order',
+  };
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 80);
@@ -38,9 +47,9 @@ export default function Header({ content = headerContent }) {
             </a>
           </li>
           <li>
-            <a href={data.ctaButton.href} className="nav-cta" target="_blank" rel="noreferrer">
-              {data.ctaButton.label}
-            </a>
+            <Link href={navCta.href} className="nav-cta">
+              {navCta.label}
+            </Link>
           </li>
         </ul>
         <button
@@ -68,10 +77,10 @@ export default function Header({ content = headerContent }) {
             {data.mobileAdminButton.label}
           </a>
         )}
-        {data.mobileCta && (
-          <a href={data.mobileCta.href} style={{ color: 'var(--gold)' }} target="_blank" rel="noreferrer" onClick={closeMobileNav}>
-            {data.mobileCta.label}
-          </a>
+        {mobileCta && (
+          <Link href={mobileCta.href} style={{ color: 'var(--gold)' }} onClick={closeMobileNav}>
+            {mobileCta.label}
+          </Link>
         )}
       </div>
     </>

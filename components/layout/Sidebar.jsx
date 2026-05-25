@@ -11,7 +11,7 @@ import { resolveAssetUrl } from '@/lib/assetUrl';
 // ── Definisi menu dengan animasi unik tiap item ───────────────
 const menus = [
   { href: '/pos',                       label: 'Kasir',        roles: ['admin','kasir'], anim: 'pop'    },
-  { href: '/customer-orders',           label: 'Pesanan Meja', roles: ['admin','kasir'], anim: 'pulse'  },
+  { href: '/admin/customer-orders',     label: 'Pesanan Meja', roles: ['admin','kasir'], anim: 'pulse'  },
   { href: '/pos/history',               label: 'Riwayat POS',   roles: ['admin'],        anim: 'slide'  },
   { href: '/dashboard',                 label: 'Dashboard',    roles: ['admin'],          anim: 'bounce' },
   { href: '/products',                  label: 'Produk',       roles: ['admin'],          anim: 'flip'   },
@@ -193,7 +193,7 @@ function InstallIcon() {
 // Map href ke icon component
 const iconMap = {
   '/pos':                         PosIcon,
-  '/customer-orders':             TableOrderIcon,
+  '/admin/customer-orders':       TableOrderIcon,
   '/pos/history':                 HistoryIcon,
   '/dashboard':                   DashIcon,
   '/products':                    ProductIcon,

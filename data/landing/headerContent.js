@@ -10,7 +10,7 @@
   ],
   ctaButton: {
     label: 'Pesan Sekarang',
-    href: 'https://wa.me/6281234567890',
+    href: '/order',
   },
   adminButton: {
     label: 'Login Admin',
@@ -18,7 +18,7 @@
   },
   mobileCta: {
     label: 'Pesan Sekarang',
-    href: 'https://wa.me/6281234567890',
+    href: '/order',
   },
   mobileAdminButton: {
     label: 'Login Admin',
