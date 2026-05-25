@@ -117,7 +117,7 @@ export default function PosPage() {
   const handleKasirNoStock = (product) => {
     const ings = product.ingredients?.map(ing => ({
       stock_item_id: ing.stock_item_id,
-      qty:           '',
+      qty:           Number(ing.qty || ing.qty_per_portion || 1),
       name:          ing.ingredient_name,
       unit:          ing.unit,
     })) || [];
@@ -187,7 +187,7 @@ export default function PosPage() {
   const handleNoStock = (product) => {
     const ings = product.ingredients?.map(ing => ({
       stock_item_id: ing.stock_item_id,
-      qty:           '',
+      qty:           Number(ing.qty || ing.qty_per_portion || 1),
       name:          ing.ingredient_name,
       unit:          ing.unit,
     })) || [];

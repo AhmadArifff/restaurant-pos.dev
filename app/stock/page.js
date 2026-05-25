@@ -26,6 +26,18 @@ function fmtQty(val) {
   const n = Number(val || 0);
   return n % 1 === 0 ? String(Math.round(n)) : n.toFixed(2);
 }
+
+function getRequestedQtyFromIngredient(ingredient) {
+  const qty = Number(
+    ingredient?.request_qty ??
+    ingredient?.qty_requested ??
+    ingredient?.qty ??
+    ingredient?.qty_per_portion ??
+    1
+  );
+
+  return qty > 0 ? qty : 1;
+}
 // ── Shared UI ─────────────────────────────────────────────────
 function TabBtn({ active, onClick, children }) {
   return (
@@ -223,7 +235,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
         setShowOutForm(true);
         setOutItems(parsedIngs.map(ing => ({
           stock_item_id: String(ing.stock_item_id),
-          qty: '',
+          qty: String(getRequestedQtyFromIngredient(ing)),
           note: `Stok untuk ${productName || 'produk'}`,
         })));
         if (userId) setOutUserId(userId);
@@ -1705,7 +1717,7 @@ function KasirStockPage({ successModal, setSuccessModal }) {
           setShowOutForm(true);
           setOutItems(parsedIngs.map(ing => ({
             stock_item_id: String(ing.stock_item_id),
-            qty:           '',
+            qty:           String(getRequestedQtyFromIngredient(ing)),
             note:          `Stok untuk ${productName || 'produk'}`,
           })));
         } catch (_) {}
@@ -2175,8 +2187,8 @@ function KasirStockPage({ successModal, setSuccessModal }) {
           <div className="bg-slate-800 rounded-2xl border border-slate-700 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b border-slate-700/60">
               <div>
-                <h3 className="text-white font-bold">📤 Catat Pengeluaran Stok</h3>
-                <p className="text-slate-500 text-xs mt-0.5">Hanya bahan yang ada di gudang · Tidak boleh melebihi stok tersedia</p>
+                <h3 className="text-white font-bold">📤 Ajukan Stok Cabang</h3>
+                <p className="text-slate-500 text-xs mt-0.5">Bahan resep otomatis terpilih · Bisa diajukan meski stok cabang 0</p>
               </div>
               <button onClick={() => { setShowOutForm(false); setOutItems([{ stock_item_id:'', qty:'', note:'' }]); }}
                 className="text-slate-500 hover:text-white p-2 rounded-xl hover:bg-slate-700 transition-colors">✕</button>
@@ -2195,7 +2207,7 @@ function KasirStockPage({ successModal, setSuccessModal }) {
                   const si       = summary.find(s => s.id == item.stock_item_id);
                   const maxStok  = si ? Number(si.current_stock) : 0;
                   const harga    = Number(si?.price_per_unit || 0);
-                  const isOver   = si && Number(item.qty) > maxStok;
+                  const isOver   = false;
                   const nilaiOut = Number(item.qty) * harga;
 
                   return (
@@ -2218,8 +2230,8 @@ function KasirStockPage({ successModal, setSuccessModal }) {
                             ))}
                             className="w-full bg-slate-700 border border-slate-600 text-white text-sm
                               rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-orange-500/50">
-                            <option value="">-- Pilih bahan yang tersedia --</option>
-                            {summary.filter(s => Number(s.current_stock) > 0).map(s => (
+                            <option value="">-- Pilih bahan baku --</option>
+                            {summary.map(s => (
                               <option key={s.id} value={s.id}>
                                 {s.name} ({s.unit}) · Stok: {fmtQty(s.current_stock)}
                               </option>
@@ -2246,9 +2258,9 @@ function KasirStockPage({ successModal, setSuccessModal }) {
 
                         <div>
                           <label className="text-slate-500 text-xs mb-1 block">
-                            Jumlah {si ? `(max ${fmtQty(maxStok)} ${si.unit})` : ''}
+                            Jumlah yang diajukan {si ? `(${si.unit})` : ''}
                           </label>
-                          <input type="number" min="1" max={maxStok || undefined}
+                          <input type="number" min="1"
                             value={item.qty} placeholder="0"
                             onChange={e => setOutItems(p => p.map((x, j) =>
                               j === i ? { ...x, qty: e.target.value } : x
@@ -2300,7 +2312,7 @@ function KasirStockPage({ successModal, setSuccessModal }) {
                 {outItems.filter(it => it.stock_item_id && Number(it.qty) > 0).map((it, i) => {
                   const s    = summary.find(st => st.id == it.stock_item_id);
                   const h    = Number(s?.price_per_unit || 0);
-                  const over = s && Number(it.qty) > Number(s.current_stock);
+                  const over = false;
                   if (!s) return null;
                   return (
                     <div key={i} className="flex justify-between text-xs">
@@ -2313,7 +2325,7 @@ function KasirStockPage({ successModal, setSuccessModal }) {
                 })}
                 <div className="flex justify-between items-center pt-2 border-t border-slate-600/60">
                   <div>
-                    <p className="text-slate-300 text-sm font-semibold">Total Nilai Pengeluaran</p>
+                    <p className="text-slate-300 text-sm font-semibold">Total Nilai Pengajuan</p>
                     <p className="text-slate-600 text-xs mt-0.5">
                       {outItems.filter(i => i.stock_item_id && Number(i.qty) > 0).length} item
                     </p>
@@ -2322,8 +2334,7 @@ function KasirStockPage({ successModal, setSuccessModal }) {
                     Rp {outItems.reduce((s, it) => {
                       const si   = summary.find(st => st.id == it.stock_item_id);
                       const h    = Number(si?.price_per_unit || 0);
-                      const over = si && Number(it.qty) > Number(si.current_stock);
-                      if (over || !si) return s;
+                      if (!si) return s;
                       return s + (Number(it.qty) * h);
                     }, 0).toLocaleString('id-ID')}
                   </p>
@@ -2340,19 +2351,13 @@ function KasirStockPage({ successModal, setSuccessModal }) {
                 onClick={async () => {
                   const valid = outItems.every(i => i.stock_item_id && Number(i.qty) > 0);
                   if (!valid) return alert('Lengkapi semua item');
-                  const overStock = outItems.some(item => {
-                    const si = summary.find(s => s.id == item.stock_item_id);
-                    return si && Number(item.qty) > Number(si.current_stock);
-                  });
-                  if (overStock) return alert('Ada item yang melebihi stok gudang');
                   setOutLoading(true);
                   try {
-                    await addManualStockOut({
-                      user_id: user.id,
+                    await submitStockRequest({
+                      note: outItems.map(i => i.note).filter(Boolean).join('; '),
                       items: outItems.map(i => ({
                         stock_item_id: Number(i.stock_item_id),
                         qty:           Number(i.qty),
-                        note:          i.note || '',
                       })),
                     });
                     setShowOutForm(false);
@@ -2374,10 +2379,7 @@ function KasirStockPage({ successModal, setSuccessModal }) {
                     });
                   } finally { setOutLoading(false); }
                 }}
-                disabled={outLoading || outItems.some(item => {
-                  const si = summary.find(s => s.id == item.stock_item_id);
-                  return si && Number(item.qty) > Number(si.current_stock);
-                })}
+                disabled={outLoading}
                 className="flex-1 py-3 rounded-xl bg-red-500 hover:bg-red-400 text-white
                   text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                 {outLoading ? 'Menyimpan...' : '📤 Kirim Pengajuan'}
