@@ -3,13 +3,13 @@ import { useEffect, useState, useRef } from 'react';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { getProducts, getCategories, deleteProduct, getStockItems } from '@/lib/api';
 import api from '@/lib/axios';
+import { resolveAssetUrl } from '@/lib/assetUrl';
 // Di app/pos/page.js atau wherever kasir lihat produk
 import { getMyStockProducts } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import { getStockByKasir } from '@/lib/api';
 
 const emptyForm = { name: '', price: '', category_id: '', ingredients: [] };
-const API_BASE  = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5000';
 
 export default function ProductsPage() {
   const [products, setProducts]     = useState([]);
@@ -62,7 +62,7 @@ export default function ProductsPage() {
       ingredients: p.ingredients || [],
     });
     setEditing(p.id);
-    setPreview(p.image_url ? `${API_BASE}${p.image_url}` : null);
+    setPreview(p.image_url ? resolveAssetUrl(p.image_url) : null);
     setImageFile(null);
     setModal(true);
   };
@@ -180,7 +180,7 @@ export default function ProductsPage() {
               {/* Gambar */}
               <div className="w-full h-32 bg-slate-700 flex items-center justify-center overflow-hidden">
                 {p.image_url
-                  ? <img src={`${API_BASE}${p.image_url}`} alt={p.name}
+                  ? <img src={resolveAssetUrl(p.image_url)} alt={p.name}
                       className="w-full h-full object-cover"/>
                   : <span className="text-4xl">🌯</span>
                 }

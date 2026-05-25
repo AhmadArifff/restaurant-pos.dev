@@ -5,6 +5,7 @@ import {
   calculateMaxPortions,
   getAvailabilityBreakdown,
 } from '@/lib/ingredientCalculator';
+import { resolveAssetUrl } from '@/lib/assetUrl';
 
 export default function ProductCard({
   product,
@@ -98,7 +99,7 @@ export default function ProductCard({
       <div className="relative w-full h-28 bg-slate-700/60 overflow-hidden">
         {product.image_url ? (
           <img
-            src={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')}${product.image_url}`}
+            src={resolveAssetUrl(product.image_url)}
             alt={product.name}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
