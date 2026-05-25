@@ -127,6 +127,9 @@ Untuk production, sesuaikan value dengan URL backend production.
 NEXT_PUBLIC_API_URL=https://domain-backend-anda.com/api
 ```
 
+Untuk deployment Vercel, gunakan template `.env.vercel.example` lalu isi value di Vercel Project Settings.
+Jika backend memakai Supabase Storage dan mengembalikan URL image penuh `https://...`, frontend akan langsung memakai URL tersebut tanpa perlu konfigurasi tambahan.
+
 ## Cara Install dan Menjalankan
 
 Pastikan backend sudah berjalan lebih dulu di port yang sesuai `NEXT_PUBLIC_API_URL`.
