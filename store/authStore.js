@@ -17,7 +17,12 @@ export const useAuthStore = create(
         try {
           const token = get().token;
           if (token) {
-            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/logout`, {
+            const rawBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+            const baseUrl = rawBaseUrl.replace(/\/+$/, '').endsWith('/api')
+                ? rawBaseUrl.replace(/\/+$/, '')
+                : `${rawBaseUrl.replace(/\/+$/, '')}/api`;
+
+            await fetch(`${baseUrl}/auth/logout`, {
               method: 'POST',
               headers: { Authorization: `Bearer ${token}` },
             });
