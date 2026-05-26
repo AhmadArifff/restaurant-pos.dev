@@ -3,6 +3,7 @@ import "./globals.css";
 import ServiceWorkerRegister from "@/components/ui/ServiceWorkerRegister";
 import WebsiteThemeRuntime from "@/components/ui/WebsiteThemeRuntime";
 import SettingsProvider from "@/components/providers/SettingsProvider";
+import GlobalFeedbackDialog from "@/components/ui/GlobalFeedbackDialog";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -31,6 +32,7 @@ export default function RootLayout({ children }) {
         <SettingsProvider>
           <WebsiteThemeRuntime />
           {children}
+          <GlobalFeedbackDialog />
         </SettingsProvider>
         <ServiceWorkerRegister />
       </body>

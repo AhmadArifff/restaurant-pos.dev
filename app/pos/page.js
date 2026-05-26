@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import AuthGuard from '@/components/ui/AuthGuard';
 import {
   getCategories, createTransaction,
-  getMyStockProducts, getStockAllUsers,
+  getMyStockProducts, getStockAllUsers, getTodayStats,
 } from '@/lib/api';
 import { useCartStore } from '@/store/cartStore';
 import { useAuthStore } from '@/store/authStore';
@@ -14,6 +14,7 @@ import Receipt      from '@/components/pos/Receipt';
 import ProductCard  from '@/components/pos/ProductCard';
 import { useReactToPrint } from 'react-to-print';
 import AdminLayout  from '@/components/layout/AdminLayout';
+import SuccessModal from '@/components/stock/SuccessModal';
 
 // ── Skeleton ──────────────────────────────────────────────────
 function ProductSkeleton() {
@@ -69,12 +70,24 @@ export default function PosPage() {
   const [lastTransaction, setLastTransaction] = useState(null);
   const [loading,         setLoading]         = useState(true);
   const [showMobileCart,  setShowMobileCart]  = useState(false);
+  const [todayStats,      setTodayStats]      = useState({
+    total_trx: 0,
+    revenue: 0,
+    margin: 0,
+    margin_pct: 0,
+  });
+  const [feedbackModal,   setFeedbackModal]   = useState({
+    isOpen: false,
+    type: 'success',
+    title: '',
+    message: '',
+  });
 
   // Admin: sumber stok yang dipilih
   const [selectedSourceUser, setSelectedSourceUser] = useState(null);
 
   const { items, addItem, clearCart } = useCartStore();
-  const { user, logout }              = useAuthStore();
+  const { user, selectedBranchId }     = useAuthStore();
   const router                        = useRouter();
   const receiptRef                    = useRef();
 
@@ -82,17 +95,33 @@ export default function PosPage() {
   const itemCount = items.reduce((s, i) => s + i.qty, 0);
   const isAdmin   = user?.role === 'admin';
 
+  const showFeedback = useCallback((type, title, message) => {
+    setFeedbackModal({ isOpen: true, type, title, message });
+  }, []);
+
   // ── Load data ──────────────────────────────────────────────
   const loadData = useCallback(() => {
     setLoading(true);
     // 🔄 Using getStockAllUsers for admin - awaiting /stock-requests/approved-for-pos backend implementation
     const fetchProducts = isAdmin ? getStockAllUsers : getMyStockProducts;
 
-    Promise.all([fetchProducts(), getCategories()])
-      .then(([p, c]) => {
+    Promise.all([
+      fetchProducts(),
+      getCategories(),
+      getTodayStats().catch(() => ({ data: null })),
+    ])
+      .then(([p, c, stats]) => {
         const prods = p.data || [];
         setProducts(prods);
         setCategories(c.data || []);
+        if (stats?.data) {
+          setTodayStats({
+            total_trx: Number(stats.data.total_trx || 0),
+            revenue: Number(stats.data.revenue || 0),
+            margin: Number(stats.data.margin || 0),
+            margin_pct: Number(stats.data.margin_pct || 0),
+          });
+        }
 
         // Admin: pilih user pertama yang punya stok sebagai default
         if (isAdmin && !selectedSourceUser && prods.length > 0) {
@@ -110,7 +139,7 @@ export default function PosPage() {
         }
       })
       .finally(() => setLoading(false));
-  }, [isAdmin]);
+  }, [isAdmin, selectedBranchId]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -174,7 +203,11 @@ export default function PosPage() {
     }
 
     if (inCart && inCart.qty >= stock) {
-      alert(`Stok tidak cukup. Maksimal ${stock} porsi.`);
+      showFeedback(
+        'warning',
+        'Stok Tidak Cukup',
+        `Maksimal pesanan untuk menu ini adalah ${stock} porsi dari stok cabang aktif.`
+      );
       return;
     }
 
@@ -233,11 +266,29 @@ export default function PosPage() {
       clearCart();
       setShowPayment(false);
       setShowMobileCart(false);
+      showFeedback(
+        'success',
+        'Transaksi Berhasil',
+        `Pendapatan cabang hari ini bertambah Rp ${Number(total || 0).toLocaleString('id-ID')}. Struk sedang disiapkan.`
+      );
       setTimeout(() => handlePrint(), 400);
       loadData();
     } catch (err) {
-      alert(err.response?.data?.message || 'Transaksi gagal');
+      showFeedback(
+        'error',
+        'Transaksi Gagal',
+        err.response?.data?.message || 'Transaksi belum bisa diproses. Silakan cek stok dan koneksi lalu coba lagi.'
+      );
     }
+  };
+
+  const handleCancelPayment = () => {
+    setShowPayment(false);
+    showFeedback(
+      'warning',
+      'Pembayaran Dibatalkan',
+      'Keranjang masih tersimpan. Anda bisa melanjutkan pembayaran kapan saja.'
+    );
   };
 
   // ── Filter produk ──────────────────────────────────────────
@@ -337,18 +388,24 @@ export default function PosPage() {
                 </div>
               </div>
 
-              <button onClick={logout}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium
-                  text-slate-400 hover:text-red-400 hover:bg-red-400/10
-                  border border-transparent hover:border-red-400/20 transition-all shrink-0">
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                  <polyline points="16 17 21 12 16 7"/>
-                  <line x1="21" y1="12" x2="9" y2="12"/>
-                </svg>
-                <span className="hidden sm:inline">Keluar</span>
-              </button>
+              {/* Pendapatan cabang aktif */}
+              <div className="shrink-0 rounded-2xl border border-emerald-400/20
+                bg-emerald-400/10 px-3 py-2 shadow-lg shadow-emerald-950/20">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-300 shadow-[0_0_12px_rgba(110,231,183,0.8)]" />
+                  <span className="text-[10px] uppercase tracking-[0.18em] text-emerald-200/70">
+                    Pendapatan
+                  </span>
+                </div>
+                <div className="mt-0.5 flex items-end gap-2">
+                  <span className="text-sm sm:text-base font-black text-white leading-none">
+                    Rp {Number(todayStats.revenue || 0).toLocaleString('id-ID')}
+                  </span>
+                  <span className="hidden md:inline text-[10px] text-emerald-200/60 leading-none">
+                    {todayStats.total_trx} transaksi
+                  </span>
+                </div>
+              </div>
 
               {/* Mobile cart */}
               <button onClick={() => setShowMobileCart(true)}
@@ -544,8 +601,16 @@ export default function PosPage() {
 
           {showPayment && (
             <PaymentModal total={total} itemCount={itemCount}
-              onPay={handlePayment} onClose={() => setShowPayment(false)} />
+              onPay={handlePayment} onClose={handleCancelPayment} />
           )}
+
+          <SuccessModal
+            isOpen={feedbackModal.isOpen}
+            requestType={feedbackModal.type}
+            title={feedbackModal.title}
+            message={feedbackModal.message}
+            onClose={() => setFeedbackModal(prev => ({ ...prev, isOpen: false }))}
+          />
 
           <div className="hidden">
             <Receipt ref={receiptRef} transaction={lastTransaction} />
