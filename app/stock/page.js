@@ -9,7 +9,7 @@ import {
   addStockPurchase, getAllStockRequests, getMyStockRequests,
   submitStockRequest, deleteStockRequest, approveStockRequest,
   updateStockPurchase, deleteStockPurchase, addManualStockOut,
-  getUsers,resubmitStockRequest
+  getUsers,resubmitStockRequest,getBranches
 } from '@/lib/api';
 // Di AdminStockPage — tambah useEffect untuk baca query params dari POS
 import { useSearchParams } from 'next/navigation';
@@ -37,6 +37,15 @@ function getRequestedQtyFromIngredient(ingredient) {
   );
 
   return qty > 0 ? qty : 1;
+}
+
+function getPriceTrend(currentPrice, referencePrice) {
+  const current = Number(currentPrice || 0);
+  const reference = Number(referencePrice || 0);
+  if (!current || !reference) return null;
+  if (current > reference) return { label: 'Naik', cls: 'text-red-400', icon: '↑' };
+  if (current < reference) return { label: 'Turun', cls: 'text-green-400', icon: '↓' };
+  return { label: 'Stabil', cls: 'text-slate-400', icon: '•' };
 }
 // ── Shared UI ─────────────────────────────────────────────────
 function TabBtn({ active, onClick, children }) {
@@ -127,6 +136,8 @@ function AdminStockPage({ successModal, setSuccessModal }) {
   const [editPurchase,  setEditPurchase]  = useState(null); // { id, item }
   const [reqDateFrom,   setReqDateFrom]   = useState('');
   const [reqDateTo,     setReqDateTo]     = useState('');
+  const [branches,      setBranches]      = useState([]);
+  const [stockBranchId, setStockBranchId] = useState('all');
   // Filter: hanya bahan yang punya stok dari main_stock (bukan stock_items.stock)
   // Gunakan summary yang sudah di-load
   const availableForOut = summary.filter(s => Number(s.current_stock) > 0);
@@ -135,6 +146,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
 
   // Tambah state di AdminStockPage (setelah state daily)
   const [outTypeFilter, setOutTypeFilter] = useState('all');
+  const branchFilterParam = stockBranchId === 'all' ? 'all' : stockBranchId;
 
   // // Update loadDaily — tambah type_filter
   // const loadDaily = useCallback(() =>
@@ -151,13 +163,14 @@ function AdminStockPage({ successModal, setSuccessModal }) {
       date_from:   selDate,
       date_to:     selDateTo || selDate,
       type_filter: outTypeFilter !== 'all' ? outTypeFilter : undefined,
+      branch_id:   branchFilterParam,
     }).then(r => setDaily(Array.isArray(r.data) ? r.data : [])),
-    [selDate, selDateTo, outTypeFilter]);
+    [selDate, selDateTo, outTypeFilter, branchFilterParam]);
 
   // Tambah useEffect reload saat filter berubah
   useEffect(() => {
     if (tab === 'main' && mainTab === 'out') loadDaily();
-  }, [outTypeFilter]);
+  }, [outTypeFilter, stockBranchId]);
 
   // Definisi filter — sama untuk admin & kasir
   const OUT_FILTERS = [
@@ -214,6 +227,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
       ...item,
       display_stock: currentStock,
       display_price_per: costPerUnit,
+      display_latest_price: Number(sum?.latest_cost_per_unit || 0),
       stock_from_main: !!sum, // Track if this came from main_stock (reliable) or is pending
     };
   });
@@ -246,6 +260,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
   // Load users saat component mount
   useEffect(() => {
     getUsers().then(r => setUsers(r.data)).catch(() => {});
+    getBranches().then(r => setBranches(Array.isArray(r.data) ? r.data : [])).catch(() => setBranches([]));
   }, []);
   // Ganti reqDate dengan range
   const [reqDateFrom2,  setReqDateFrom2]  = useState(new Date().toISOString().split('T')[0]);
@@ -273,22 +288,22 @@ function AdminStockPage({ successModal, setSuccessModal }) {
   // const loadSummary  = useCallback(() => getMainStockSummary().then(r => setSummary(r.data)), []);
   // Di KasirStockPage — loadSummary sudah ada catch, pastikan seperti ini:
   const loadSummary = useCallback(() =>
-    getMainStockSummary()
+    getMainStockSummary({ branch_id: branchFilterParam })
       .then(r => setSummary(Array.isArray(r.data) ? r.data : []))
       .catch(err => {
         console.error('Summary error:', err.response?.status, err.response?.data);
         setSummary([]);
-      }), []);
+      }), [branchFilterParam]);
   const loadMonthly  = useCallback(() =>
-    getMainStockMonthly({ month: selMonth, year: selYear }).then(r => setMonthly(r.data)),
-    [selMonth, selYear]);
+    getMainStockMonthly({ month: selMonth, year: selYear, branch_id: branchFilterParam }).then(r => setMonthly(r.data)),
+    [selMonth, selYear, branchFilterParam]);
   // const loadDaily    = useCallback(() =>
   //   getMainStockDaily({ date: selDate }).then(r => setDaily(r.data)), [selDate]);
   // const loadRequests = useCallback(() =>
   //   getAllStockRequests({ date: reqDate || undefined, status: reqStatus || undefined })
   //     .then(r => setRequests(r.data)), [reqDate, reqStatus]);
 
-  useEffect(() => { loadMaster(); loadSummary(); }, []);
+  useEffect(() => { loadMaster(); loadSummary(); }, [loadMaster, loadSummary]);
   // useEffect(() => { if (tab==='main') { loadMonthly(); loadDaily(); } }, [tab, selMonth, selYear, selDate]);
   const [filterItemId, setFilterItemId] = useState(null); // null = semua
   // Ganti useEffect ini
@@ -308,14 +323,14 @@ function AdminStockPage({ successModal, setSuccessModal }) {
       loadSummary().then(() => loadDaily());
       setFilterItemId(null);
     }
-  }, [tab, selMonth, selYear, selDate]);
+  }, [tab, selMonth, selYear, selDate, stockBranchId, loadMonthly, loadSummary, loadDaily]);
 
   // FIX: tambah useEffect untuk outTypeFilter di admin
   useEffect(() => {
     if (tab === 'main' && mainTab === 'out') {
       loadDaily();
     }
-  }, [outTypeFilter, mainTab]);
+  }, [outTypeFilter, mainTab, stockBranchId, loadDaily]);
   useEffect(() => { if (tab==='requests') loadRequests(); }, [tab, reqDate, reqStatus]);
 
   const resetForm = () => { setShowForm(false); setEditId(null); setFormData({ name:'', unit:'Pcs', min_stock:'' }); };
@@ -333,6 +348,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
   };
 
   const handlePurchase = async () => {
+    if (stockBranchId === 'all') return alert('Pilih cabang terlebih dahulu sebelum mencatat pembelian stok');
     const valid = purchItems.every(i => i.stock_item_id && Number(i.qty)>0 && Number(i.cost_per_unit)>0);
     if (!valid) return alert('Lengkapi semua item (bahan, jumlah, harga/satuan)');
     setPurchLoading(true);
@@ -344,6 +360,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
           cost_per_unit: Number(i.cost_per_unit),
         })),
         note: purchNote,
+        branch_id: Number(stockBranchId),
       });
       setShowPurchase(false);
       setPurchItems([{ stock_item_id:'', qty:'', cost_per_unit:'' }]);
@@ -372,6 +389,9 @@ function AdminStockPage({ successModal, setSuccessModal }) {
   const inData   = monthly.filter(r => r.type==='in');
   // const outData  = daily.length > 0 ? daily : monthly.filter(r => r.type==='out');
   const outData = daily;
+  const selectedBranchName = stockBranchId === 'all'
+    ? 'Semua Cabang'
+    : branches.find(b => Number(b.id) === Number(stockBranchId))?.name || 'Cabang dipilih';
 
   return (
     <>
@@ -433,7 +453,26 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                           </td>
                           <td className={`${tdC} text-slate-300`}>
                             {item.display_price_per > 0
-                              ? `Rp ${item.display_price_per.toLocaleString('id-ID')}`
+                              ? (() => {
+                                const latest = Number(item.display_latest_price || 0);
+                                const trend = getPriceTrend(latest, item.display_price_per);
+                                return (
+                                  <div className="space-y-1">
+                                    <p className="font-semibold">Avg Rp {item.display_price_per.toLocaleString('id-ID')}</p>
+                                    {latest > 0 && (
+                                      <p className="text-xs">
+                                        <span className="text-slate-500">Terakhir </span>
+                                        <span className="text-slate-300">Rp {latest.toLocaleString('id-ID')}</span>
+                                        {trend && (
+                                          <span className={`ml-1 font-semibold ${trend.cls}`}>
+                                            {trend.icon} {trend.label}
+                                          </span>
+                                        )}
+                                      </p>
+                                    )}
+                                  </div>
+                                );
+                              })()
                               : <span className="text-slate-600 text-xs">Belum ada pembelian</span>
                             }
                           </td>
@@ -487,9 +526,25 @@ function AdminStockPage({ successModal, setSuccessModal }) {
             <SubTab active={mainTab==='summary'} onClick={() => setMainTab('summary')}>📊 Saldo Stok</SubTab>
             <SubTab active={mainTab==='in'}      onClick={() => setMainTab('in')}>📥 Pemasukan</SubTab>
             <SubTab active={mainTab==='out'}     onClick={() => setMainTab('out')}>📤 Pengeluaran</SubTab>
+            <select
+              value={stockBranchId}
+              onChange={e => {
+                setStockBranchId(e.target.value);
+                setFilterItemId(null);
+              }}
+              className="ml-auto bg-slate-700 border border-slate-600 text-white text-xs rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-orange-500/50">
+              <option value="all">Semua Cabang</option>
+              {branches.map(branch => (
+                <option key={branch.id} value={branch.id}>{branch.name}</option>
+              ))}
+            </select>
             {mainTab === 'in' && (
-              <button onClick={() => setShowPurchase(true)}
-                className="ml-auto px-4 py-2 rounded-xl text-xs font-semibold
+              <button
+                onClick={() => {
+                  if (stockBranchId === 'all') return alert('Pilih cabang terlebih dahulu sebelum mencatat pembelian');
+                  setShowPurchase(true);
+                }}
+                className="px-4 py-2 rounded-xl text-xs font-semibold
                   bg-blue-500/20 text-blue-400 border border-blue-500/30 hover:bg-blue-500/30 transition-all">
                 + Catat Pembelian
               </button>
@@ -515,7 +570,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
               <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-3 flex gap-2.5">
                 <span className="text-blue-400 shrink-0">ℹ</span>
                 <p className="text-slate-500 text-xs leading-relaxed">
-                  Data saldo dihitung otomatis dari semua pemasukan dan pengeluaran (via pengajuan kasir yang disetujui).
+                  Cabang: <span className="text-slate-300 font-semibold">{selectedBranchName}</span>. Data saldo dihitung otomatis dari semua pemasukan dan pengeluaran (via pengajuan kasir yang disetujui).
                   Tidak ada input manual di halaman ini.
                 </p>
               </div>
@@ -711,7 +766,11 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                     🔍 Cari
                   </button>
                 </div>
-                <button onClick={() => setShowOutForm(true)}
+                <button
+                  onClick={() => {
+                    if (stockBranchId === 'all') return alert('Pilih cabang terlebih dahulu sebelum mencatat pengeluaran');
+                    setShowOutForm(true);
+                  }}
                   className="px-4 py-2 rounded-xl text-xs font-semibold
                     bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 transition-all">
                   + Catat Pengeluaran
@@ -737,7 +796,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
               <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-3 flex gap-2.5">
                 <span className="text-yellow-400 shrink-0">ℹ</span>
                 <p className="text-slate-500 text-xs">
-                  Termasuk pengeluaran otomatis dari transaksi POS dan pengajuan manual kasir.
+                  Cabang: <span className="text-slate-300 font-semibold">{selectedBranchName}</span>. Termasuk pengeluaran otomatis dari transaksi POS dan pengajuan manual kasir.
                 </p>
               </div>
 
@@ -1462,6 +1521,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
               </button>
               <button
                 onClick={async () => {
+                  if (stockBranchId === 'all') return alert('Pilih cabang terlebih dahulu sebelum mencatat pengeluaran');
                   if (!outUserId) return alert('Pilih kasir terlebih dahulu');
                   const valid = outItems.every(i => i.stock_item_id && Number(i.qty) > 0);
                   if (!valid) return alert('Lengkapi semua item (pilih bahan dan isi jumlah)');
@@ -1474,6 +1534,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                   try {
                     await addManualStockOut({
                       user_id: Number(outUserId),
+                      branch_id: Number(stockBranchId),
                       items: outItems.map(i => ({
                         stock_item_id: Number(i.stock_item_id),
                         qty:           Number(i.qty),
