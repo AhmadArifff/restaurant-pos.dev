@@ -55,7 +55,6 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
-  const [successDialogOpen, setSuccessDialogOpen] = useState(false);
   const [logoFile, setLogoFile] = useState(null);
   const [faviconFile, setFaviconFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState(null);
@@ -147,6 +146,13 @@ export default function SettingsPage() {
     try {
       if (!validateAllFields()) {
         setError('Silakan perbaiki kesalahan di form sebelum menyimpan');
+        window.dispatchEvent(new CustomEvent('app:feedback', {
+          detail: {
+            type: 'warning',
+            title: 'Form Belum Lengkap',
+            message: 'Silakan perbaiki kesalahan di form sebelum menyimpan.',
+          },
+        }));
         setTimeout(() => setError(null), 4000);
         return;
       }
@@ -193,7 +199,6 @@ export default function SettingsPage() {
       await bulkUpdateWebsiteSettings(payload);
       await loadSettings();
       setSuccess('Pengaturan berhasil disimpan. Tema warna diterapkan ke landing page, login, dan admin panel.');
-      setSuccessDialogOpen(true);
       setTimeout(() => setSuccess(null), 5000);
     } catch (err) {
       setError(buildErrorMessage(err, 'Gagal menyimpan pengaturan'));
@@ -378,32 +383,6 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Success Dialog Modal */}
-        {successDialogOpen && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full border border-slate-700 animate-in fade-in duration-300">
-              <div className="p-6 text-center">
-                <div className="mb-4 flex justify-center">
-                  <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center">
-                    <svg className="w-8 h-8 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                </div>
-                <h3 className="text-white text-lg font-bold mb-2">Pengaturan Berhasil Disimpan!</h3>
-                <p className="text-slate-400 text-sm mb-6">
-                  Semua 10 tema warna telah diterapkan ke landing page, halaman login, dan panel admin.
-                </p>
-                <button
-                  onClick={() => setSuccessDialogOpen(false)}
-                  className="w-full px-4 py-2.5 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg transition-all"
-                >
-                  Tutup
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
         {/* Favicon Debugger */}
         <FaviconDebugger />      </div>
     </AdminLayout>
