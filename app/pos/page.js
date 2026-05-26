@@ -96,8 +96,9 @@ export default function PosPage() {
 
         // Admin: pilih user pertama yang punya stok sebagai default
         if (isAdmin && !selectedSourceUser && prods.length > 0) {
-          const firstProduct = prods[0];
-          const firstUser = firstProduct.stock_by_user?.[0];
+          const firstUser = prods
+            .flatMap(product => product.stock_by_user || [])
+            .find(stockUser => Number(stockUser.can_make || 0) > 0);
           if (firstUser) {
             setSelectedSourceUser({
               user_id: firstUser.user_id,
