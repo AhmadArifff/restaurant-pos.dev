@@ -5,11 +5,11 @@ import { useAuthStore } from '@/store/authStore';
 import SuccessModal from '@/components/stock/SuccessModal';
 import {
   getStockItems, createStockItem, updateStockItem, deleteStockItem,
-  getMainStockSummary, getMainStockMonthly, getMainStockDaily,
+  getMainStockSummary, getMainStockMonthly, getMainStockDaily, getMainStockPriceTrends,
   addStockPurchase, getAllStockRequests, getMyStockRequests,
   submitStockRequest, deleteStockRequest, approveStockRequest,
   updateStockPurchase, deleteStockPurchase, addManualStockOut,
-  getUsers,resubmitStockRequest,getBranches
+  getUsers,resubmitStockRequest
 } from '@/lib/api';
 // Di AdminStockPage — tambah useEffect untuk baca query params dari POS
 import { useSearchParams } from 'next/navigation';
@@ -46,6 +46,13 @@ function getPriceTrend(currentPrice, referencePrice) {
   if (current > reference) return { label: 'Naik', cls: 'text-red-400', icon: '↑' };
   if (current < reference) return { label: 'Turun', cls: 'text-green-400', icon: '↓' };
   return { label: 'Stabil', cls: 'text-slate-400', icon: '•' };
+}
+
+function getPercentTrend(percent) {
+  const value = Number(percent || 0);
+  if (value > 0) return { label: `Naik ${value.toFixed(2)}%`, cls: 'text-red-400', bg: 'bg-red-500/10 border-red-500/20', icon: '↑' };
+  if (value < 0) return { label: `Turun ${Math.abs(value).toFixed(2)}%`, cls: 'text-green-400', bg: 'bg-green-500/10 border-green-500/20', icon: '↓' };
+  return { label: 'Stabil 0.00%', cls: 'text-slate-400', bg: 'bg-slate-700/40 border-slate-600/40', icon: '•' };
 }
 // ── Shared UI ─────────────────────────────────────────────────
 function TabBtn({ active, onClick, children }) {
@@ -98,6 +105,7 @@ function EmptyState({ icon = '📋', title, sub }) {
 
 // ── ADMIN VIEW ────────────────────────────────────────────────
 function AdminStockPage({ successModal, setSuccessModal }) {
+  const { selectedBranchId, user } = useAuthStore();
   const [tab,     setTab]     = useState('master');
   const [mainTab, setMainTab] = useState('summary');
 
@@ -110,6 +118,9 @@ function AdminStockPage({ successModal, setSuccessModal }) {
 
   // Gudang
   const [summary,  setSummary]  = useState([]);
+  const [globalSummary, setGlobalSummary] = useState([]);
+  const [priceTrends, setPriceTrends] = useState([]);
+  const [trendYear, setTrendYear] = useState(new Date().getFullYear());
   const [monthly,  setMonthly]  = useState([]);
   const [daily,    setDaily]    = useState([]);
   const [selMonth, setSelMonth] = useState(new Date().getMonth() + 1);
@@ -136,8 +147,6 @@ function AdminStockPage({ successModal, setSuccessModal }) {
   const [editPurchase,  setEditPurchase]  = useState(null); // { id, item }
   const [reqDateFrom,   setReqDateFrom]   = useState('');
   const [reqDateTo,     setReqDateTo]     = useState('');
-  const [branches,      setBranches]      = useState([]);
-  const [stockBranchId, setStockBranchId] = useState('all');
   // Filter: hanya bahan yang punya stok dari main_stock (bukan stock_items.stock)
   // Gunakan summary yang sudah di-load
   const availableForOut = summary.filter(s => Number(s.current_stock) > 0);
@@ -146,7 +155,6 @@ function AdminStockPage({ successModal, setSuccessModal }) {
 
   // Tambah state di AdminStockPage (setelah state daily)
   const [outTypeFilter, setOutTypeFilter] = useState('all');
-  const branchFilterParam = stockBranchId === 'all' ? 'all' : stockBranchId;
 
   // // Update loadDaily — tambah type_filter
   // const loadDaily = useCallback(() =>
@@ -163,14 +171,13 @@ function AdminStockPage({ successModal, setSuccessModal }) {
       date_from:   selDate,
       date_to:     selDateTo || selDate,
       type_filter: outTypeFilter !== 'all' ? outTypeFilter : undefined,
-      branch_id:   branchFilterParam,
     }).then(r => setDaily(Array.isArray(r.data) ? r.data : [])),
-    [selDate, selDateTo, outTypeFilter, branchFilterParam]);
+    [selDate, selDateTo, outTypeFilter, selectedBranchId]);
 
   // Tambah useEffect reload saat filter berubah
   useEffect(() => {
     if (tab === 'main' && mainTab === 'out') loadDaily();
-  }, [outTypeFilter, stockBranchId]);
+  }, [outTypeFilter, selectedBranchId]);
 
   // Definisi filter — sama untuk admin & kasir
   const OUT_FILTERS = [
@@ -212,6 +219,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
   // ✓ Fallback: If summary unavailable, show "Loading..." instead of stale stock_items.stock
   const stockItemsWithSummary = stockItems.map(item => {
     const sum = summary.find(s => s.id === item.id);
+    const global = globalSummary.find(s => s.id === item.id);
     
     // If summary exists (API returned calculated balance from main_stock), use it
     // Otherwise, mark as pending/loading (do NOT fallback to item.stock which may be out of sync)
@@ -219,15 +227,15 @@ function AdminStockPage({ successModal, setSuccessModal }) {
       ? Number(sum.current_stock)
       : null; // null indicates we're waiting for the calculated value
 
-    const costPerUnit = sum && Number(sum.total_in) > 0
-      ? Math.round(Number(sum.total_cost_in) / Number(sum.total_in))
+    const costPerUnit = global && Number(global.total_in) > 0
+      ? Math.round(Number(global.total_cost_in) / Number(global.total_in))
       : Number(item.price_per_unit || 0);
 
     return {
       ...item,
       display_stock: currentStock,
       display_price_per: costPerUnit,
-      display_latest_price: Number(sum?.latest_cost_per_unit || 0),
+      display_latest_price: Number(global?.latest_cost_per_unit || 0),
       stock_from_main: !!sum, // Track if this came from main_stock (reliable) or is pending
     };
   });
@@ -260,7 +268,6 @@ function AdminStockPage({ successModal, setSuccessModal }) {
   // Load users saat component mount
   useEffect(() => {
     getUsers().then(r => setUsers(r.data)).catch(() => {});
-    getBranches().then(r => setBranches(Array.isArray(r.data) ? r.data : [])).catch(() => setBranches([]));
   }, []);
   // Ganti reqDate dengan range
   const [reqDateFrom2,  setReqDateFrom2]  = useState(new Date().toISOString().split('T')[0]);
@@ -288,22 +295,30 @@ function AdminStockPage({ successModal, setSuccessModal }) {
   // const loadSummary  = useCallback(() => getMainStockSummary().then(r => setSummary(r.data)), []);
   // Di KasirStockPage — loadSummary sudah ada catch, pastikan seperti ini:
   const loadSummary = useCallback(() =>
-    getMainStockSummary({ branch_id: branchFilterParam })
+    getMainStockSummary()
       .then(r => setSummary(Array.isArray(r.data) ? r.data : []))
       .catch(err => {
         console.error('Summary error:', err.response?.status, err.response?.data);
         setSummary([]);
-      }), [branchFilterParam]);
+      }), [selectedBranchId]);
+  const loadGlobalSummary = useCallback(() =>
+    getMainStockSummary({ branch_id: 'all' })
+      .then(r => setGlobalSummary(Array.isArray(r.data) ? r.data : []))
+      .catch(() => setGlobalSummary([])), []);
+  const loadPriceTrends = useCallback(() =>
+    getMainStockPriceTrends({ year: trendYear })
+      .then(r => setPriceTrends(Array.isArray(r.data) ? r.data : []))
+      .catch(() => setPriceTrends([])), [trendYear]);
   const loadMonthly  = useCallback(() =>
-    getMainStockMonthly({ month: selMonth, year: selYear, branch_id: branchFilterParam }).then(r => setMonthly(r.data)),
-    [selMonth, selYear, branchFilterParam]);
+    getMainStockMonthly({ month: selMonth, year: selYear }).then(r => setMonthly(r.data)),
+    [selMonth, selYear, selectedBranchId]);
   // const loadDaily    = useCallback(() =>
   //   getMainStockDaily({ date: selDate }).then(r => setDaily(r.data)), [selDate]);
   // const loadRequests = useCallback(() =>
   //   getAllStockRequests({ date: reqDate || undefined, status: reqStatus || undefined })
   //     .then(r => setRequests(r.data)), [reqDate, reqStatus]);
 
-  useEffect(() => { loadMaster(); loadSummary(); }, [loadMaster, loadSummary]);
+  useEffect(() => { loadMaster(); loadSummary(); loadGlobalSummary(); loadPriceTrends(); }, [loadMaster, loadSummary, loadGlobalSummary, loadPriceTrends]);
   // useEffect(() => { if (tab==='main') { loadMonthly(); loadDaily(); } }, [tab, selMonth, selYear, selDate]);
   const [filterItemId, setFilterItemId] = useState(null); // null = semua
   // Ganti useEffect ini
@@ -323,14 +338,14 @@ function AdminStockPage({ successModal, setSuccessModal }) {
       loadSummary().then(() => loadDaily());
       setFilterItemId(null);
     }
-  }, [tab, selMonth, selYear, selDate, stockBranchId, loadMonthly, loadSummary, loadDaily]);
+  }, [tab, selMonth, selYear, selDate, selectedBranchId, loadMonthly, loadSummary, loadDaily]);
 
   // FIX: tambah useEffect untuk outTypeFilter di admin
   useEffect(() => {
     if (tab === 'main' && mainTab === 'out') {
       loadDaily();
     }
-  }, [outTypeFilter, mainTab, stockBranchId, loadDaily]);
+  }, [outTypeFilter, mainTab, selectedBranchId, loadDaily]);
   useEffect(() => { if (tab==='requests') loadRequests(); }, [tab, reqDate, reqStatus]);
 
   const resetForm = () => { setShowForm(false); setEditId(null); setFormData({ name:'', unit:'Pcs', min_stock:'' }); };
@@ -348,7 +363,6 @@ function AdminStockPage({ successModal, setSuccessModal }) {
   };
 
   const handlePurchase = async () => {
-    if (stockBranchId === 'all') return alert('Pilih cabang terlebih dahulu sebelum mencatat pembelian stok');
     const valid = purchItems.every(i => i.stock_item_id && Number(i.qty)>0 && Number(i.cost_per_unit)>0);
     if (!valid) return alert('Lengkapi semua item (bahan, jumlah, harga/satuan)');
     setPurchLoading(true);
@@ -360,7 +374,6 @@ function AdminStockPage({ successModal, setSuccessModal }) {
           cost_per_unit: Number(i.cost_per_unit),
         })),
         note: purchNote,
-        branch_id: Number(stockBranchId),
       });
       setShowPurchase(false);
       setPurchItems([{ stock_item_id:'', qty:'', cost_per_unit:'' }]);
@@ -389,9 +402,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
   const inData   = monthly.filter(r => r.type==='in');
   // const outData  = daily.length > 0 ? daily : monthly.filter(r => r.type==='out');
   const outData = daily;
-  const selectedBranchName = stockBranchId === 'all'
-    ? 'Semua Cabang'
-    : branches.find(b => Number(b.id) === Number(stockBranchId))?.name || 'Cabang dipilih';
+  const selectedBranchName = user?.branch_name || (selectedBranchId ? `Cabang #${selectedBranchId}` : 'Cabang aktif');
 
   return (
     <>
@@ -404,17 +415,63 @@ function AdminStockPage({ successModal, setSuccessModal }) {
       {/* ── BAHAN BAKU ── */}
       {tab==='master' && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-slate-300 text-sm font-semibold">{stockItems.length} bahan baku</p>
               <p className="text-slate-600 text-xs mt-0.5">Stok & harga dikelola di Stok Gudang → Catat Pembelian</p>
             </div>
-            <button onClick={() => setShowForm(true)}
-              className="bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold
-                px-4 py-2 rounded-xl transition-all shadow-lg shadow-orange-500/25">
-              + Tambah Bahan
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <select
+                value={trendYear}
+                onChange={e => setTrendYear(Number(e.target.value))}
+                className="bg-slate-700 border border-slate-600 text-white text-xs rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-orange-500/50">
+                {[2024, 2025, 2026, 2027].map(year => <option key={year} value={year}>{year}</option>)}
+              </select>
+              <button onClick={() => setShowForm(true)}
+                className="bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold
+                  px-4 py-2 rounded-xl transition-all shadow-lg shadow-orange-500/25">
+                + Tambah Bahan
+              </button>
+            </div>
           </div>
+
+          {priceTrends.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+              {priceTrends.map((trend) => {
+                const yearTrend = getPercentTrend(trend.year_change_percent);
+                const allTrend = getPercentTrend(trend.all_change_percent);
+                return (
+                  <div key={trend.id} className="bg-slate-800/80 border border-slate-700/60 rounded-2xl p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-white text-sm font-bold">{trend.name}</p>
+                        <p className="text-slate-500 text-xs">{trend.unit}</p>
+                      </div>
+                      <span className="text-[10px] px-2 py-1 rounded-full bg-slate-700/70 text-slate-300">
+                        {trend.all_purchase_count} pembelian
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 mt-3">
+                      <div className={`rounded-xl border p-3 ${yearTrend.bg}`}>
+                        <p className="text-slate-500 text-[11px]">{trendYear}</p>
+                        <p className={`text-sm font-black ${yearTrend.cls}`}>{yearTrend.icon} {yearTrend.label}</p>
+                        <p className="text-slate-500 text-[11px] mt-1">
+                          Rp {Number(trend.year_first_price || 0).toLocaleString('id-ID')} → Rp {Number(trend.year_last_price || 0).toLocaleString('id-ID')}
+                        </p>
+                      </div>
+                      <div className={`rounded-xl border p-3 ${allTrend.bg}`}>
+                        <p className="text-slate-500 text-[11px]">All</p>
+                        <p className={`text-sm font-black ${allTrend.cls}`}>{allTrend.icon} {allTrend.label}</p>
+                        <p className="text-slate-500 text-[11px] mt-1">
+                          Rp {Number(trend.all_first_price || 0).toLocaleString('id-ID')} → Rp {Number(trend.all_last_price || 0).toLocaleString('id-ID')}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {stockItems.length === 0
             ? <div className="bg-slate-800/60 rounded-2xl border border-slate-700/40 py-12">
@@ -526,25 +583,10 @@ function AdminStockPage({ successModal, setSuccessModal }) {
             <SubTab active={mainTab==='summary'} onClick={() => setMainTab('summary')}>📊 Saldo Stok</SubTab>
             <SubTab active={mainTab==='in'}      onClick={() => setMainTab('in')}>📥 Pemasukan</SubTab>
             <SubTab active={mainTab==='out'}     onClick={() => setMainTab('out')}>📤 Pengeluaran</SubTab>
-            <select
-              value={stockBranchId}
-              onChange={e => {
-                setStockBranchId(e.target.value);
-                setFilterItemId(null);
-              }}
-              className="ml-auto bg-slate-700 border border-slate-600 text-white text-xs rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-orange-500/50">
-              <option value="all">Semua Cabang</option>
-              {branches.map(branch => (
-                <option key={branch.id} value={branch.id}>{branch.name}</option>
-              ))}
-            </select>
             {mainTab === 'in' && (
               <button
-                onClick={() => {
-                  if (stockBranchId === 'all') return alert('Pilih cabang terlebih dahulu sebelum mencatat pembelian');
-                  setShowPurchase(true);
-                }}
-                className="px-4 py-2 rounded-xl text-xs font-semibold
+                onClick={() => setShowPurchase(true)}
+                className="ml-auto px-4 py-2 rounded-xl text-xs font-semibold
                   bg-blue-500/20 text-blue-400 border border-blue-500/30 hover:bg-blue-500/30 transition-all">
                 + Catat Pembelian
               </button>
@@ -766,11 +808,8 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                     🔍 Cari
                   </button>
                 </div>
-                <button
-                  onClick={() => {
-                    if (stockBranchId === 'all') return alert('Pilih cabang terlebih dahulu sebelum mencatat pengeluaran');
-                    setShowOutForm(true);
-                  }}
+              <button
+                  onClick={() => setShowOutForm(true)}
                   className="px-4 py-2 rounded-xl text-xs font-semibold
                     bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 transition-all">
                   + Catat Pengeluaran
@@ -1521,7 +1560,6 @@ function AdminStockPage({ successModal, setSuccessModal }) {
               </button>
               <button
                 onClick={async () => {
-                  if (stockBranchId === 'all') return alert('Pilih cabang terlebih dahulu sebelum mencatat pengeluaran');
                   if (!outUserId) return alert('Pilih kasir terlebih dahulu');
                   const valid = outItems.every(i => i.stock_item_id && Number(i.qty) > 0);
                   if (!valid) return alert('Lengkapi semua item (pilih bahan dan isi jumlah)');
@@ -1534,7 +1572,6 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                   try {
                     await addManualStockOut({
                       user_id: Number(outUserId),
-                      branch_id: Number(stockBranchId),
                       items: outItems.map(i => ({
                         stock_item_id: Number(i.stock_item_id),
                         qty:           Number(i.qty),
