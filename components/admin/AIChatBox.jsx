@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getAIChatModels, sendAIQuery } from '@/lib/api';
 import { useAIChatStore } from '@/store/aiChatStore';
 import ElectricBorder from '@/components/ui/ElectricBorder';
+import AgentPlan from '@/components/ui/agent-plan';
 
 const MAX_MESSAGE_LENGTH = 500;
 
@@ -75,6 +76,122 @@ function renderMarkdown(text) {
   return html;
 }
 
+function inferPromptTopic(prompt) {
+  const text = String(prompt || '').toLowerCase();
+  if (/(revenue|omzet|penjualan|transaksi|profit|margin|laba|untung)/.test(text)) return 'sales';
+  if (/(stok|bahan|gudang|pengajuan|habis|persediaan)/.test(text)) return 'stock';
+  if (/(produk|menu|laris|rating|review)/.test(text)) return 'product';
+  if (/(kasir|karyawan|staff|absen|aktivitas|performa)/.test(text)) return 'staff';
+  return 'business';
+}
+
+function statusForPhase(phase, index) {
+  if (phase === 'error') {
+    if (index === 0) return 'completed';
+    if (index === 1) return 'failed';
+    return 'need-help';
+  }
+  if (phase === 'thinking') {
+    if (index === 0) return 'completed';
+    if (index === 1) return 'in-progress';
+    return 'pending';
+  }
+  return 'completed';
+}
+
+function buildAgentPlan(prompt, phase = 'thinking') {
+  const topic = inferPromptTopic(prompt);
+  const topicCopy = {
+    sales: {
+      context: 'Pertanyaan terdeteksi terkait omzet, transaksi, profit, atau margin.',
+      data: 'Menggunakan data transaksi, laporan penjualan, HPP, dan margin cabang aktif.',
+      insight: 'Menjawab dengan angka utama, margin, tren, dan rekomendasi tindakan penjualan.',
+      tools: ['reports-api', 'transactions', 'margin-calculator'],
+    },
+    stock: {
+      context: 'Pertanyaan terdeteksi terkait stok, bahan baku, gudang, atau pengajuan.',
+      data: 'Menggunakan saldo stok cabang, pemasukan, pengeluaran, dan pengajuan kasir.',
+      insight: 'Menjawab status stok kritis, kebutuhan pembelian, dan langkah operasional berikutnya.',
+      tools: ['stock-api', 'branch-inventory', 'request-audit'],
+    },
+    product: {
+      context: 'Pertanyaan terdeteksi terkait produk, menu, performa item, atau review.',
+      data: 'Menggunakan data produk, penjualan per item, komposisi bahan, dan review pelanggan.',
+      insight: 'Menjawab menu unggulan, menu perlu evaluasi, dan peluang optimasi harga atau promo.',
+      tools: ['products-api', 'sales-by-product', 'customer-review'],
+    },
+    staff: {
+      context: 'Pertanyaan terdeteksi terkait kasir, karyawan, absen, atau performa user.',
+      data: 'Menggunakan data user, transaksi per kasir, dan aktivitas operasional yang tersedia.',
+      insight: 'Menjawab performa kerja, kontribusi penjualan, dan catatan evaluasi tim.',
+      tools: ['staff-performance', 'attendance-api', 'user-sales'],
+    },
+    business: {
+      context: 'Pertanyaan dibaca sebagai analisis bisnis umum.',
+      data: 'Menggunakan konteks POS yang relevan: transaksi, stok, produk, cabang, dan laporan.',
+      insight: 'Menjawab dengan insight ringkas, risiko, peluang, dan rekomendasi eksekusi.',
+      tools: ['business-context', 'reports-api', 'ai-analysis'],
+    },
+  }[topic];
+
+  return [
+    {
+      id: '1',
+      title: 'Pahami intent prompt',
+      description: topicCopy.context,
+      status: statusForPhase(phase, 0),
+      priority: 'high',
+      dependencies: [],
+      subtasks: [
+        {
+          id: '1.1',
+          title: 'Ekstrak kebutuhan user',
+          description: `AI membaca prompt: "${String(prompt || '').slice(0, 120)}"`,
+          status: statusForPhase(phase, 0),
+          priority: 'high',
+          tools: ['prompt-parser'],
+        },
+      ],
+    },
+    {
+      id: '2',
+      title: 'Siapkan konteks data',
+      description: topicCopy.data,
+      status: statusForPhase(phase, 1),
+      priority: 'high',
+      dependencies: ['1'],
+      subtasks: [
+        {
+          id: '2.1',
+          title: 'Cocokkan data POS',
+          description: 'AI memakai ringkasan data yang backend kirimkan, bukan mengarang angka tanpa konteks.',
+          status: statusForPhase(phase, 1),
+          priority: 'high',
+          tools: topicCopy.tools,
+        },
+      ],
+    },
+    {
+      id: '3',
+      title: 'Susun jawaban actionable',
+      description: topicCopy.insight,
+      status: statusForPhase(phase, 2),
+      priority: 'medium',
+      dependencies: ['1', '2'],
+      subtasks: [
+        {
+          id: '3.1',
+          title: 'Buat rekomendasi bisnis',
+          description: 'Jawaban dibuat ringkas, mudah dipahami admin/owner, dan berisi tindakan berikutnya.',
+          status: statusForPhase(phase, 2),
+          priority: 'medium',
+          tools: ['recommendation-engine'],
+        },
+      ],
+    },
+  ];
+}
+
 function EmptyState({ onSelect }) {
   return (
     <div className="ai-empty">
@@ -96,16 +213,29 @@ function EmptyState({ onSelect }) {
   );
 }
 
-function TypingIndicator() {
+function TypingIndicator({ plan, prompt }) {
   return (
     <div className="ai-message-row ai-message-row-left">
       <div className="ai-avatar">
         <AIMark compact />
       </div>
-      <div className="ai-bubble ai-bubble-assistant ai-typing" aria-label="AI sedang mengetik">
-        <span />
-        <span />
-        <span />
+      <div className="ai-message-stack">
+        {plan && (
+          <div className="ai-plan-wrap">
+            <AgentPlan
+              title="AI sedang menganalisis"
+              description="Ini ringkasan proses terstruktur, bukan chain-of-thought internal model."
+              prompt={prompt}
+              tasks={plan}
+              compact
+            />
+          </div>
+        )}
+        <div className="ai-bubble ai-bubble-assistant ai-typing" aria-label="AI sedang mengetik">
+          <span />
+          <span />
+          <span />
+        </div>
       </div>
     </div>
   );
@@ -144,6 +274,7 @@ function Message({ message, onRetry }) {
 
   const isUser = message.role === 'user';
   const isError = message.role === 'error';
+  const hasPlan = !isUser && message.plan;
   const timestamp = message.timestamp
     ? new Date(message.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
     : '';
@@ -154,6 +285,19 @@ function Message({ message, onRetry }) {
         {isUser ? 'U' : isError ? '!' : <AIMark compact />}
       </div>
       <div className="ai-message-stack">
+        {hasPlan && (
+          <div className="ai-plan-wrap">
+            <AgentPlan
+              title={isError ? 'Rencana Analisis Gagal' : 'Rencana Analisis AI'}
+              description={isError
+                ? 'AI gagal menyelesaikan permintaan, berikut titik proses yang perlu dicek.'
+                : 'Ringkasan langkah yang dipakai AI untuk menyusun jawaban ini.'}
+              prompt={message.prompt || ''}
+              tasks={message.plan}
+              compact
+            />
+          </div>
+        )}
         <div className={`ai-bubble ${isUser ? 'ai-bubble-user' : isError ? 'ai-bubble-error' : 'ai-bubble-assistant'}`}>
           {isUser || isError ? (
             <p>{message.content}</p>
@@ -174,6 +318,8 @@ export default function AIChatBox({ isModal = false }) {
   const [models, setModels] = useState([]);
   const [modelsLoading, setModelsLoading] = useState(true);
   const [recommendedModel, setRecommendedModel] = useState(null);
+  const [pendingPlan, setPendingPlan] = useState(null);
+  const [pendingPrompt, setPendingPrompt] = useState('');
   const [sessionId] = useState(() => `session-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`);
 
   const {
@@ -246,6 +392,8 @@ export default function AIChatBox({ isModal = false }) {
     setInputValue('');
     setError(null);
     setLoading(true);
+    setPendingPrompt(userMessage);
+    setPendingPlan(buildAgentPlan(userMessage, 'thinking'));
     inputRef.current?.focus();
 
     addMessage({
@@ -255,7 +403,8 @@ export default function AIChatBox({ isModal = false }) {
     });
 
     try {
-      const response = await sendAIQuery(userMessage, messages, sessionId, {
+      const compactHistory = messages.map(({ role, content, timestamp }) => ({ role, content, timestamp }));
+      const response = await sendAIQuery(userMessage, compactHistory, sessionId, {
         modelId: selectedModelId,
       });
       const data = response?.data || response;
@@ -267,6 +416,8 @@ export default function AIChatBox({ isModal = false }) {
           role: 'error',
           content: errorMessage,
           timestamp: new Date().toISOString(),
+          prompt: userMessage,
+          plan: buildAgentPlan(userMessage, 'error'),
         });
         return;
       }
@@ -275,6 +426,8 @@ export default function AIChatBox({ isModal = false }) {
         role: 'assistant',
         content: data.response || 'AI tidak memberikan respons.',
         timestamp: new Date().toISOString(),
+        prompt: userMessage,
+        plan: buildAgentPlan(userMessage, 'completed'),
       });
 
       if (data.message) {
@@ -293,9 +446,13 @@ export default function AIChatBox({ isModal = false }) {
         role: hasNoResponse ? 'offline' : 'error',
         content: errorMessage,
         timestamp: new Date().toISOString(),
+        prompt: userMessage,
+        plan: buildAgentPlan(userMessage, 'error'),
       });
     } finally {
       setLoading(false);
+      setPendingPlan(null);
+      setPendingPrompt('');
     }
   }, [
     addMessage,
@@ -394,7 +551,7 @@ export default function AIChatBox({ isModal = false }) {
             <Message key={`${message.timestamp || index}-${index}`} message={message} onRetry={retryLastQuestion} />
           ))
         )}
-        {isLoading && <TypingIndicator />}
+        {isLoading && <TypingIndicator plan={pendingPlan} prompt={pendingPrompt} />}
       </main>
 
       {error && <div className="ai-error-line">{error}</div>}
@@ -765,6 +922,15 @@ export default function AIChatBox({ isModal = false }) {
         .ai-message-stack {
           max-width: min(78%, 680px);
           min-width: 0;
+        }
+
+        .ai-plan-wrap {
+          margin-bottom: 8px;
+          max-width: min(100%, 680px);
+        }
+
+        .ai-plan-wrap .agent-plan {
+          width: min(100%, 680px);
         }
 
         .ai-message-row-right .ai-message-stack {
