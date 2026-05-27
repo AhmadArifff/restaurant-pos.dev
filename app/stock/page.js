@@ -890,14 +890,14 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-slate-700/60 bg-slate-800/30">
-                        {['Tanggal','Bahan Baku','Jumlah','Harga/Sat','Total Nilai','Status Sumber','Sumber Stok','Pengaju','Status','Catatan'].map(h => (
+                        {['Tanggal','Bahan Baku','Jumlah','Harga/Sat','Total Nilai','Status Sumber','Sumber Cabang','Sumber Stok','Pengaju','Status','Catatan'].map(h => (
                           <th key={h} className={thC}>{h}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
                       {outData.length === 0
-                        ? <tr><td colSpan={10}><EmptyState title="Tidak ada data pengeluaran" /></td></tr>
+                        ? <tr><td colSpan={11}><EmptyState title="Tidak ada data pengeluaran" /></td></tr>
                         : outData.map((row, i) => {
                           const isPending  = row.type === 'pending_out' && row.request_status === 'pending';
                           const isRejected = row.type === 'pending_out' && row.request_status === 'rejected';
@@ -925,6 +925,9 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                               {/* Kolom Status Sumber */}
                               <td className={tdC}>
                                 <TypeBadge type={row.type} status={row.request_status} />
+                              </td>
+                              <td className={`${tdC} text-slate-300 text-xs`}>
+                                {row.branch_name || 'Cabang aktif'}
                               </td>
 
                               {/* Kolom Sumber Stok */}
@@ -2131,14 +2134,14 @@ function KasirStockPage({ successModal, setSuccessModal }) {
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-slate-700/60 bg-slate-800/30">
-                        {['Tanggal','Bahan Baku','Jumlah','Harga/Sat','Total Nilai','Status Sumber','Sumber Stok','Pengaju','Status','Catatan'].map(h =>
+                        {['Tanggal','Bahan Baku','Jumlah','Harga/Sat','Total Nilai','Status Sumber','Sumber Cabang','Sumber Stok','Pengaju','Status','Catatan'].map(h =>
                           <th key={h} className={thC}>{h}</th>
                         )}
                       </tr>
                     </thead>
                     <tbody>
                       {outData.length === 0
-                        ? <tr><td colSpan={10}><EmptyState title="Tidak ada data pengeluaran pada periode ini" /></td></tr>
+                        ? <tr><td colSpan={11}><EmptyState title="Tidak ada data pengeluaran pada periode ini" /></td></tr>
                         : outData.map((row, i) => {
                           const isPending  = row.type === 'pending_out' && row.request_status === 'pending';
                           const isRejected = row.type === 'pending_out' && row.request_status === 'rejected';
@@ -2164,6 +2167,9 @@ function KasirStockPage({ successModal, setSuccessModal }) {
                               </td>
                               <td className={tdC}>
                                 <TypeBadge type={row.type} status={row.request_status} />
+                              </td>
+                              <td className={`${tdC} text-slate-300 text-xs`}>
+                                {row.branch_name || 'Cabang aktif'}
                               </td>
                               <td className={`${tdC} text-slate-300 text-xs`}>
                                 {row.stock_owner_name || row.target_user_name || row.created_by_name || '—'}
@@ -2604,4 +2610,6 @@ export default function StockPage() {
     </AdminLayout>
   );
 }
+
+
 

@@ -22,13 +22,16 @@ import Sidebar from './Sidebar';
 import AuthGuard from '@/components/ui/AuthGuard';
 import PWAInstallPrompt from '@/components/ui/PWAInstallPrompt';
 import FloatingChatButton from '@/components/ui/FloatingChatButton';
+import { useAuthStore } from '@/store/authStore';
 
 export default function AdminLayout({ children, noPadding = false }) {
+  const selectedBranchId = useAuthStore((state) => state.selectedBranchId);
+
   return (
     <AuthGuard>
       <div className="admin-theme admin-shell flex h-screen overflow-hidden">
         <Sidebar />
-        <main className={`admin-main flex-1 overflow-hidden ${noPadding ? '' : 'overflow-y-auto p-4 sm:p-6'}`}>
+        <main key={selectedBranchId || 'no-branch'} className={`admin-main flex-1 overflow-hidden ${noPadding ? '' : 'overflow-y-auto p-4 sm:p-6'}`}>
           {children}
           <PWAInstallPrompt />
         </main>

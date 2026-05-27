@@ -8,13 +8,13 @@ const fmtPecahan = (n) => {
   return `Rp ${n}`;
 };
 
-export default function PaymentModal({ total, itemCount = 0, onPay, onClose }) {
+export default function PaymentModal({ total, itemCount = 0, onPay, onClose, processing = false }) {
   const [method, setMethod]   = useState('cash');
   const [tunai, setTunai]     = useState(0);
   const [tunaiStr, setTunaiStr] = useState('');
 
   const kembalian = method === 'cash' ? tunai - total : 0;
-  const canPay    = method !== 'cash' || (tunai >= total);
+  const canPay    = !processing && (method !== 'cash' || (tunai >= total));
 
   const addPecahan = (p) => {
     const newVal = tunai + p;
@@ -164,6 +164,7 @@ export default function PaymentModal({ total, itemCount = 0, onPay, onClose }) {
         <div className="px-5 pb-5 flex gap-3">
           <button
             onClick={onClose}
+            disabled={processing}
             className="flex-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 font-semibold rounded-xl py-3 transition-colors"
           >
             Batal
@@ -173,7 +174,7 @@ export default function PaymentModal({ total, itemCount = 0, onPay, onClose }) {
             disabled={!canPay}
             className="flex-[2] bg-orange-500 hover:bg-orange-600 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black rounded-xl py-3 text-base transition-colors"
           >
-            Proses & Cetak Struk
+            {processing ? 'Memproses transaksi...' : 'Proses & Cetak Struk'}
           </button>
         </div>
 

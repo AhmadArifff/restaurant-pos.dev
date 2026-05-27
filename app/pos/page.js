@@ -69,6 +69,7 @@ export default function PosPage() {
   const [showPayment,     setShowPayment]      = useState(false);
   const [lastTransaction, setLastTransaction] = useState(null);
   const [loading,         setLoading]         = useState(true);
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [showMobileCart,  setShowMobileCart]  = useState(false);
   const [todayStats,      setTodayStats]      = useState({
     total_trx: 0,
@@ -214,6 +215,7 @@ export default function PosPage() {
     addItem({
       ...product,
       _sourceUserId: isAdmin ? selectedSourceUser?.user_id : user?.id,
+      _availableStock: stock,
     });
   };
 
@@ -239,6 +241,20 @@ export default function PosPage() {
   // ── Transaksi ──────────────────────────────────────────────
   // ✅ CHANGED: Track admin execution dan request_id yang digunakan
   const handlePayment = async (paymentMethod, tunai = 0) => {
+    if (paymentProcessing) return;
+    for (const cartItem of items) {
+      const stock = getProductStock(cartItem);
+      if (Number(cartItem.qty || 0) > Number(stock || 0)) {
+        showFeedback(
+          'error',
+          'Stok Berubah',
+          `Stok ${cartItem.name} tersisa ${stock} porsi. Kurangi jumlah pesanan lalu coba lagi.`
+        );
+        return;
+      }
+    }
+
+    setPaymentProcessing(true);
     try {
       const sourceUserId = isAdmin
         ? (selectedSourceUser?.user_id || null)
@@ -274,15 +290,22 @@ export default function PosPage() {
       setTimeout(() => handlePrint(), 400);
       loadData();
     } catch (err) {
+      const validation = err.response?.data?.validation_errors;
+      const detail = Array.isArray(validation) && validation.length
+        ? validation.map((item) => `${item.item_name}: tersedia ${item.available}, butuh ${item.needed}`).join('\n')
+        : null;
       showFeedback(
         'error',
         'Transaksi Gagal',
-        err.response?.data?.message || 'Transaksi belum bisa diproses. Silakan cek stok dan koneksi lalu coba lagi.'
+        detail || err.response?.data?.message || 'Transaksi belum bisa diproses. Silakan cek stok dan koneksi lalu coba lagi.'
       );
+    } finally {
+      setPaymentProcessing(false);
     }
   };
 
   const handleCancelPayment = () => {
+    if (paymentProcessing) return;
     setShowPayment(false);
     showFeedback(
       'warning',
@@ -599,9 +622,9 @@ export default function PosPage() {
             </>
           )}
 
-          {showPayment && (
-            <PaymentModal total={total} itemCount={itemCount}
-              onPay={handlePayment} onClose={handleCancelPayment} />
+              {showPayment && (
+                <PaymentModal total={total} itemCount={itemCount}
+              onPay={handlePayment} onClose={handleCancelPayment} processing={paymentProcessing} />
           )}
 
           <SuccessModal

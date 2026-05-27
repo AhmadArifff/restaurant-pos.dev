@@ -20,13 +20,19 @@ export default function Cart({ onCheckout }) {
             <p className="text-sm">Belum ada pesanan</p>
           </div>
         ) : (
-          items.map(item => (
+          items.map(item => {
+            const maxQty = Number(item._availableStock || item.stock || 0);
+            const atMax = maxQty > 0 && Number(item.qty || 0) >= maxQty;
+            return (
             <div key={item.id} className="flex items-center gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-white text-sm font-medium truncate">{item.name}</p>
                 <p className="text-orange-400 text-sm">
                   Rp {(Number(item.price) * item.qty).toLocaleString('id-ID')}
                 </p>
+                {maxQty > 0 && (
+                  <p className="text-slate-500 text-[11px]">Maks {maxQty} porsi</p>
+                )}
               </div>
               <div className="flex items-center gap-1">
                 <button
@@ -35,12 +41,14 @@ export default function Cart({ onCheckout }) {
                 >−</button>
                 <span className="text-white w-6 text-center text-sm">{item.qty}</span>
                 <button
-                  onClick={() => updateQty(item.id, item.qty + 1)}
-                  className="w-7 h-7 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm font-bold transition-colors"
+                  onClick={() => !atMax && updateQty(item.id, item.qty + 1)}
+                  disabled={atMax}
+                  className="w-7 h-7 bg-slate-700 hover:bg-slate-600 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg text-sm font-bold transition-colors"
                 >+</button>
               </div>
             </div>
-          ))
+          );
+          })
         )}
       </div>
 
