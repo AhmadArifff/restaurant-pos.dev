@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { downloadBusinessAnalysisPdf, getBusinessAnalysis, getTransactionYears } from '@/lib/api';
+import SectionSkeleton from '@/components/ui/SectionSkeleton';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
 
@@ -302,7 +303,7 @@ export default function ReportsPage() {
         {error && <div className="p-4 bg-red-500/15 border border-red-500/30 text-red-200 rounded-lg text-sm">{error}</div>}
 
         {loading ? (
-          <div className="h-72 grid place-items-center bg-slate-900 border border-slate-800 rounded-lg text-slate-400">Memuat analisis...</div>
+          <SectionSkeleton />
         ) : analysis ? (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">

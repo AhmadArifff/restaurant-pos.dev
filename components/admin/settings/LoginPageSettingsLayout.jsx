@@ -7,6 +7,7 @@ import ImageUpload from '../form/ImageUpload';
 import TextArea from '../form/TextArea';
 import TextInput from '../form/TextInput';
 import { useLoginPageSettingsStore } from '@/store/loginSettingsStore';
+import SectionSkeleton from '@/components/ui/SectionSkeleton';
 
 export default function LoginPageSettingsLayout() {
   const {
@@ -39,6 +40,12 @@ export default function LoginPageSettingsLayout() {
             Kelola text dan gambar halaman login. Default mengikuti tampilan saat ini, lalu otomatis memakai data database jika tersedia.
           </p>
         </div>
+
+        {isLoading && !lastSavedAt && (
+          <div className="mb-6">
+            <SectionSkeleton />
+          </div>
+        )}
 
         {(loadError || saveError) && (
           <div className="mb-5 px-4 py-3 rounded border border-red-700 bg-red-950/40 text-red-200 text-sm">

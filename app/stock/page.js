@@ -21,6 +21,12 @@ const UNIT_GROUPS = [
   { label: 'Saus & Bumbu', units: ['Liter','Botol','Pouch','Sachet','Blok'] },
   { label: 'Packaging',    units: ['Pcs','Lusin'] },
 ];
+const STOCK_REQUEST_FILTERS = [
+  { val: '', label: 'Semua' },
+  { val: 'pending', label: 'Menunggu' },
+  { val: 'approved', label: 'Disetujui' },
+  { val: 'rejected', label: 'Ditolak' },
+];
 // Format qty — tampilkan desimal hanya jika perlu
 function fmtQty(val) {
   const n = Number(val || 0);
@@ -958,13 +964,18 @@ function AdminStockPage({ successModal, setSuccessModal }) {
             <input type="date" value={reqDateTo2}
               onChange={e => setReqDateTo2(e.target.value)}
               className="bg-slate-700 border border-slate-600 text-white text-xs rounded-xl px-3 py-2 outline-none" />
-            <select value={reqStatus} onChange={e => setReqStatus(e.target.value)}
-              className="bg-slate-700 border border-slate-600 text-white text-xs rounded-xl px-3 py-2 outline-none">
-              <option value="">Semua Status</option>
-              <option value="pending">Menunggu</option>
-              <option value="approved">Disetujui</option>
-              <option value="rejected">Ditolak</option>
-            </select>
+            <div className="flex gap-1.5 flex-wrap">
+              {STOCK_REQUEST_FILTERS.map(({ val, label }) => (
+                <button key={val || 'all'} onClick={() => setReqStatus(val)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                    reqStatus === val
+                      ? 'bg-orange-500 text-white'
+                      : 'bg-slate-800 text-slate-400 border border-slate-700 hover:text-white'
+                  }`}>
+                  {label}
+                </button>
+              ))}
+            </div>
             <span className="text-slate-600 text-xs">{requests.length} pengajuan</span>
           </div>
 
@@ -2162,8 +2173,8 @@ function KasirStockPage({ successModal, setSuccessModal }) {
               onChange={e => setReqDateTo(e.target.value)}
               className="bg-slate-700 border border-slate-600 text-white text-xs rounded-xl px-3 py-2 outline-none" />
             <div className="flex gap-1.5 flex-wrap">
-              {[['','Semua'],['pending','Menunggu'],['approved','Disetujui'],['rejected','Ditolak']].map(([val,label]) => (
-                <button key={val} onClick={() => setReqStatus(val)}
+              {STOCK_REQUEST_FILTERS.map(({ val, label }) => (
+                <button key={val || 'all'} onClick={() => setReqStatus(val)}
                   className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
                     reqStatus === val
                       ? 'bg-orange-500 text-white'

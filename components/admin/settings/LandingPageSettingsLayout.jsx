@@ -16,6 +16,7 @@ import FooterSettings from './FooterSettings';
 import FloatButtonSettings from './FloatButtonSettings';
 import LandingPageFullPreview from '../preview/LandingPageFullPreview';
 import { useLandingSettingsStore } from '@/store/landingSettingsStore';
+import SectionSkeleton from '@/components/ui/SectionSkeleton';
 
 const SETTINGS_SECTIONS = [
   { id: 'header', title: 'Header', component: HeaderSettings },
@@ -71,6 +72,12 @@ export default function LandingPageSettingsLayout() {
           <h1 className="text-3xl font-bold text-cream mb-2">Landing Page Settings</h1>
           <p className="text-slate-400">Kelola semua 13 section landing page dengan preview lengkap.</p>
         </div>
+
+        {isLoading && !lastSavedAt && (
+          <div className="mb-6">
+            <SectionSkeleton />
+          </div>
+        )}
 
         {(loadError || saveError) && (
           <div className="mb-5 px-4 py-3 rounded border border-red-700 bg-red-950/40 text-red-200 text-sm">

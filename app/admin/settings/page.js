@@ -6,6 +6,7 @@ import { useWebsiteSettings, DEFAULT_THEME_COLORS, DEFAULT_SETTINGS } from '@/st
 import { uploadWebsiteImage, bulkUpdateWebsiteSettings } from '@/lib/api';
 import { resolveAssetUrl } from '@/lib/assetUrl';
 import FaviconDebugger from '@/components/ui/FaviconDebugger';
+import SectionSkeleton from '@/components/ui/SectionSkeleton';
 
 const THEME_FIELDS = [
   { key: 'gold', label: 'Gold (Primary Accent / Logo & Buttons)', fallback: DEFAULT_THEME_COLORS.gold },
@@ -211,8 +212,8 @@ export default function SettingsPage() {
   if (loading) {
     return (
       <AdminLayout>
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-white">Loading...</div>
+        <div className="max-w-4xl mx-auto py-8">
+          <SectionSkeleton />
         </div>
       </AdminLayout>
     );

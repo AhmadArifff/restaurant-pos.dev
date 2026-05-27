@@ -5,6 +5,7 @@ import AuthGuard from '@/components/ui/AuthGuard';
 import { getTransactions } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import AdminLayout from '@/components/layout/AdminLayout';
+import { TableSkeleton } from '@/components/ui/SectionSkeleton';
 
 export default function TransactionHistoryPage() {
   const { user } = useAuthStore();
@@ -320,9 +321,7 @@ export default function TransactionHistoryPage() {
           {/* Table */}
           <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
             {loading ? (
-              <div className="p-8 text-center text-slate-400">
-                <p className="animate-pulse">⏳ Memuat data...</p>
-              </div>
+              <TableSkeleton rows={7} cols={6} />
             ) : transactions.length === 0 ? (
               <div className="p-8 text-center text-slate-400">
                 <p>📭 Tidak ada transaksi</p>
@@ -634,3 +633,4 @@ export default function TransactionHistoryPage() {
     </AuthGuard>
   );
 }
+

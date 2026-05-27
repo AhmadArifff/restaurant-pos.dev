@@ -7,7 +7,13 @@ import { useRouter } from 'next/navigation';
 import { useWebsiteSettings, DEFAULT_SETTINGS } from '@/store/settingsStore';
 import { usePWAInstall } from '@/components/ui/PWAInstallPrompt';
 import { resolveAssetUrl } from '@/lib/assetUrl';
-import { getBranches, setMyBranch } from '@/lib/api';
+import {
+  getAllStockRequests,
+  getBranches,
+  getCustomerOrders,
+  getMyStockRequests,
+  setMyBranch,
+} from '@/lib/api';
 
 // ── Definisi menu dengan animasi unik tiap item ───────────────
 const menus = [
@@ -260,10 +266,33 @@ const ICON_KEYFRAMES = `
   @keyframes rippleBurst{ 0%{transform:scale(0.6);opacity:0.5} 100%{transform:scale(2.4);opacity:0} }
   @keyframes activeBarIn{ from{height:0;opacity:0} to{height:20px;opacity:1} }
   @keyframes sidebarLabelIn{ from{opacity:0;transform:translateX(-6px)} to{opacity:1;transform:translateX(0)} }
+  @keyframes notifPing{ 0%{transform:scale(0.8);opacity:0.8} 80%,100%{transform:scale(2.2);opacity:0} }
+  @keyframes notifBounce{ 0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(-2px) scale(1.08)} }
 `;
 
 // ── NavItem Component ─────────────────────────────────────────
-function NavItem({ menu, active, collapsed, primaryColor, onClick }) {
+function NavBadge({ count, collapsed }) {
+  if (!count || Number(count) <= 0) return null;
+
+  return (
+    <span
+      className={`
+        relative inline-flex shrink-0 items-center justify-center rounded-full
+        bg-red-500 text-[10px] font-black leading-none text-white shadow-lg shadow-red-500/30
+        ${collapsed ? 'absolute -right-1 -top-1 h-5 min-w-5 px-1' : 'ml-auto h-5 min-w-5 px-1.5'}
+      `}
+      style={{ animation: 'notifBounce 1.35s ease-in-out infinite' }}
+    >
+      <span
+        className="absolute inset-0 rounded-full bg-red-400"
+        style={{ animation: 'notifPing 1.35s ease-out infinite' }}
+      />
+      <span className="relative">{count > 99 ? '99+' : count}</span>
+    </span>
+  );
+}
+
+function NavItem({ menu, active, collapsed, primaryColor, badgeCount = 0, onClick }) {
   const [animClass, setAnimClass] = useState('');
   const [showRipple, setShowRipple] = useState(false);
 
@@ -328,6 +357,8 @@ function NavItem({ menu, active, collapsed, primaryColor, onClick }) {
         </span>
       )}
 
+      <NavBadge count={badgeCount} collapsed={collapsed} />
+
       {/* Tooltip collapsed */}
       {collapsed && (
         <span className="
@@ -347,7 +378,7 @@ function NavItem({ menu, active, collapsed, primaryColor, onClick }) {
 // ── Sidebar content (shared) ──────────────────────────────────
 function SidebarContent({ collapsed, noLogo, pathname, user, settings, visible,
   logoSrc, initials, primaryColor, onLogout, showInstall, isInstalled,
-  branches, selectedBranchId, onBranchChange }) {
+  branches, selectedBranchId, onBranchChange, notificationCounts }) {
 
   return (
     <>
@@ -391,6 +422,7 @@ function SidebarContent({ collapsed, noLogo, pathname, user, settings, visible,
             active={pathname === m.href}
             collapsed={collapsed}
             primaryColor={primaryColor}
+            badgeCount={notificationCounts?.[m.href] || 0}
           />
         ))}
       </nav>
@@ -496,6 +528,10 @@ export default function Sidebar() {
   const [isTablet,      setIsTablet]      = useState(false);
   const [hydrated,      setHydrated]      = useState(false);
   const [branches, setBranches] = useState([]);
+  const [notificationCounts, setNotificationCounts] = useState({
+    '/admin/customer-orders': 0,
+    '/stock': 0,
+  });
 
   // Inject keyframes once
   useEffect(() => {
@@ -518,6 +554,44 @@ export default function Sidebar() {
       })
       .catch(() => setBranches([]));
   }, [selectedBranchId, setBranch, user]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    let cancelled = false;
+    const activeOrderStatuses = ['pending', 'accepted', 'preparing', 'ready'];
+
+    const loadNotificationCounts = async () => {
+      try {
+        const stockRequestFn = user.role === 'admin' ? getAllStockRequests : getMyStockRequests;
+        const [ordersRes, stockRes] = await Promise.all([
+          getCustomerOrders({}),
+          stockRequestFn({ status: 'pending' }),
+        ]);
+
+        if (cancelled) return;
+
+        const orders = Array.isArray(ordersRes.data) ? ordersRes.data : [];
+        const pendingStockRequests = Array.isArray(stockRes.data) ? stockRes.data : [];
+        setNotificationCounts({
+          '/admin/customer-orders': orders.filter((order) => activeOrderStatuses.includes(order.status)).length,
+          '/stock': pendingStockRequests.length,
+        });
+      } catch (_) {
+        if (!cancelled) {
+          setNotificationCounts({ '/admin/customer-orders': 0, '/stock': 0 });
+        }
+      }
+    };
+
+    loadNotificationCounts();
+    const timer = window.setInterval(loadNotificationCounts, 15000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [selectedBranchId, user]);
 
   useEffect(() => {
     const check = () => {
@@ -558,7 +632,7 @@ export default function Sidebar() {
 
   const sharedProps = { pathname, user, settings, visible, logoSrc, initials,
     primaryColor, onLogout: handleLogout, showInstall, isInstalled,
-    branches, selectedBranchId, onBranchChange: handleBranchChange };
+    branches, selectedBranchId, onBranchChange: handleBranchChange, notificationCounts };
 
   // ── MOBILE ──────────────────────────────────────────────────
   if (hydrated && isMobile) {

@@ -4,6 +4,7 @@ import AdminLayout from '@/components/layout/AdminLayout';
 import { getProducts, getCategories, deleteProduct, getStockItems } from '@/lib/api';
 import api from '@/lib/axios';
 import { resolveAssetUrl } from '@/lib/assetUrl';
+import { CardSkeleton } from '@/components/ui/SectionSkeleton';
 // Di app/pos/page.js atau wherever kasir lihat produk
 import { getMyStockProducts } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
@@ -22,13 +23,15 @@ export default function ProductsPage() {
   const [imagePreview, setPreview]  = useState(null);
   const [search, setSearch]         = useState('');
   const [loading, setLoading]       = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
   const fileRef = useRef();
   const { user } = useAuthStore();
 
   useEffect(() => {
     // Kasir pakai my-stock, admin pakai semua
     const fetchFn = user?.role === 'kasir' ? getMyStockProducts : getProducts;
-    fetchFn().then(r => setProducts(r.data));
+    setPageLoading(true);
+    fetchFn().then(r => setProducts(r.data)).finally(() => setPageLoading(false));
   }, [user]);
 
   // Tambah state baru
@@ -174,7 +177,10 @@ export default function ProductsPage() {
           className="w-full bg-slate-800 text-white rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-orange-500 border border-slate-700"/>
 
         {/* Grid Produk */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {pageLoading ? (
+          <CardSkeleton count={8} />
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {filtered.map(p => (
             <div key={p.id} className="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden">
               {/* Gambar */}
@@ -288,7 +294,8 @@ export default function ProductsPage() {
               </div>
             </div>
           ))}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Modal Tambah/Edit Produk */}

@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import AdminLayout from '@/components/layout/AdminLayout';
 import AuthGuard from '@/components/ui/AuthGuard';
 import QRCodeCard from '@/components/customer/QRCodeCard';
+import SectionSkeleton from '@/components/ui/SectionSkeleton';
 import {
   createDiningTable,
   deleteDiningTable,
@@ -41,6 +42,15 @@ const statusActions = [
   { status: 'cancelled', label: 'Batal', color: 'bg-red-500 hover:bg-red-400' },
 ];
 
+const statusFilters = [
+  { value: 'all', label: 'Semua' },
+  { value: 'pending', label: 'Menunggu' },
+  { value: 'accepted', label: 'Diterima' },
+  { value: 'preparing', label: 'Disiapkan' },
+  { value: 'ready', label: 'Siap Diantar' },
+  { value: 'completed', label: 'Selesai' },
+];
+
 const formatRp = (value) => `Rp ${Number(value || 0).toLocaleString('id-ID')}`;
 
 const getOrderUrl = (token) => {
@@ -63,7 +73,7 @@ export default function CustomerOrdersPage() {
     setLoading(true);
     try {
       const [ordersRes, tablesRes] = await Promise.all([
-        getCustomerOrders(status === 'all' ? {} : { status }),
+        getCustomerOrders({}),
         isAdmin ? getManagedDiningTables() : Promise.resolve({ data: [] }),
       ]);
       setOrders(ordersRes.data || []);
@@ -78,7 +88,22 @@ export default function CustomerOrdersPage() {
     load();
     const timer = window.setInterval(load, 10000);
     return () => window.clearInterval(timer);
-  }, [status, isAdmin]);
+  }, [isAdmin]);
+
+  const visibleOrders = useMemo(
+    () => (status === 'all' ? orders : orders.filter((order) => order.status === status)),
+    [orders, status]
+  );
+
+  const statusCounts = useMemo(() => {
+    const counts = { all: orders.length };
+    statusFilters.forEach((item) => {
+      if (item.value !== 'all') {
+        counts[item.value] = orders.filter((order) => order.status === item.value).length;
+      }
+    });
+    return counts;
+  }, [orders]);
 
   const stats = useMemo(() => {
     const active = orders.filter((order) => !['completed', 'cancelled'].includes(order.status)).length;
@@ -152,15 +177,20 @@ export default function CustomerOrdersPage() {
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
-              {['all', 'pending', 'accepted', 'preparing', 'ready', 'completed'].map((item) => (
+              {statusFilters.map((item) => (
                 <button
-                  key={item}
-                  onClick={() => setStatus(item)}
-                  className={`rounded-xl px-3 py-2 text-xs font-bold capitalize transition ${
-                    status === item ? 'bg-orange-500 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'
+                  key={item.value}
+                  onClick={() => setStatus(item.value)}
+                  className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold transition ${
+                    status === item.value ? 'bg-orange-500 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'
                   }`}
                 >
-                  {item === 'all' ? 'Semua' : statusLabels[item]}
+                  {item.label}
+                  <span className={`rounded-full px-1.5 py-0.5 text-[10px] ${
+                    status === item.value ? 'bg-white/20 text-white' : 'bg-slate-700 text-slate-300'
+                  }`}>
+                    {statusCounts[item.value] || 0}
+                  </span>
                 </button>
               ))}
             </div>
@@ -188,13 +218,13 @@ export default function CustomerOrdersPage() {
 
           <div className="grid gap-6 xl:grid-cols-[1fr_390px]">
             <section className="space-y-4">
-              {loading && <p className="rounded-2xl bg-slate-800 p-4 text-slate-400">Memuat pesanan...</p>}
-              {!loading && orders.length === 0 && (
+              {loading && <SectionSkeleton type="orders" />}
+              {!loading && visibleOrders.length === 0 && (
                 <div className="rounded-3xl border border-dashed border-slate-700 bg-slate-800/50 p-10 text-center text-slate-400">
                   Belum ada pesanan meja untuk filter ini.
                 </div>
               )}
-              {orders.map((order) => (
+              {visibleOrders.map((order) => (
                 <motion.article
                   key={order.id}
                   layout

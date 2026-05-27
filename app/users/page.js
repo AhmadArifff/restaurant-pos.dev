@@ -3,14 +3,19 @@ import { useEffect, useState } from 'react';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { getMe, registerUser } from '@/lib/api';
 import api from '@/lib/axios';
+import { TableSkeleton } from '@/components/ui/SectionSkeleton';
 
 export default function UsersPage() {
   const [users, setUsers]   = useState([]);
   const [modal, setModal]   = useState(false);
   const [form, setForm]     = useState({ name: '', email: '', password: '', role: 'kasir' });
   const [loading, setLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
 
-  const load = () => api.get('/auth/users').then(r => setUsers(r.data)).catch(() => {});
+  const load = () => api.get('/auth/users')
+    .then(r => setUsers(r.data))
+    .catch(() => {})
+    .finally(() => setPageLoading(false));
 
   useEffect(() => { load(); }, []);
 
@@ -44,6 +49,9 @@ export default function UsersPage() {
         </div>
 
         <div className="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden">
+          {pageLoading ? (
+            <TableSkeleton rows={5} cols={4} />
+          ) : (
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-700">
@@ -73,6 +81,7 @@ export default function UsersPage() {
               )}
             </tbody>
           </table>
+          )}
         </div>
       </div>
 
