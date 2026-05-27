@@ -7,7 +7,7 @@ import ImageUpload from '../form/ImageUpload';
 import TextArea from '../form/TextArea';
 import TextInput from '../form/TextInput';
 import { useLoginPageSettingsStore } from '@/store/loginSettingsStore';
-import SectionSkeleton from '@/components/ui/SectionSkeleton';
+import { SettingsPageSkeleton } from '@/components/ui/SectionSkeleton';
 
 export default function LoginPageSettingsLayout() {
   const {
@@ -30,6 +30,7 @@ export default function LoginPageSettingsLayout() {
 
   const stats = settings.hero?.stats || [];
   const floatingImages = settings.media?.floatingImages || [];
+  const showInitialSkeleton = isLoading && !lastSavedAt;
 
   return (
     <div className="h-full bg-slate-950 p-6 overflow-y-auto">
@@ -41,11 +42,14 @@ export default function LoginPageSettingsLayout() {
           </p>
         </div>
 
-        {isLoading && !lastSavedAt && (
+        {showInitialSkeleton && (
           <div className="mb-6">
-            <SectionSkeleton />
+            <SettingsPageSkeleton sections={6} />
           </div>
         )}
+
+        {showInitialSkeleton ? null : (
+          <>
 
         {(loadError || saveError) && (
           <div className="mb-5 px-4 py-3 rounded border border-red-700 bg-red-950/40 text-red-200 text-sm">
@@ -311,6 +315,8 @@ export default function LoginPageSettingsLayout() {
             </div>
           </div>
         </div>
+          </>
+        )}
       </div>
     </div>
   );

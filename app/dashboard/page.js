@@ -7,6 +7,7 @@ import {
   getSalesByProduct, getActiveUsers,
   getWeeklyAttendance, getStaffPerformance,
 } from '@/lib/api';
+import { DashboardSkeleton } from '@/components/ui/SectionSkeleton';
 const MONTHS = ['Jan','Feb','Mar','Apr','Mei','Jun',
                 'Jul','Agu','Sep','Okt','Nov','Des'];
 const COLORS  = [
@@ -751,13 +752,7 @@ const filteredBestSelling = bestSelling.filter(p => {
         </div>
 
         {/* Loading */}
-        {loading && (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="bg-slate-800 rounded-2xl p-4 border border-slate-700 animate-pulse h-24"/>
-            ))}
-          </div>
-        )}
+        {loading && <DashboardSkeleton />}
 
         {!loading && (
           <>

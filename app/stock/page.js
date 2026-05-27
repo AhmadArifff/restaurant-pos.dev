@@ -4,6 +4,11 @@ import AdminLayout from '@/components/layout/AdminLayout';
 import { useAuthStore } from '@/store/authStore';
 import SuccessModal from '@/components/stock/SuccessModal';
 import {
+  StockMasterSkeleton,
+  StockRequestSkeleton,
+  StockWarehouseSkeleton,
+} from '@/components/ui/SectionSkeleton';
+import {
   getStockItems, createStockItem, updateStockItem, deleteStockItem,
   getMainStockSummary, getMainStockMonthly, getMainStockDaily, getMainStockPriceTrends,
   addStockPurchase, getAllStockRequests, getMyStockRequests,
@@ -121,6 +126,12 @@ function AdminStockPage({ successModal, setSuccessModal }) {
   const [editId,      setEditId]      = useState(null);
   const [formData,    setFormData]    = useState({ name:'', unit:'Pcs', min_stock:'' });
   const [formLoading, setFormLoading] = useState(false);
+  const [masterLoading, setMasterLoading] = useState(true);
+  const [summaryLoading, setSummaryLoading] = useState(true);
+  const [monthlyLoading, setMonthlyLoading] = useState(false);
+  const [dailyLoading, setDailyLoading] = useState(false);
+  const [requestsLoading, setRequestsLoading] = useState(false);
+  const [trendLoading, setTrendLoading] = useState(true);
 
   // Gudang
   const [summary,  setSummary]  = useState([]);
@@ -172,13 +183,16 @@ function AdminStockPage({ successModal, setSuccessModal }) {
   //   [selDate, selDateTo, outTypeFilter]);
 
   // ✅ FIX: sekarang selDateTo sudah dideklarasikan sebelumnya — tidak ada error
-  const loadDaily = useCallback(() =>
-    getMainStockDaily({
+  const loadDaily = useCallback(() => {
+    setDailyLoading(true);
+    return getMainStockDaily({
       date_from:   selDate,
       date_to:     selDateTo || selDate,
       type_filter: outTypeFilter !== 'all' ? outTypeFilter : undefined,
-    }).then(r => setDaily(Array.isArray(r.data) ? r.data : [])),
-    [selDate, selDateTo, outTypeFilter, selectedBranchId]);
+    })
+      .then(r => setDaily(Array.isArray(r.data) ? r.data : []))
+      .finally(() => setDailyLoading(false));
+  }, [selDate, selDateTo, outTypeFilter, selectedBranchId]);
 
   // Tambah useEffect reload saat filter berubah
   useEffect(() => {
@@ -286,38 +300,55 @@ function AdminStockPage({ successModal, setSuccessModal }) {
 
   // const [selDateTo, setSelDateTo] = useState(new Date().toISOString().split('T')[0]);
 
-  const loadRequests = useCallback(() =>
-  getAllStockRequests({
-    date_from: reqDateFrom2 || undefined,
-    date_to:   reqDateTo2   || undefined,
-    status:    reqStatus    || undefined,
-  }).then(r => setRequests(r.data)),
-  [reqDateFrom2, reqDateTo2, reqStatus]);
+  const loadRequests = useCallback(() => {
+    setRequestsLoading(true);
+    return getAllStockRequests({
+      date_from: reqDateFrom2 || undefined,
+      date_to:   reqDateTo2   || undefined,
+      status:    reqStatus    || undefined,
+    })
+      .then(r => setRequests(r.data))
+      .finally(() => setRequestsLoading(false));
+  }, [reqDateFrom2, reqDateTo2, reqStatus]);
   // const loadDaily = useCallback(() =>
   // getMainStockDaily({ date_from: selDate, date_to: selDateTo || selDate })
   //   .then(r => setDaily(r.data)), [selDate, selDateTo]);
 
-  const loadMaster   = useCallback(() => getStockItems().then(r => setStockItems(r.data)), []);
+  const loadMaster = useCallback(() => {
+    setMasterLoading(true);
+    return getStockItems()
+      .then(r => setStockItems(r.data))
+      .finally(() => setMasterLoading(false));
+  }, []);
   // const loadSummary  = useCallback(() => getMainStockSummary().then(r => setSummary(r.data)), []);
   // Di KasirStockPage — loadSummary sudah ada catch, pastikan seperti ini:
-  const loadSummary = useCallback(() =>
-    getMainStockSummary()
+  const loadSummary = useCallback(() => {
+    setSummaryLoading(true);
+    return getMainStockSummary()
       .then(r => setSummary(Array.isArray(r.data) ? r.data : []))
       .catch(err => {
         console.error('Summary error:', err.response?.status, err.response?.data);
         setSummary([]);
-      }), [selectedBranchId]);
+      })
+      .finally(() => setSummaryLoading(false));
+  }, [selectedBranchId]);
   const loadGlobalSummary = useCallback(() =>
     getMainStockSummary({ branch_id: 'all' })
       .then(r => setGlobalSummary(Array.isArray(r.data) ? r.data : []))
       .catch(() => setGlobalSummary([])), []);
-  const loadPriceTrends = useCallback(() =>
-    getMainStockPriceTrends({ year: trendYear })
+  const loadPriceTrends = useCallback(() => {
+    setTrendLoading(true);
+    return getMainStockPriceTrends({ year: trendYear })
       .then(r => setPriceTrends(Array.isArray(r.data) ? r.data : []))
-      .catch(() => setPriceTrends([])), [trendYear]);
-  const loadMonthly  = useCallback(() =>
-    getMainStockMonthly({ month: selMonth, year: selYear }).then(r => setMonthly(r.data)),
-    [selMonth, selYear, selectedBranchId]);
+      .catch(() => setPriceTrends([]))
+      .finally(() => setTrendLoading(false));
+  }, [trendYear]);
+  const loadMonthly = useCallback(() => {
+    setMonthlyLoading(true);
+    return getMainStockMonthly({ month: selMonth, year: selYear })
+      .then(r => setMonthly(r.data))
+      .finally(() => setMonthlyLoading(false));
+  }, [selMonth, selYear, selectedBranchId]);
   // const loadDaily    = useCallback(() =>
   //   getMainStockDaily({ date: selDate }).then(r => setDaily(r.data)), [selDate]);
   // const loadRequests = useCallback(() =>
@@ -352,7 +383,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
       loadDaily();
     }
   }, [outTypeFilter, mainTab, selectedBranchId, loadDaily]);
-  useEffect(() => { if (tab==='requests') loadRequests(); }, [tab, reqDate, reqStatus]);
+  useEffect(() => { if (tab==='requests') loadRequests(); }, [tab, loadRequests]);
 
   const resetForm = () => { setShowForm(false); setEditId(null); setFormData({ name:'', unit:'Pcs', min_stock:'' }); };
 
@@ -420,6 +451,9 @@ function AdminStockPage({ successModal, setSuccessModal }) {
 
       {/* ── BAHAN BAKU ── */}
       {tab==='master' && (
+        masterLoading || summaryLoading || trendLoading ? (
+          <StockMasterSkeleton />
+        ) : (
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -580,10 +614,15 @@ function AdminStockPage({ successModal, setSuccessModal }) {
             )
           }
         </div>
-      )}
+      ))}
 
       {/* ── STOK GUDANG ── */}
       {tab==='main' && (
+        ((mainTab === 'summary' && summaryLoading) ||
+          (mainTab === 'in' && monthlyLoading) ||
+          (mainTab === 'out' && dailyLoading)) ? (
+          <StockWarehouseSkeleton mode={mainTab} />
+        ) : (
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-2">
             <SubTab active={mainTab==='summary'} onClick={() => setMainTab('summary')}>📊 Saldo Stok</SubTab>
@@ -950,10 +989,13 @@ function AdminStockPage({ successModal, setSuccessModal }) {
             </div>
           )}
         </div>
-      )}
+      ))}
 
       {/* ── PENGAJUAN KASIR ── */}
       {tab==='requests' && (
+        requestsLoading ? (
+          <StockRequestSkeleton />
+        ) : (
         <div className="space-y-4">
           <div className="flex flex-wrap gap-3 items-center">
             <span className="text-slate-500 text-xs">Dari:</span>
@@ -1109,7 +1151,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
             ))
           }
         </div>
-      )}
+      ))}
 
       {/* ══ MODAL: TAMBAH/EDIT BAHAN BAKU ══ */}
       {showForm && (
@@ -1792,23 +1834,29 @@ function KasirStockPage({ successModal, setSuccessModal }) {
   const [showOutForm, setShowOutForm] = useState(false);
   const [outItems,    setOutItems]    = useState([{ stock_item_id:'', qty:'', note:'' }]);
   const [outLoading,  setOutLoading]  = useState(false);
+  const [summaryLoading, setSummaryLoading] = useState(true);
+  const [dailyLoading, setDailyLoading] = useState(false);
+  const [requestsLoading, setRequestsLoading] = useState(false);
 
   // Di dalam function KasirStockPage(), tambah setelah state declarations:
   const searchParams = useSearchParams();
 
   // Ubah loadSummary agar return promise
-  const loadSummary = useCallback(() =>
-    getMainStockSummary()
+  const loadSummary = useCallback(() => {
+    setSummaryLoading(true);
+    return getMainStockSummary()
       .then(r => {
         const data = Array.isArray(r.data) ? r.data : [];
         setSummary(data);
-        return data; // ← return data agar bisa di-await
+        return data;
       })
       .catch(err => {
         console.error('Summary error:', err.response?.status);
         setSummary([]);
         return [];
-      }), []);
+      })
+      .finally(() => setSummaryLoading(false));
+  }, []);
 
   // Ganti useEffect pertama (yang loadSummary) dengan ini:
   useEffect(() => {
@@ -1850,14 +1898,17 @@ function KasirStockPage({ successModal, setSuccessModal }) {
   const [outTypeFilter, setOutTypeFilter] = useState('all');
 
   // Update loadDaily kasir
-  const loadDaily = useCallback(() =>
-    getMainStockDaily({
+  const loadDaily = useCallback(() => {
+    setDailyLoading(true);
+    return getMainStockDaily({
       date_from:   selDate,
       date_to:     selDateTo || selDate,
-      user_id:     user?.id,   // kasir selalu filter by user sendiri
+      user_id:     user?.id,
       type_filter: outTypeFilter !== 'all' ? outTypeFilter : undefined,
-    }).then(r => setDaily(Array.isArray(r.data) ? r.data : [])),
-    [selDate, selDateTo, user?.id, outTypeFilter]);
+    })
+      .then(r => setDaily(Array.isArray(r.data) ? r.data : []))
+      .finally(() => setDailyLoading(false));
+  }, [selDate, selDateTo, user?.id, outTypeFilter]);
 
   useEffect(() => {
     if (tab === 'gudang' && mainTab === 'out') loadDaily();
@@ -1897,13 +1948,16 @@ function KasirStockPage({ successModal, setSuccessModal }) {
     );
   }
 
-  const loadRequests = useCallback(() =>
-    getMyStockRequests({
+  const loadRequests = useCallback(() => {
+    setRequestsLoading(true);
+    return getMyStockRequests({
       status:    reqStatus   || undefined,
       date_from: reqDateFrom || undefined,
       date_to:   reqDateTo   || undefined,
-    }).then(r => setRequests(r.data)),
-    [reqStatus, reqDateFrom, reqDateTo]);
+    })
+      .then(r => setRequests(r.data))
+      .finally(() => setRequestsLoading(false));
+  }, [reqStatus, reqDateFrom, reqDateTo]);
 
   // Ganti useEffect ini
   useEffect(() => { loadSummary(); }, []);
@@ -1935,7 +1989,7 @@ function KasirStockPage({ successModal, setSuccessModal }) {
   }, [mainTab]);
   useEffect(() => {
     if (tab === 'requests') loadRequests();
-  }, [tab, reqStatus, reqDateFrom, reqDateTo]);
+  }, [tab, loadRequests]);
 
   // Tampilkan hanya pengeluaran yang diapprove dan milik user ini
   const outData = daily;
@@ -1948,6 +2002,10 @@ function KasirStockPage({ successModal, setSuccessModal }) {
       </div>
 
       {tab === 'gudang' && (
+        ((mainTab === 'summary' && summaryLoading) ||
+          (mainTab === 'out' && dailyLoading)) ? (
+          <StockWarehouseSkeleton mode={mainTab} />
+        ) : (
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-2">
             <SubTab active={mainTab==='summary'} onClick={() => setMainTab('summary')}>📊 Saldo Stok</SubTab>
@@ -2158,10 +2216,13 @@ function KasirStockPage({ successModal, setSuccessModal }) {
             </div>
           )}
         </div>
-      )}
+      ))}
 
       {/* ── PENGAJUAN SAYA ── */}
       {tab === 'requests' && (
+        requestsLoading ? (
+          <StockRequestSkeleton />
+        ) : (
         <div className="space-y-4">
           <div className="flex flex-wrap gap-3 items-center">
             <span className="text-slate-500 text-xs">Dari:</span>
@@ -2288,7 +2349,7 @@ function KasirStockPage({ successModal, setSuccessModal }) {
             ))
           }
         </div>
-      )}
+      ))}
 
       {/* ══ MODAL: CATAT PENGELUARAN (KASIR) ══ */}
       {showOutForm && (
@@ -2543,3 +2604,4 @@ export default function StockPage() {
     </AdminLayout>
   );
 }
+
