@@ -76,6 +76,16 @@ export default function CustomerOrderPage() {
     return () => window.clearInterval(interval);
   }, [order?.order_code, order?.status]);
 
+  useEffect(() => {
+    if (!token || order) return;
+    const interval = window.setInterval(() => {
+      getDiningTableByToken(token)
+        .then((res) => setTable(res.data))
+        .catch(() => {});
+    }, 6000);
+    return () => window.clearInterval(interval);
+  }, [token, order]);
+
   const categories = useMemo(() => {
     const map = new Map();
     products.forEach((product) => {
@@ -90,8 +100,10 @@ export default function CustomerOrderPage() {
 
   const total = cart.reduce((sum, item) => sum + Number(item.price) * item.qty, 0);
   const itemCount = cart.reduce((sum, item) => sum + item.qty, 0);
+  const tableBusy = !order && Number(table?.active_orders || 0) > 0;
 
   const addToCart = (product) => {
+    if (tableBusy) return;
     if (Number(product.stock || 0) <= 0) return;
     setCart((prev) => {
       const existing = prev.find((item) => item.id === product.id);
@@ -110,6 +122,7 @@ export default function CustomerOrderPage() {
   };
 
   const submitOrder = async () => {
+    if (tableBusy) return alert('Meja ini masih memiliki pesanan aktif. Silakan hubungi kasir atau pilih meja lain.');
     if (!cart.length) return alert('Pilih menu terlebih dahulu');
     setSubmitting(true);
     try {
@@ -193,6 +206,12 @@ export default function CustomerOrderPage() {
             </p>
           </div>
 
+          {tableBusy && (
+            <div className="mb-5 rounded-3xl border border-yellow-400/25 bg-yellow-500/10 p-4 text-yellow-100">
+              Meja ini masih memiliki pesanan aktif. Untuk mencegah double order, pemesanan baru dikunci sampai pesanan sebelumnya selesai atau dibatalkan.
+            </div>
+          )}
+
           <div className="mb-5 flex gap-2 overflow-x-auto pb-1">
             <button
               onClick={() => setActiveCategory('all')}
@@ -213,7 +232,7 @@ export default function CustomerOrderPage() {
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {filteredProducts.map((product, index) => {
-              const soldOut = Number(product.stock || 0) <= 0;
+              const soldOut = Number(product.stock || 0) <= 0 || tableBusy;
               return (
                 <motion.article
                   key={product.id}
@@ -239,7 +258,7 @@ export default function CustomerOrderPage() {
                     </div>
                     <div className="mt-4 flex items-center justify-between">
                       <span className={`rounded-full px-3 py-1 text-xs font-bold ${soldOut ? 'bg-red-500/15 text-red-200' : 'bg-emerald-500/15 text-emerald-200'}`}>
-                        {soldOut ? 'Stok habis' : `${product.stock} porsi tersedia`}
+                        {tableBusy ? 'Meja sedang aktif' : soldOut ? 'Stok habis' : `${product.stock} porsi tersedia`}
                       </span>
                       <button
                         onClick={() => addToCart(product)}

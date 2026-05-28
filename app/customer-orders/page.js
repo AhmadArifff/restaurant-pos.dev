@@ -29,18 +29,17 @@ const statusLabels = {
   pending: 'Menunggu',
   accepted: 'Diterima',
   preparing: 'Disiapkan',
-  ready: 'Siap Diantar',
+  ready: 'Siap Diantarkan Ke Meja',
   completed: 'Selesai',
   cancelled: 'Dibatalkan',
 };
 
-const statusActions = [
-  { status: 'accepted', label: 'Terima', color: 'bg-blue-500 hover:bg-blue-400' },
-  { status: 'preparing', label: 'Siapkan', color: 'bg-yellow-500 hover:bg-yellow-400' },
-  { status: 'ready', label: 'Siap', color: 'bg-emerald-500 hover:bg-emerald-400' },
-  { status: 'completed', label: 'Selesai', color: 'bg-orange-500 hover:bg-orange-400' },
-  { status: 'cancelled', label: 'Batal', color: 'bg-red-500 hover:bg-red-400' },
-];
+const nextActionByStatus = {
+  pending: { status: 'accepted', label: '1. Terima', color: 'bg-blue-500 hover:bg-blue-400' },
+  accepted: { status: 'preparing', label: '2. Siapkan', color: 'bg-yellow-500 hover:bg-yellow-400' },
+  preparing: { status: 'ready', label: '3. Siap Diantar', color: 'bg-emerald-500 hover:bg-emerald-400' },
+  ready: { status: 'completed', label: '4. Selesai', color: 'bg-orange-500 hover:bg-orange-400' },
+};
 
 const statusFilters = [
   { value: 'all', label: 'Semua' },
@@ -49,6 +48,7 @@ const statusFilters = [
   { value: 'preparing', label: 'Disiapkan' },
   { value: 'ready', label: 'Siap Diantar' },
   { value: 'completed', label: 'Selesai' },
+  { value: 'cancelled', label: 'Dibatalkan' },
 ];
 
 const formatRp = (value) => `Rp ${Number(value || 0).toLocaleString('id-ID')}`;
@@ -86,7 +86,7 @@ export default function CustomerOrdersPage() {
 
   useEffect(() => {
     load();
-    const timer = window.setInterval(load, 10000);
+    const timer = window.setInterval(load, 5000);
     return () => window.clearInterval(timer);
   }, [isAdmin]);
 
@@ -153,15 +153,32 @@ export default function CustomerOrdersPage() {
 
   const changeStatus = async (order, nextStatus) => {
     try {
-      await updateCustomerOrderStatus(order.id, { status: nextStatus });
+      const payload = { status: nextStatus };
+      if (nextStatus === 'cancelled') {
+        const reason = window.prompt(`Alasan pembatalan pesanan ${order.order_code}:`);
+        if (!reason?.trim()) return;
+        payload.cancel_reason = reason.trim();
+      }
+      await updateCustomerOrderStatus(order.id, payload);
       await load();
     } catch (err) {
       const validation = err.response?.data?.validation_errors;
       const detail = validation?.length
-        ? `\n\n${validation.map((item) => `${item.item_name}: tersedia ${item.available}, butuh ${item.needed}`).join('\n')}`
+        ? `\n\n${validation
+            .filter((item) => item?.item_name)
+            .map((item) => `${item.item_name}: tersedia ${Number(item.available ?? item.current_balance ?? 0)} ${item.unit || ''}, butuh ${Number(item.needed ?? 0)} ${item.unit || ''}`)
+            .join('\n')}`
         : '';
       alert(`${err.response?.data?.message || 'Gagal update status'}${detail}`);
     }
+  };
+
+  const getStatusActions = (order) => {
+    if (['completed', 'cancelled'].includes(order.status)) return [];
+    return [
+      nextActionByStatus[order.status],
+      { status: 'cancelled', label: 'Batalkan', color: 'bg-red-500 hover:bg-red-400' },
+    ].filter(Boolean);
   };
 
   return (
@@ -274,13 +291,18 @@ export default function CustomerOrdersPage() {
                           {order.service_review.service_comment ? ` - ${order.service_review.service_comment}` : ''}
                         </div>
                       )}
+                      {order.cancel_reason && (
+                        <div className="mt-3 rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-xs text-red-100">
+                          Alasan batal: {order.cancel_reason}
+                          {order.cancelled_by_name ? ` - oleh ${order.cancelled_by_name}` : ''}
+                        </div>
+                      )}
                     </div>
                     <div className="flex flex-wrap gap-2 lg:w-44 lg:flex-col">
-                      {statusActions.map((action) => (
+                      {getStatusActions(order).map((action) => (
                         <button
                           key={action.status}
                           onClick={() => changeStatus(order, action.status)}
-                          disabled={order.status === action.status || order.status === 'completed' || order.status === 'cancelled'}
                           className={`${action.color} rounded-xl px-3 py-2 text-xs font-black text-white transition disabled:cursor-not-allowed disabled:opacity-35`}
                         >
                           {action.label}

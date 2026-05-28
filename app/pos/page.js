@@ -5,6 +5,7 @@ import AuthGuard from '@/components/ui/AuthGuard';
 import {
   getCategories, createTransaction,
   getMyStockProducts, getStockAllUsers, getTodayStats,
+  getPublicDiningTables,
 } from '@/lib/api';
 import { useCartStore } from '@/store/cartStore';
 import { useAuthStore } from '@/store/authStore';
@@ -77,6 +78,8 @@ export default function PosPage() {
     margin: 0,
     margin_pct: 0,
   });
+  const [diningTables, setDiningTables] = useState([]);
+  const [selectedTableId, setSelectedTableId] = useState('');
   const [feedbackModal,   setFeedbackModal]   = useState({
     isOpen: false,
     type: 'success',
@@ -110,11 +113,20 @@ export default function PosPage() {
       fetchProducts(),
       getCategories(),
       getTodayStats().catch(() => ({ data: null })),
+      getPublicDiningTables({ branch_id: selectedBranchId || user?.branch_id || undefined }).catch(() => ({ data: [] })),
     ])
-      .then(([p, c, stats]) => {
+      .then(([p, c, stats, tableRes]) => {
         const prods = p.data || [];
+        const tableRows = tableRes.data || [];
         setProducts(prods);
         setCategories(c.data || []);
+        setDiningTables(tableRows);
+        setSelectedTableId((prev) => {
+          if (prev && tableRows.some((table) => String(table.id) === String(prev) && Number(table.active_orders || 0) === 0)) {
+            return prev;
+          }
+          return tableRows.find((table) => Number(table.active_orders || 0) === 0)?.id || '';
+        });
         if (stats?.data) {
           setTodayStats({
             total_trx: Number(stats.data.total_trx || 0),
@@ -263,6 +275,7 @@ export default function PosPage() {
       const res = await createTransaction({
         payment_method: paymentMethod,
         sourceUserId: sourceUserId,
+        table_id: selectedTableId || null,
         items: items.map(i => ({ product_id: i.id, price: i.price, qty: i.qty })),
       });
 
@@ -277,6 +290,11 @@ export default function PosPage() {
           ? `Admin (${user?.name}) → ${selectedSourceUser?.user_name || 'Gudang'}`
           : user?.name,
         created_by_type: isAdmin ? 'admin' : 'kasir',
+        customer_order_code: res.data?.data?.customer_order_code,
+        table_number: res.data?.data?.table_number,
+        receipt_status_url: res.data?.data?.customer_order_code
+          ? `${window.location.origin}/order/status/${res.data.data.customer_order_code}`
+          : null,
       });
 
       clearCart();
@@ -623,8 +641,16 @@ export default function PosPage() {
           )}
 
               {showPayment && (
-                <PaymentModal total={total} itemCount={itemCount}
-              onPay={handlePayment} onClose={handleCancelPayment} processing={paymentProcessing} />
+              <PaymentModal
+                total={total}
+                itemCount={itemCount}
+                onPay={handlePayment}
+                onClose={handleCancelPayment}
+                processing={paymentProcessing}
+                tables={diningTables}
+                selectedTableId={selectedTableId}
+                onSelectTable={setSelectedTableId}
+              />
           )}
 
           <SuccessModal

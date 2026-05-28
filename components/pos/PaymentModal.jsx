@@ -8,7 +8,16 @@ const fmtPecahan = (n) => {
   return `Rp ${n}`;
 };
 
-export default function PaymentModal({ total, itemCount = 0, onPay, onClose, processing = false }) {
+export default function PaymentModal({
+  total,
+  itemCount = 0,
+  onPay,
+  onClose,
+  processing = false,
+  tables = [],
+  selectedTableId = '',
+  onSelectTable,
+}) {
   const [method, setMethod]   = useState('cash');
   const [tunai, setTunai]     = useState(0);
   const [tunaiStr, setTunaiStr] = useState('');
@@ -47,7 +56,11 @@ export default function PaymentModal({ total, itemCount = 0, onPay, onClose, pro
         {/* Header */}
         <div className="px-5 py-4 border-b border-slate-700 flex items-center justify-between">
           <h2 className="text-white font-bold text-lg">Pembayaran</h2>
-          <button onClick={onClose} className="text-slate-500 hover:text-slate-300 text-xl leading-none transition-colors">×</button>
+          <button
+            onClick={onClose}
+            disabled={processing}
+            className="text-slate-500 hover:text-slate-300 disabled:cursor-not-allowed disabled:opacity-40 text-xl leading-none transition-colors"
+          >×</button>
         </div>
 
         <div className="px-5 py-4 space-y-5">
@@ -64,6 +77,32 @@ export default function PaymentModal({ total, itemCount = 0, onPay, onClose, pro
               <p className="text-slate-400 text-xs">{itemCount} item</p>
             </div>
           </div>
+
+          {/* Meja untuk status publik */}
+          {tables.length > 0 && (
+            <div>
+              <p className="text-slate-500 text-xs uppercase tracking-wide font-medium mb-2">Meja Pelanggan</p>
+              <select
+                value={selectedTableId || ''}
+                onChange={(e) => onSelectTable?.(e.target.value)}
+                disabled={processing}
+                className="w-full rounded-xl border border-slate-700 bg-slate-800 px-3 py-3 text-sm font-semibold text-white outline-none focus:border-orange-500 disabled:opacity-60"
+              >
+                <option value="">Tanpa QR status meja</option>
+                {tables.map((table) => {
+                  const busy = Number(table.active_orders || 0) > 0;
+                  return (
+                    <option key={table.id} value={table.id} disabled={busy}>
+                      Meja {table.table_number} {table.table_name ? `- ${table.table_name}` : ''}{busy ? ' (ada pesanan aktif)' : ''}
+                    </option>
+                  );
+                })}
+              </select>
+              <p className="mt-1 text-[11px] leading-5 text-slate-500">
+                Jika dipilih, struk akan berisi QR publik untuk pelanggan memantau status pesanan dan mengunduh struk digital.
+              </p>
+            </div>
+          )}
 
           {/* Metode Bayar */}
           <div>

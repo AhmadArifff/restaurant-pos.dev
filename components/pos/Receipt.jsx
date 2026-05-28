@@ -11,6 +11,10 @@ const Receipt = forwardRef(function Receipt({ transaction }, ref) {
   const kembalian   = Number(transaction.kembalian ?? 0);
   const method      = transaction.payment_method || 'cash';
   const methodLabel = { cash:'TUNAI', qris:'QRIS', transfer:'TRANSFER' }[method] || 'TUNAI';
+  const statusUrl   = transaction.receipt_status_url || transaction.order_status_url || '';
+  const qrUrl       = statusUrl
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=116x116&margin=1&data=${encodeURIComponent(statusUrl)}`
+    : '';
   const dash        = '=======================================';
   const dash2       = '--------------------------------------';
   const year        = now.getFullYear();
@@ -300,6 +304,30 @@ const Receipt = forwardRef(function Receipt({ transaction }, ref) {
         </div>
 
         <div className="receipt-dash">{dash2}</div>
+
+        {statusUrl && (
+          <>
+            <div style={{ textAlign:'center', padding:'6px 4px 3px' }}>
+              <div style={{ fontSize:'9px', fontWeight:900, marginBottom:'4px' }}>
+                SCAN STATUS PESANAN
+              </div>
+              <img
+                src={qrUrl}
+                alt="QR Status Pesanan"
+                style={{ width:'82px', height:'82px', display:'block', margin:'0 auto' }}
+              />
+              <div style={{ fontSize:'7px', color:'#555', lineHeight:1.3, marginTop:'3px', wordBreak:'break-all' }}>
+                {statusUrl}
+              </div>
+              {transaction.table_number && (
+                <div style={{ fontSize:'8px', fontWeight:700, marginTop:'2px' }}>
+                  Meja {transaction.table_number}
+                </div>
+              )}
+            </div>
+            <div className="receipt-dash">{dash2}</div>
+          </>
+        )}
 
         {/* Footer pesan */}
         <div style={{ textAlign:'center', fontSize:'10px', fontWeight:700, margin:'5px 0 2px' }}>

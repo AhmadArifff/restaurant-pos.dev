@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import AuthGuard from '@/components/ui/AuthGuard';
-import { getTransactions } from '@/lib/api';
+import { deleteTransaction, getTransactions } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { TableSkeleton } from '@/components/ui/SectionSkeleton';
@@ -75,6 +75,24 @@ export default function TransactionHistoryPage() {
       dateFrom: dateStr,
       dateTo: dateStr,
     });
+  };
+
+  const handleDeleteTransaction = async (tx) => {
+    const reason = window.prompt(
+      `Alasan hapus/void transaksi ${tx.invoice_number}:\n\nStok akan dikembalikan sesuai bahan yang keluar dari transaksi ini.`
+    );
+    if (!reason?.trim()) return;
+    if (!window.confirm(`Yakin hapus transaksi ${tx.invoice_number}? Aksi ini akan mengembalikan stok.`)) return;
+
+    try {
+      setLoading(true);
+      await deleteTransaction(tx.id, { reason: reason.trim() });
+      await loadTransactions(appliedFilters);
+      alert('Transaksi berhasil dihapus dan stok sudah dikembalikan.');
+    } catch (err) {
+      alert(err.response?.data?.message || 'Gagal menghapus transaksi');
+      setLoading(false);
+    }
   };
 
   // Initial load - fixed dependency array
@@ -321,7 +339,7 @@ export default function TransactionHistoryPage() {
           {/* Table */}
           <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
             {loading ? (
-              <TableSkeleton rows={7} cols={6} />
+              <TableSkeleton rows={7} cols={7} />
             ) : transactions.length === 0 ? (
               <div className="p-8 text-center text-slate-400">
                 <p>📭 Tidak ada transaksi</p>
@@ -348,6 +366,9 @@ export default function TransactionHistoryPage() {
                       </th>
                       <th className="px-4 py-3 text-right text-sm font-semibold text-slate-300">
                         Total
+                      </th>
+                      <th className="px-4 py-3 text-right text-sm font-semibold text-slate-300">
+                        Aksi
                       </th>
                     </tr>
                   </thead>
@@ -394,6 +415,15 @@ export default function TransactionHistoryPage() {
                           </td>
                           <td className="px-4 py-3 text-sm font-semibold text-orange-400 text-right">
                             {formatCurrency(tx.total_price)}
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteTransaction(tx)}
+                              className="rounded-lg border border-red-400/25 bg-red-500/10 px-3 py-1.5 text-xs font-bold text-red-200 transition hover:bg-red-500/20"
+                            >
+                              Hapus & Kembalikan Stok
+                            </button>
                           </td>
                         </tr>
                       );
