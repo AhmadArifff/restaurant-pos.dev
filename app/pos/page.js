@@ -5,7 +5,7 @@ import AuthGuard from '@/components/ui/AuthGuard';
 import {
   getCategories, createTransaction,
   getMyStockProducts, getStockAllUsers, getTodayStats,
-  getPublicDiningTables,
+  getPublicDiningTables, getActiveDiscountPrograms,
 } from '@/lib/api';
 import { useCartStore } from '@/store/cartStore';
 import { useAuthStore } from '@/store/authStore';
@@ -79,6 +79,7 @@ export default function PosPage() {
     margin_pct: 0,
   });
   const [diningTables, setDiningTables] = useState([]);
+  const [bundlePrograms, setBundlePrograms] = useState([]);
   const [selectedTableId, setSelectedTableId] = useState('');
   const [feedbackModal,   setFeedbackModal]   = useState({
     isOpen: false,
@@ -114,13 +115,15 @@ export default function PosPage() {
       getCategories(),
       getTodayStats().catch(() => ({ data: null })),
       getPublicDiningTables({ branch_id: selectedBranchId || user?.branch_id || undefined }).catch(() => ({ data: [] })),
+      getActiveDiscountPrograms({ type: 'bundle' }).catch(() => ({ data: [] })),
     ])
-      .then(([p, c, stats, tableRes]) => {
+      .then(([p, c, stats, tableRes, bundleRes]) => {
         const prods = p.data || [];
         const tableRows = tableRes.data || [];
         setProducts(prods);
         setCategories(c.data || []);
         setDiningTables(tableRows);
+        setBundlePrograms(bundleRes.data || []);
         setSelectedTableId((prev) => {
           if (prev && tableRows.some((table) => String(table.id) === String(prev) && Number(table.active_orders || 0) === 0)) {
             return prev;
@@ -358,6 +361,53 @@ export default function PosPage() {
       return String(a.name || '').localeCompare(String(b.name || ''), 'id');
     }), [products, activeCategory, search, getProductStock]);
 
+  const bundleHints = useMemo(() => {
+    const productById = new Map(products.map((product) => [Number(product.id), product]));
+    const cartIds = new Set(items.map((item) => Number(item.id || item.product_id)));
+
+    return (bundlePrograms || [])
+      .map((program) => {
+        const bundleIds = Array.isArray(program.bundle_product_ids)
+          ? program.bundle_product_ids.map(Number).filter(Boolean)
+          : [];
+        const bundleProducts = bundleIds.map((id) => productById.get(id)).filter(Boolean);
+        if (bundleProducts.length === 0) return null;
+
+        const missingProducts = bundleProducts.filter((product) => !cartIds.has(Number(product.id)));
+        const selectedCount = bundleProducts.length - missingProducts.length;
+        const unavailable = missingProducts.filter((product) => Number(getProductStock(product) || 0) <= 0);
+        const discountText = program.discount_type === 'percent'
+          ? `${Number(program.discount_value || 0)}%`
+          : `Rp ${Number(program.discount_value || 0).toLocaleString('id-ID')}`;
+
+        return {
+          ...program,
+          bundleProducts,
+          missingProducts,
+          selectedCount,
+          unavailable,
+          discountText,
+          complete: missingProducts.length === 0,
+        };
+      })
+      .filter(Boolean)
+      .filter((program) => !program.complete || program.selectedCount > 0)
+      .sort((a, b) => Number(b.selectedCount) - Number(a.selectedCount));
+  }, [bundlePrograms, getProductStock, items, products]);
+
+  const handleAddBundle = (program) => {
+    const targets = (program.missingProducts?.length ? program.missingProducts : program.bundleProducts)
+      .filter((product) => Number(getProductStock(product) || 0) > 0);
+    targets.forEach((product) => handleAddItem(product));
+    if (targets.length > 0) {
+      showFeedback(
+        'success',
+        'Paket Bundle Ditambahkan',
+        `${targets.length} menu syarat paket sudah masuk ke keranjang.`
+      );
+    }
+  };
+
   const now     = new Date();
   const timeStr = now.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
   const dateStr = now.toLocaleDateString('id-ID', {
@@ -566,6 +616,46 @@ export default function PosPage() {
                 </p>
               )}
 
+              {!loading && bundleHints.length > 0 && (
+                <div className="mb-4 grid gap-3 md:grid-cols-2">
+                  {bundleHints.slice(0, 2).map((program) => {
+                    const disabled = !program.complete && program.unavailable.length > 0;
+                    return (
+                      <button
+                        key={program.id}
+                        type="button"
+                        onClick={() => !disabled && !program.complete && handleAddBundle(program)}
+                        disabled={disabled}
+                        className={`rounded-2xl border p-4 text-left transition ${
+                          program.complete
+                            ? 'cursor-default border-emerald-400/35 bg-emerald-500/10 text-emerald-100'
+                            : disabled
+                              ? 'cursor-not-allowed border-slate-700 bg-slate-800/50 text-slate-500'
+                              : 'border-orange-400/35 bg-orange-500/10 text-orange-100 hover:border-orange-400/70'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-xs font-black uppercase tracking-[0.18em] text-orange-300">Paket Bundle</p>
+                            <h3 className="mt-1 line-clamp-2 text-sm font-black text-white">{program.name}</h3>
+                          </div>
+                          <span className="shrink-0 rounded-full bg-slate-950/60 px-2.5 py-1 text-xs font-black">
+                            {program.discountText}
+                          </span>
+                        </div>
+                        <p className="mt-2 text-xs leading-5 text-slate-300">
+                          {program.complete
+                            ? 'Syarat paket sudah lengkap, diskon akan otomatis dicek saat pembayaran.'
+                            : disabled
+                              ? `Belum bisa diklaim karena ${program.unavailable.map((item) => item.name).join(', ')} sedang habis.`
+                              : `Tambah ${program.missingProducts.map((item) => item.name).join(', ')} untuk klaim diskon paket.`}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
               <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
                 {loading
                   ? [...Array(8)].map((_, i) => <ProductSkeleton key={i} />)
@@ -670,6 +760,7 @@ export default function PosPage() {
                 selectedTableId={selectedTableId}
                 onSelectTable={setSelectedTableId}
                 items={items}
+                bundleHints={bundleHints}
               />
           )}
 

@@ -81,6 +81,7 @@ export default function DiscountsPage() {
   const [editing, setEditing] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [typeFilter, setTypeFilter] = useState('all');
 
   const load = async () => {
     setLoading(true);
@@ -106,6 +107,19 @@ export default function DiscountsPage() {
     const used = programs.reduce((sum, item) => sum + Number(item.used_count || 0), 0);
     return { active, distributed, used };
   }, [programs]);
+
+  const typeFilters = useMemo(() => ([
+    { key: 'all', label: 'Semua', count: programs.length },
+    { key: 'review_reward', label: 'Reward Review', count: programs.filter((item) => item.type === 'review_reward').length },
+    { key: 'voucher', label: 'Kode Voucher', count: programs.filter((item) => item.type === 'voucher').length },
+    { key: 'bundle', label: 'Paket Bundle', count: programs.filter((item) => item.type === 'bundle').length },
+  ]), [programs]);
+
+  const filteredPrograms = useMemo(() => (
+    typeFilter === 'all'
+      ? programs
+      : programs.filter((program) => program.type === typeFilter)
+  ), [programs, typeFilter]);
 
   const allBundleProductIds = useMemo(() => products.map((product) => product.id), [products]);
   const allBundleSelected = allBundleProductIds.length > 0
@@ -392,10 +406,34 @@ export default function DiscountsPage() {
 
             <section className="rounded-2xl border border-slate-700 bg-slate-800 p-5">
               <h2 className="text-xl font-black text-white">Daftar Program</h2>
+              <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+                {typeFilters.map((filter) => (
+                  <button
+                    key={filter.key}
+                    type="button"
+                    onClick={() => setTypeFilter(filter.key)}
+                    className={`shrink-0 rounded-xl border px-3 py-2 text-xs font-black transition ${
+                      typeFilter === filter.key
+                        ? 'border-orange-500 bg-orange-500 text-white shadow-lg shadow-orange-950/30'
+                        : 'border-slate-700 bg-slate-900 text-slate-400 hover:border-orange-500/60 hover:text-orange-300'
+                    }`}
+                  >
+                    {filter.label}
+                    <span className={`ml-2 rounded-full px-2 py-0.5 ${
+                      typeFilter === filter.key ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-300'
+                    }`}>
+                      {filter.count}
+                    </span>
+                  </button>
+                ))}
+              </div>
               <div className="mt-4 space-y-3">
                 {loading && <p className="rounded-xl bg-slate-900 p-5 text-slate-400">Memuat data...</p>}
                 {!loading && programs.length === 0 && <p className="rounded-xl bg-slate-900 p-5 text-slate-400">Belum ada program diskon.</p>}
-                {programs.map((program) => {
+                {!loading && programs.length > 0 && filteredPrograms.length === 0 && (
+                  <p className="rounded-xl bg-slate-900 p-5 text-slate-400">Belum ada program untuk filter ini.</p>
+                )}
+                {filteredPrograms.map((program) => {
                   const programState = getProgramState(program);
                   return (
                   <article key={program.id} className="rounded-xl border border-slate-700 bg-slate-900 p-4">

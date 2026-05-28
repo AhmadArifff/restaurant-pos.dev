@@ -10,6 +10,7 @@ import {
   getCustomerMenu,
   getCustomerOrder,
   getDiningTableByToken,
+  previewDiscount,
   submitCustomerOrderReview,
 } from '@/lib/api';
 import { resolveAssetUrl } from '@/lib/assetUrl';
@@ -64,6 +65,9 @@ export default function CustomerOrderPage() {
   const [discountAlert, setDiscountAlert] = useState(null);
   const [showMobileCart, setShowMobileCart] = useState(false);
   const [reviewRewardProgram, setReviewRewardProgram] = useState(null);
+  const [bundlePrograms, setBundlePrograms] = useState([]);
+  const [discountPreview, setDiscountPreview] = useState(null);
+  const [discountLoading, setDiscountLoading] = useState(false);
 
   useEffect(() => {
     if (!token) return;
@@ -72,15 +76,17 @@ export default function CustomerOrderPage() {
     const load = async () => {
       const savedOrderCode = storageKey ? localStorage.getItem(storageKey) : null;
       const tableRes = await getDiningTableByToken(token);
-      const [menuRes, rewardRes, orderRes] = await Promise.all([
+      const [menuRes, rewardRes, bundleRes, orderRes] = await Promise.all([
         getCustomerMenu({ branch_id: tableRes.data?.branch_id }),
         getActiveDiscountPrograms({ type: 'review_reward' }).catch(() => ({ data: [] })),
+        getActiveDiscountPrograms({ type: 'bundle' }).catch(() => ({ data: [] })),
         savedOrderCode ? getCustomerOrder(savedOrderCode).catch(() => null) : Promise.resolve(null),
       ]);
       if (!mounted) return;
       setTable(tableRes.data);
       setProducts(menuRes.data || []);
       setReviewRewardProgram(Array.isArray(rewardRes.data) ? rewardRes.data[0] || null : null);
+      setBundlePrograms(Array.isArray(bundleRes.data) ? bundleRes.data : []);
       if (orderRes?.data) setOrder(orderRes.data);
       setLoading(false);
     };
@@ -136,6 +142,8 @@ export default function CustomerOrderPage() {
 
   const total = cart.reduce((sum, item) => sum + Number(item.price) * item.qty, 0);
   const itemCount = cart.reduce((sum, item) => sum + item.qty, 0);
+  const discountAmount = Math.max(0, Number(discountPreview?.discount_amount || 0));
+  const payableTotal = Math.max(0, Number(discountPreview?.final_total ?? total));
   const tableBusy = !order && Number(table?.active_orders || 0) > 0;
   const branchLabel = table?.branch_name || 'Cabang Sultan Kebab';
   const branchArea = table?.branch_area || table?.branch_address || '';
@@ -148,6 +156,76 @@ export default function CustomerOrderPage() {
       }`
     : 'Review semua menu';
 
+  const bundleHints = useMemo(() => {
+    const productById = new Map(products.map((product) => [Number(product.id), product]));
+    const cartIds = new Set(cart.map((item) => Number(item.id || item.product_id)));
+
+    return (bundlePrograms || [])
+      .map((program) => {
+        const bundleIds = Array.isArray(program.bundle_product_ids)
+          ? program.bundle_product_ids.map(Number).filter(Boolean)
+          : [];
+        const bundleProducts = bundleIds.map((id) => productById.get(id)).filter(Boolean);
+        if (bundleProducts.length === 0) return null;
+
+        const missingProducts = bundleProducts.filter((product) => !cartIds.has(Number(product.id)));
+        const selectedCount = bundleProducts.length - missingProducts.length;
+        const unavailable = missingProducts.filter((product) => Number(product.stock || 0) <= 0);
+        const discountText = program.discount_type === 'percent'
+          ? `${Number(program.discount_value || 0)}%`
+          : formatRp(program.discount_value);
+
+        return {
+          ...program,
+          bundleProducts,
+          missingProducts,
+          selectedCount,
+          unavailable,
+          discountText,
+          complete: missingProducts.length === 0,
+        };
+      })
+      .filter(Boolean)
+      .filter((program) => !program.complete || program.selectedCount > 0)
+      .sort((a, b) => Number(b.selectedCount) - Number(a.selectedCount));
+  }, [bundlePrograms, cart, products]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      if (!cart.length || total <= 0) {
+        setDiscountPreview(null);
+        return;
+      }
+
+      try {
+        setDiscountLoading(true);
+        const res = await previewDiscount({
+          subtotal: total,
+          items: cart.map((item) => ({ product_id: item.id, qty: item.qty, price: item.price })),
+          customer_phone: customerPhoneForApi,
+          voucher_code: voucherCode,
+        });
+        if (!cancelled) setDiscountPreview(res.data?.applicable ? res.data : null);
+      } catch (err) {
+        if (!cancelled) {
+          setDiscountPreview({
+            applicable: false,
+            error: true,
+            message: err.response?.data?.message || 'Diskon belum bisa digunakan.',
+          });
+        }
+      } finally {
+        if (!cancelled) setDiscountLoading(false);
+      }
+    }, 350);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [cart, customerPhoneForApi, total, voucherCode]);
+
   const addToCart = (product) => {
     if (tableBusy) return;
     if (Number(product.stock || 0) <= 0) return;
@@ -159,6 +237,24 @@ export default function CustomerOrderPage() {
       }
       return [...prev, { ...product, qty: 1, note: '' }];
     });
+  };
+
+  const addBundleToCart = (program) => {
+    if (tableBusy) return;
+    const targets = (program.missingProducts?.length ? program.missingProducts : program.bundleProducts)
+      .filter((product) => Number(product.stock || 0) > 0);
+    if (!targets.length) return;
+
+    setCart((prev) => {
+      let next = prev;
+      targets.forEach((product) => {
+        const existing = next.find((item) => item.id === product.id);
+        if (existing) return;
+        next = [...next, { ...product, qty: 1, note: '' }];
+      });
+      return next;
+    });
+    setShowMobileCart(true);
   };
 
   const changeQty = (productId, delta) => {
@@ -271,9 +367,37 @@ export default function CustomerOrderPage() {
       </div>
 
       <div className="mt-5 flex items-center justify-between border-t border-[#C9A84C]/15 pt-4">
-        <span className="text-sm text-[#EDE0C4]/70">Total</span>
+        <span className="text-sm text-[#EDE0C4]/70">Subtotal</span>
         <strong className="text-2xl text-[#C9A84C]">{formatRp(total)}</strong>
       </div>
+      {cart.length > 0 && (
+        <div className="mt-3 rounded-2xl border border-[#C9A84C]/15 bg-[#0D0A06]/55 p-3 text-xs">
+          {discountLoading ? (
+            <p className="text-[#EDE0C4]/55">Mengecek diskon...</p>
+          ) : discountPreview?.error ? (
+            <p className="text-yellow-200">{discountPreview.message}</p>
+          ) : discountAmount > 0 ? (
+            <div className="space-y-2">
+              <div className="flex justify-between gap-3 text-emerald-200">
+                <span>{discountPreview.label}</span>
+                <strong>-{formatRp(discountAmount)}</strong>
+              </div>
+              <div className="flex justify-between gap-3 border-t border-[#C9A84C]/10 pt-2 text-[#C9A84C]">
+                <span>Total bayar</span>
+                <strong>{formatRp(payableTotal)}</strong>
+              </div>
+            </div>
+          ) : bundleHints.some((program) => program.complete) && !customerPhoneForApi ? (
+            <p className="text-yellow-200">Isi nomor HP agar diskon paket bundle bisa diklaim.</p>
+          ) : bundleHints.some((program) => !program.complete && program.missingProducts?.length) ? (
+            <p className="text-[#C9A84C]">
+              Tambah {bundleHints.find((program) => !program.complete && program.missingProducts?.length)?.missingProducts?.map((item) => item.name).join(', ')} untuk membuka diskon paket.
+            </p>
+          ) : (
+            <p className="text-[#EDE0C4]/55">Voucher dan paket bundle otomatis dicek sebelum pesanan dikirim.</p>
+          )}
+        </div>
+      )}
       <button
         onClick={submitOrder}
         disabled={submitting || !cart.length}
@@ -353,6 +477,46 @@ export default function CustomerOrderPage() {
               </button>
             ))}
           </div>
+
+          {!tableBusy && bundleHints.length > 0 && (
+            <div className="mb-4 grid gap-3 sm:grid-cols-2">
+              {bundleHints.slice(0, 2).map((program) => {
+                const disabled = !program.complete && program.unavailable.length > 0;
+                return (
+                  <button
+                    key={program.id}
+                    type="button"
+                    onClick={() => !disabled && !program.complete && addBundleToCart(program)}
+                    disabled={disabled}
+                    className={`rounded-3xl border p-4 text-left transition ${
+                      program.complete
+                        ? 'cursor-default border-emerald-400/30 bg-emerald-500/10 text-emerald-100'
+                        : disabled
+                          ? 'cursor-not-allowed border-[#C9A84C]/10 bg-[#1A1409]/60 text-[#EDE0C4]/45'
+                          : 'border-[#C9A84C]/30 bg-[#C9A84C]/10 text-[#F5EDD8] active:scale-[0.99]'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-black uppercase tracking-[0.22em] text-[#C9A84C]">Paket Bundle</p>
+                        <h3 className="mt-1 line-clamp-2 font-black">{program.name}</h3>
+                      </div>
+                      <span className="shrink-0 rounded-full bg-[#0D0A06]/70 px-3 py-1 text-xs font-black text-[#C9A84C]">
+                        {program.discountText}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-xs leading-5 text-[#EDE0C4]/70">
+                      {program.complete
+                        ? 'Syarat paket sudah lengkap. Isi nomor HP agar diskon bisa diklaim.'
+                        : disabled
+                          ? `Belum bisa diklaim karena ${program.unavailable.map((item) => item.name).join(', ')} sedang habis.`
+                          : `Ambil ${program.missingProducts.map((item) => item.name).join(', ')} untuk dapat diskon paket.`}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
             {filteredProducts.map((product, index) => {

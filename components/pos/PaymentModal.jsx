@@ -20,6 +20,7 @@ export default function PaymentModal({
   selectedTableId = '',
   onSelectTable,
   items = [],
+  bundleHints = [],
 }) {
   const [method, setMethod]   = useState('cash');
   const [tunai, setTunai]     = useState(0);
@@ -189,6 +190,12 @@ export default function PaymentModal({
                   <span>{discountPreview.label}</span>
                   <strong>-Rp {discountAmount.toLocaleString('id-ID')}</strong>
                 </div>
+              ) : bundleHints.some((program) => program.complete) && !customerPhoneForApi ? (
+                <span className="text-yellow-300">Nomor HP wajib diisi agar diskon paket bundle bisa diklaim.</span>
+              ) : bundleHints.some((program) => !program.complete && program.missingProducts?.length) ? (
+                <span className="text-orange-300">
+                  Tambah {bundleHints.find((program) => !program.complete && program.missingProducts?.length)?.missingProducts?.map((item) => item.name).join(', ')} untuk membuka diskon paket.
+                </span>
               ) : (
                 <span className="text-slate-500">Bundle aktif otomatis terdeteksi. Voucher memakai batas klaim berdasarkan nomor HP.</span>
               )}
