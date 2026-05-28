@@ -1,5 +1,6 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { previewDiscount } from '@/lib/api';
 
 const PECAHAN = [100000, 50000, 20000, 10000, 5000, 2000, 1000, 500, 200, 100, 50];
 
@@ -17,13 +18,60 @@ export default function PaymentModal({
   tables = [],
   selectedTableId = '',
   onSelectTable,
+  items = [],
 }) {
   const [method, setMethod]   = useState('cash');
   const [tunai, setTunai]     = useState(0);
   const [tunaiStr, setTunaiStr] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [voucherCode, setVoucherCode] = useState('');
+  const [discountPreview, setDiscountPreview] = useState(null);
+  const [discountLoading, setDiscountLoading] = useState(false);
 
-  const kembalian = method === 'cash' ? tunai - total : 0;
-  const canPay    = !processing && (method !== 'cash' || (tunai >= total));
+  const previewItems = useMemo(
+    () => items.map((item) => ({ product_id: item.id || item.product_id, qty: item.qty, price: item.price })),
+    [items]
+  );
+  const payableTotal = Math.max(0, Number(discountPreview?.final_total ?? total));
+  const discountAmount = Math.max(0, Number(discountPreview?.discount_amount || 0));
+  const kembalian = method === 'cash' ? tunai - payableTotal : 0;
+  const canPay    = !processing && (method !== 'cash' || (tunai >= payableTotal));
+
+  useEffect(() => {
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      if (!total || previewItems.length === 0) {
+        setDiscountPreview(null);
+        return;
+      }
+
+      try {
+        setDiscountLoading(true);
+        const res = await previewDiscount({
+          subtotal: total,
+          items: previewItems,
+          customer_phone: customerPhone,
+          voucher_code: voucherCode,
+        });
+        if (!cancelled) setDiscountPreview(res.data?.applicable ? res.data : null);
+      } catch (err) {
+        if (!cancelled) {
+          setDiscountPreview({
+            applicable: false,
+            message: err.response?.data?.message || 'Voucher belum bisa digunakan.',
+            error: true,
+          });
+        }
+      } finally {
+        if (!cancelled) setDiscountLoading(false);
+      }
+    }, 350);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [customerPhone, previewItems, total, voucherCode]);
 
   const addPecahan = (p) => {
     const newVal = tunai + p;
@@ -72,6 +120,11 @@ export default function PaymentModal({
               <p className="text-orange-400 text-2xl font-black mt-0.5">
                 Rp {total.toLocaleString('id-ID')}
               </p>
+              {discountAmount > 0 && (
+                <p className="mt-1 text-xs font-semibold text-emerald-300">
+                  Setelah diskon: Rp {payableTotal.toLocaleString('id-ID')}
+                </p>
+              )}
             </div>
             <div className="text-right">
               <p className="text-slate-400 text-xs">{itemCount} item</p>
@@ -103,6 +156,41 @@ export default function PaymentModal({
               </p>
             </div>
           )}
+
+          {/* Voucher */}
+          <div className="rounded-xl border border-slate-700 bg-slate-800/60 p-3">
+            <p className="text-slate-500 text-xs uppercase tracking-wide font-medium mb-2">Voucher & Diskon</p>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <input
+                value={customerPhone}
+                onChange={(e) => setCustomerPhone(e.target.value)}
+                disabled={processing}
+                placeholder="No. HP pelanggan"
+                className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white outline-none focus:border-orange-500"
+              />
+              <input
+                value={voucherCode}
+                onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
+                disabled={processing}
+                placeholder="Kode voucher"
+                className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-bold uppercase text-white outline-none focus:border-orange-500"
+              />
+            </div>
+            <div className="mt-2 rounded-lg bg-slate-900/70 px-3 py-2 text-xs">
+              {discountLoading ? (
+                <span className="text-slate-400">Mengecek diskon...</span>
+              ) : discountPreview?.error ? (
+                <span className="text-yellow-300">{discountPreview.message}</span>
+              ) : discountAmount > 0 ? (
+                <div className="flex items-center justify-between gap-2 text-emerald-300">
+                  <span>{discountPreview.label}</span>
+                  <strong>-Rp {discountAmount.toLocaleString('id-ID')}</strong>
+                </div>
+              ) : (
+                <span className="text-slate-500">Bundle aktif otomatis terdeteksi. Voucher memakai batas klaim berdasarkan nomor HP.</span>
+              )}
+            </div>
+          </div>
 
           {/* Metode Bayar */}
           <div>
@@ -209,7 +297,12 @@ export default function PaymentModal({
             Batal
           </button>
           <button
-            onClick={() => canPay && onPay(method, tunai, kembalian)}
+            onClick={() => canPay && onPay(method, tunai, kembalian, {
+              customer_phone: customerPhone,
+              voucher_code: voucherCode,
+              discount_amount: discountAmount,
+              final_total: payableTotal,
+            })}
             disabled={!canPay}
             className="flex-[2] bg-orange-500 hover:bg-orange-600 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black rounded-xl py-3 text-base transition-colors"
           >

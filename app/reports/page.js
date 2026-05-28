@@ -306,13 +306,26 @@ export default function ReportsPage() {
           <SectionSkeleton />
         ) : analysis ? (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-4">
               <MetricCard label="Total Omzet" value={formatCurrency(analysis.summary.revenue)} helper={analysis.range.label} />
               <MetricCard label="Gross Profit" value={formatCurrency(analysis.summary.gross_profit)} helper={`HPP ${formatCurrency(analysis.summary.hpp)}`} tone="green" />
               <MetricCard label="Margin" value={formatCurrency(analysis.summary.gross_profit)} helper={`${analysis.summary.margin_pct}% gross margin`} tone={analysis.summary.margin_pct >= 45 ? 'green' : 'red'} />
               <MetricCard label="Transaksi" value={`${formatNumber(analysis.summary.total_trx)} trx`} helper={`AOV ${formatCurrency(analysis.summary.avg_order_value)}`} tone="blue" />
               <MetricCard label="Growth" value={`${analysis.summary.growth_pct >= 0 ? '+' : ''}${analysis.summary.growth_pct}%`} helper="Vs periode sebelumnya" tone={analysis.summary.growth_pct >= 0 ? 'green' : 'red'} />
+              <MetricCard label="Distribusi Diskon" value={formatCurrency(analysis.discounts?.total_discount || 0)} helper={`Rata-rata ${analysis.discounts?.avg_discount_rate || 0}% | ${formatNumber(analysis.discounts?.total_orders || 0)} klaim`} tone="green" />
             </div>
+
+            {analysis.discounts?.by_type?.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {analysis.discounts.by_type.map((item) => (
+                  <div key={item.type} className="rounded-lg border border-slate-800 bg-slate-900 p-4">
+                    <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{item.type === 'review_reward' ? 'Reward Review' : item.type === 'voucher' ? 'Voucher' : 'Bundle'}</p>
+                    <p className="mt-2 text-xl font-black text-emerald-400">{formatCurrency(item.total_discount)}</p>
+                    <p className="mt-1 text-xs text-slate-500">{formatNumber(item.total_orders)} klaim</p>
+                  </div>
+                ))}
+              </div>
+            )}
 
             <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.45fr)_minmax(360px,0.75fr)] gap-6">
               <div className="bg-slate-900 border border-slate-800 rounded-lg p-5">

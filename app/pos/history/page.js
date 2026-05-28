@@ -188,6 +188,13 @@ export default function TransactionHistoryPage() {
   const monthlyStats = calculateStats();
   const totalOmzet = transactions.reduce((sum, t) => sum + Number(t.total_price), 0);
   const totalMargin = Math.round(totalOmzet * 0.35);
+  const totalDiscount = transactions.reduce((sum, t) => sum + Number(t.customer_discount_amount || 0), 0);
+  const discountCount = transactions.filter((t) => Number(t.customer_discount_amount || 0) > 0).length;
+  const avgDiscountRate = discountCount > 0
+    ? Math.round(
+        transactions.reduce((sum, t) => sum + Number(t.customer_discount_rate || 0), 0) / discountCount * 10
+      ) / 10
+    : 0;
 
   return (
     <AuthGuard requiredRole="admin">
@@ -317,7 +324,7 @@ export default function TransactionHistoryPage() {
           )}
 
           {/* Summary Overall */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
             <div className="bg-slate-800 border border-slate-700 rounded-xl p-4">
               <p className="text-slate-400 text-sm">Total Transaksi</p>
               <p className="text-2xl font-black text-white">{transactions.length}</p>
@@ -334,12 +341,19 @@ export default function TransactionHistoryPage() {
                 {formatCurrency(totalMargin)}
               </p>
             </div>
+            <div className="bg-slate-800 border border-emerald-500/25 rounded-xl p-4">
+              <p className="text-slate-400 text-sm">Total Distribusi Diskon</p>
+              <p className="text-2xl font-black text-emerald-400">
+                {formatCurrency(totalDiscount)}
+              </p>
+              <p className="mt-1 text-xs text-slate-500">Rata-rata {avgDiscountRate}% | {discountCount} transaksi</p>
+            </div>
           </div>
 
           {/* Table */}
           <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
             {loading ? (
-              <TableSkeleton rows={7} cols={7} />
+              <TableSkeleton rows={7} cols={8} />
             ) : transactions.length === 0 ? (
               <div className="p-8 text-center text-slate-400">
                 <p>📭 Tidak ada transaksi</p>
@@ -366,6 +380,9 @@ export default function TransactionHistoryPage() {
                       </th>
                       <th className="px-4 py-3 text-right text-sm font-semibold text-slate-300">
                         Total
+                      </th>
+                      <th className="px-4 py-3 text-right text-sm font-semibold text-slate-300">
+                        Diskon
                       </th>
                       <th className="px-4 py-3 text-right text-sm font-semibold text-slate-300">
                         Aksi
@@ -415,6 +432,11 @@ export default function TransactionHistoryPage() {
                           </td>
                           <td className="px-4 py-3 text-sm font-semibold text-orange-400 text-right">
                             {formatCurrency(tx.total_price)}
+                          </td>
+                          <td className="px-4 py-3 text-sm font-semibold text-emerald-400 text-right">
+                            {Number(tx.customer_discount_amount || 0) > 0
+                              ? formatCurrency(tx.customer_discount_amount)
+                              : '-'}
                           </td>
                           <td className="px-4 py-3 text-right">
                             <button

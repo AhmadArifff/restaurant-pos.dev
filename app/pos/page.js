@@ -252,7 +252,7 @@ export default function PosPage() {
 
   // ── Transaksi ──────────────────────────────────────────────
   // ✅ CHANGED: Track admin execution dan request_id yang digunakan
-  const handlePayment = async (paymentMethod, tunai = 0) => {
+  const handlePayment = async (paymentMethod, tunai = 0, _kembalian = 0, discountMeta = {}) => {
     if (paymentProcessing) return;
     for (const cartItem of items) {
       const stock = getProductStock(cartItem);
@@ -276,24 +276,33 @@ export default function PosPage() {
         payment_method: paymentMethod,
         sourceUserId: sourceUserId,
         table_id: selectedTableId || null,
+        customer_phone: discountMeta.customer_phone || '',
+        voucher_code: discountMeta.voucher_code || '',
         items: items.map(i => ({ product_id: i.id, price: i.price, qty: i.qty })),
       });
+      const transactionData = res.data?.data || {};
+      const finalTotal = Number(transactionData.total ?? transactionData.total_price ?? discountMeta.final_total ?? total);
+      const discountAmount = Number(transactionData.discount_amount ?? discountMeta.discount_amount ?? 0);
 
       setLastTransaction({
         ...res.data,
         items,
-        total,
+        subtotal: Number(transactionData.subtotal ?? total),
+        total: finalTotal,
+        discount_amount: discountAmount,
+        discount_label: transactionData.discount_label,
+        voucher_code: transactionData.voucher_code,
         payment_method: paymentMethod,
         tunai,
-        kembalian:  paymentMethod === 'cash' ? tunai - total : 0,
+        kembalian:  paymentMethod === 'cash' ? tunai - finalTotal : 0,
         kasir_name: isAdmin
           ? `Admin (${user?.name}) → ${selectedSourceUser?.user_name || 'Gudang'}`
           : user?.name,
         created_by_type: isAdmin ? 'admin' : 'kasir',
-        customer_order_code: res.data?.data?.customer_order_code,
-        table_number: res.data?.data?.table_number,
-        receipt_status_url: res.data?.data?.customer_order_code
-          ? `${window.location.origin}/order/status/${res.data.data.customer_order_code}`
+        customer_order_code: transactionData.customer_order_code,
+        table_number: transactionData.table_number,
+        receipt_status_url: transactionData.customer_order_code
+          ? `${window.location.origin}/order/status/${transactionData.customer_order_code}`
           : null,
       });
 
@@ -303,7 +312,7 @@ export default function PosPage() {
       showFeedback(
         'success',
         'Transaksi Berhasil',
-        `Pendapatan cabang hari ini bertambah Rp ${Number(total || 0).toLocaleString('id-ID')}. Struk sedang disiapkan.`
+        `Pendapatan cabang hari ini bertambah Rp ${Number(finalTotal || 0).toLocaleString('id-ID')}. Struk sedang disiapkan.`
       );
       setTimeout(() => handlePrint(), 400);
       loadData();
@@ -650,6 +659,7 @@ export default function PosPage() {
                 tables={diningTables}
                 selectedTableId={selectedTableId}
                 onSelectTable={setSelectedTableId}
+                items={items}
               />
           )}
 

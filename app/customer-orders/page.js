@@ -53,6 +53,19 @@ const statusFilters = [
 
 const formatRp = (value) => `Rp ${Number(value || 0).toLocaleString('id-ID')}`;
 
+function Stars({ value = 0, size = 'text-sm' }) {
+  const rating = Math.max(0, Math.min(5, Number(value || 0)));
+  return (
+    <span className={`inline-flex items-center gap-0.5 ${size}`} aria-label={`${rating} dari 5 bintang`}>
+      {[1, 2, 3, 4, 5].map((star) => (
+        <span key={star} className={star <= rating ? 'text-yellow-300' : 'text-slate-600'}>
+          {star <= rating ? '★' : '☆'}
+        </span>
+      ))}
+    </span>
+  );
+}
+
 const getOrderUrl = (token) => {
   if (typeof window === 'undefined') return `/order/${token}`;
   return `${window.location.origin}/order/${token}`;
@@ -69,8 +82,8 @@ export default function CustomerOrdersPage() {
   const [selectedTable, setSelectedTable] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const load = async () => {
-    setLoading(true);
+  const load = async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
     try {
       const [ordersRes, tablesRes] = await Promise.all([
         getCustomerOrders({}),
@@ -80,13 +93,13 @@ export default function CustomerOrdersPage() {
       setTables(tablesRes.data || []);
       setSelectedTable((prev) => prev || tablesRes.data?.[0] || null);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
     load();
-    const timer = window.setInterval(load, 5000);
+    const timer = window.setInterval(() => load({ silent: true }), 5000);
     return () => window.clearInterval(timer);
   }, [isAdmin]);
 
@@ -271,7 +284,9 @@ export default function CustomerOrdersPage() {
                       <p className="text-xs text-slate-500">Total pesanan</p>
                       <strong className="text-2xl text-orange-400">{formatRp(order.final_total || order.subtotal)}</strong>
                       {Number(order.discount_amount || 0) > 0 && (
-                        <p className="text-xs text-emerald-300">Diskon {formatRp(order.discount_amount)}</p>
+                        <p className="text-xs text-emerald-300">
+                          {order.discount_label || 'Diskon'} {formatRp(order.discount_amount)}
+                        </p>
                       )}
                     </div>
                   </div>
@@ -284,11 +299,34 @@ export default function CustomerOrdersPage() {
                           <span className="font-bold text-white">{formatRp(item.subtotal)}</span>
                         </div>
                       ))}
-                      {order.note && <p className="mt-3 text-xs italic text-slate-500">Catatan: {order.note}</p>}
+                      {order.items?.some((item) => item.review) && (
+                        <div className="mt-3 space-y-2 border-t border-slate-700/60 pt-3">
+                          <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Rating menu</p>
+                          {order.items
+                            ?.filter((item) => item.review)
+                            .map((item) => (
+                              <div key={`review-${item.id}`} className="rounded-xl bg-slate-950/45 p-2">
+                                <div className="flex items-center justify-between gap-3">
+                                  <span className="text-xs font-semibold text-slate-200">{item.product_name}</span>
+                                  <Stars value={item.review.rating} />
+                                </div>
+                                {item.review.comment && (
+                                  <p className="mt-1 text-xs text-slate-400">{item.review.comment}</p>
+                                )}
+                              </div>
+                            ))}
+                        </div>
+                      )}
+                      <p className="mt-3 text-xs italic text-slate-500">Catatan: {order.note || 'Tidak ada'}</p>
                       {order.service_review && (
                         <div className="mt-3 rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-xs text-emerald-100">
-                          Rating layanan: {order.service_review.service_rating}/5
-                          {order.service_review.service_comment ? ` - ${order.service_review.service_comment}` : ''}
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="font-bold">Rating layanan</span>
+                            <Stars value={order.service_review.service_rating} />
+                          </div>
+                          {order.service_review.service_comment && (
+                            <p className="mt-1 text-emerald-100/80">{order.service_review.service_comment}</p>
+                          )}
                         </div>
                       )}
                       {order.cancel_reason && (

@@ -6,6 +6,7 @@ import {
   getBestSelling, getLowStock, getTransactionYears,
   getSalesByProduct, getActiveUsers,
   getWeeklyAttendance, getStaffPerformance,
+  getDiscountSummary,
 } from '@/lib/api';
 import { DashboardSkeleton } from '@/components/ui/SectionSkeleton';
 const MONTHS = ['Jan','Feb','Mar','Apr','Mei','Jun',
@@ -544,6 +545,11 @@ export default function DashboardPage() {
   const [activeUsers, setActiveUsers] = useState([]);
   const [attendance,  setAttendance]  = useState({ users: [], allWeeks: [] }); // ← tanpa 's' di akhir
   const [staffPerf,   setStaffPerf]   = useState([]);
+  const [discountSummary, setDiscountSummary] = useState({
+    today: { total_discount: 0, total_orders: 0 },
+    month: { total_discount: 0, total_orders: 0 },
+    year: { total_discount: 0, total_orders: 0 },
+  });
   const [attendFilter,setAttendFilter]= useState(new Set());
   const [perfFilter,  setPerfFilter]  = useState(new Set());
   const [perfTab,     setPerfTab]     = useState('omzet');
@@ -573,7 +579,8 @@ export default function DashboardPage() {
       getActiveUsers(),
       getWeeklyAttendance({ month: currentMonth, year }),
       getStaffPerformance({ month: currentMonth, year }),
-    ]).then(([today, salesM, salesY, best, low, byPM, byPY, active, attend, perf]) => {
+      getDiscountSummary({ month: currentMonth, year }),
+    ]).then(([today, salesM, salesY, best, low, byPM, byPY, active, attend, perf, discounts]) => {
       setToday(today.data);
       setSalesMonth(salesM.data);
       setSalesYear(salesY.data);
@@ -590,6 +597,11 @@ export default function DashboardPage() {
 
       setStaffPerf(perf.data);
       setPerfFilter(new Set((perf.data || []).map((_, i) => i)));
+      setDiscountSummary(discounts.data || {
+        today: { total_discount: 0, total_orders: 0 },
+        month: { total_discount: 0, total_orders: 0 },
+        year: { total_discount: 0, total_orders: 0 },
+      });
     }).catch(console.error)
       .finally(() => setLoading(false));
   }, [year, currentMonth]);
@@ -760,7 +772,7 @@ const filteredBestSelling = bestSelling.filter(p => {
             <div className="space-y-5">
               <div>
                 <h3 className="text-slate-400 text-xs font-semibold mb-3 uppercase">Hari Ini</h3>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
                   {[
                     { label:'Omzet Hari Ini',
                       value:`Rp ${todayStats.revenue.toLocaleString('id-ID')}`,
@@ -782,6 +794,10 @@ const filteredBestSelling = bestSelling.filter(p => {
                   sub: lowStock.length > 0 ? `${lowStock[0]?.name} kritis` : 'Semua aman',
                   color: lowStock.length > 0 ? 'text-red-400':'text-green-400',
                   glow:  lowStock.length > 0 ? 'bg-red-500':'bg-green-500', icon: lowStock.length>0?'⚠️':'✅' },
+                { label:'Distribusi Diskon',
+                  value:`Rp ${Number(discountSummary.today?.total_discount || 0).toLocaleString('id-ID')}`,
+                  sub:`Rata-rata ${Number(discountSummary.today?.avg_discount_rate || 0)}% | ${discountSummary.today?.total_orders || 0} klaim`,
+                  color:'text-emerald-400', glow:'bg-emerald-500', icon:'\u2605' },
               ].map((s,i) => (
                 <div key={i} className="relative bg-slate-800/80 rounded-2xl p-4
                   border border-slate-700/60 hover:border-slate-600 transition-all overflow-hidden group">
@@ -803,7 +819,7 @@ const filteredBestSelling = bestSelling.filter(p => {
               {/* Stat Cards - Monthly */}
               <div>
                 <h3 className="text-slate-400 text-xs font-semibold mb-3 uppercase">Bulan {MONTHS[currentMonth - 1]} {year}</h3>
-                <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                   {[
                     { label:`Omzet ${MONTHS[currentMonth - 1]}`,
                       value:`Rp ${totalMonthRevenue.toLocaleString('id-ID')}`,
@@ -820,6 +836,10 @@ const filteredBestSelling = bestSelling.filter(p => {
                         ? `Avg Rp ${Math.round(totalMonthRevenue/totalMonthTrx).toLocaleString('id-ID')}`
                         : 'Belum ada',
                       color:'text-blue-400', glow:'bg-blue-500', icon:'🧾' },
+                    { label:`Diskon Review ${MONTHS[currentMonth - 1]}`,
+                      value:`Rp ${Number(discountSummary.month?.total_discount || 0).toLocaleString('id-ID')}`,
+                      sub:`Rata-rata ${Number(discountSummary.month?.avg_discount_rate || 0)}% | ${discountSummary.month?.total_orders || 0} klaim`,
+                      color:'text-emerald-400', glow:'bg-emerald-500', icon:'\u2605' },
                   ].map((s,i) => (
                     <div key={i} className="relative bg-slate-800/80 rounded-2xl p-4
                       border border-slate-700/60 hover:border-slate-600 transition-all overflow-hidden group">
@@ -841,7 +861,7 @@ const filteredBestSelling = bestSelling.filter(p => {
               {/* Stat Cards - Yearly */}
               <div>
                 <h3 className="text-slate-400 text-xs font-semibold mb-3 uppercase">Tahun {year}</h3>
-                <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                   {[
                     { label:`Omzet Tahun ${year}`,
                       value:`Rp ${totalYearRevenue.toLocaleString('id-ID')}`,
@@ -858,6 +878,10 @@ const filteredBestSelling = bestSelling.filter(p => {
                         ? `Avg Rp ${Math.round(totalYearRevenue/totalYearTrx).toLocaleString('id-ID')}`
                         : 'Belum ada',
                       color:'text-blue-400', glow:'bg-blue-500', icon:'🧾' },
+                    { label:`Diskon Review Tahun ${year}`,
+                      value:`Rp ${Number(discountSummary.year?.total_discount || 0).toLocaleString('id-ID')}`,
+                      sub:`Rata-rata ${Number(discountSummary.year?.avg_discount_rate || 0)}% | ${discountSummary.year?.total_orders || 0} klaim`,
+                      color:'text-emerald-400', glow:'bg-emerald-500', icon:'\u2605' },
                   ].map((s,i) => (
                     <div key={i} className="relative bg-slate-800/80 rounded-2xl p-4
                       border border-slate-700/60 hover:border-slate-600 transition-all overflow-hidden group">

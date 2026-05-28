@@ -23,6 +23,25 @@ const statusSteps = [
 
 const formatRp = (value) => `Rp ${Number(value || 0).toLocaleString('id-ID')}`;
 
+function StarPicker({ value = 5, onChange }) {
+  const rating = Number(value || 0);
+  return (
+    <div className="flex items-center gap-1" role="radiogroup" aria-label="Pilih rating bintang">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <button
+          key={star}
+          type="button"
+          onClick={() => onChange(star)}
+          className={`text-2xl leading-none transition hover:scale-110 ${star <= rating ? 'text-[#C9A84C]' : 'text-[#EDE0C4]/25'}`}
+          aria-label={`${star} bintang`}
+        >
+          {star <= rating ? '★' : '☆'}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export default function CustomerOrderPage() {
   const params = useParams();
   const token = params?.token;
@@ -33,6 +52,7 @@ export default function CustomerOrderPage() {
   const [cart, setCart] = useState([]);
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
+  const [voucherCode, setVoucherCode] = useState('');
   const [note, setNote] = useState('');
   const [order, setOrder] = useState(null);
   const [activeCategory, setActiveCategory] = useState('all');
@@ -132,6 +152,7 @@ export default function CustomerOrderPage() {
         table_token: token,
         customer_name: customerName,
         customer_phone: customerPhone,
+        voucher_code: voucherCode,
         note,
         items: cart.map((item) => ({ product_id: item.id, qty: item.qty, note: item.note || null })),
       });
@@ -147,6 +168,11 @@ export default function CustomerOrderPage() {
   };
 
   const submitReview = async () => {
+    if (!String(order?.customer_phone || customerPhone || '').trim()) {
+      alert('Nomor HP wajib diisi untuk klaim diskon review.');
+      return;
+    }
+
     const itemReviews = (order?.items || []).map((item) => ({
       order_item_id: item.id,
       rating: Number(review.items[item.id]?.rating || 5),
@@ -157,6 +183,7 @@ export default function CustomerOrderPage() {
       const res = await submitCustomerOrderReview(order.order_code, {
         service_rating: Number(review.service_rating || 5),
         service_comment: review.service_comment,
+        customer_phone: order.customer_phone || customerPhone,
         items: itemReviews,
       });
       setOrder(res.data.data);
@@ -332,7 +359,7 @@ export default function CustomerOrderPage() {
                   </div>
                   {Number(order.discount_amount || 0) > 0 && (
                     <div className="mt-1 flex justify-between text-xs text-emerald-300">
-                      <span>Diskon review {order.discount_rate}%</span>
+                      <span>{order.discount_label || `Diskon review ${order.discount_rate}%`}</span>
                       <strong>-{formatRp(order.discount_amount)}</strong>
                     </div>
                   )}
@@ -342,10 +369,18 @@ export default function CustomerOrderPage() {
                   <div className="mt-5 rounded-3xl border border-[#C9A84C]/20 bg-[#0D0A06]/55 p-4">
                     <p className="font-black text-[#C9A84C]">Review semua menu dan dapatkan diskon 5%</p>
                     <label className="mt-4 block text-sm font-bold">Rating pelayanan</label>
+                    <div className="mt-2 rounded-2xl border border-[#C9A84C]/15 bg-[#1A1409] p-3">
+                      <StarPicker
+                        value={review.service_rating}
+                        onChange={(rating) => setReview((prev) => ({ ...prev, service_rating: rating }))}
+                      />
+                    </div>
                     <select
                       value={review.service_rating}
                       onChange={(e) => setReview((prev) => ({ ...prev, service_rating: e.target.value }))}
-                      className="mt-2 w-full rounded-xl border border-[#C9A84C]/20 bg-[#1A1409] px-3 py-2 text-[#F5EDD8]"
+                      className="sr-only"
+                      aria-hidden="true"
+                      tabIndex={-1}
                     >
                       {[5, 4, 3, 2, 1].map((rating) => <option key={rating} value={rating}>{rating} bintang</option>)}
                     </select>
@@ -359,13 +394,24 @@ export default function CustomerOrderPage() {
                       {order.items?.map((item) => (
                         <div key={item.id} className="rounded-2xl bg-[#241C0E] p-3">
                           <p className="text-sm font-bold">{item.product_name}</p>
+                          <div className="mt-2 rounded-2xl border border-[#C9A84C]/15 bg-[#1A1409] p-3">
+                            <StarPicker
+                              value={review.items[item.id]?.rating || 5}
+                              onChange={(rating) => setReview((prev) => ({
+                                ...prev,
+                                items: { ...prev.items, [item.id]: { ...prev.items[item.id], rating } },
+                              }))}
+                            />
+                          </div>
                           <select
                             value={review.items[item.id]?.rating || 5}
                             onChange={(e) => setReview((prev) => ({
                               ...prev,
                               items: { ...prev.items, [item.id]: { ...prev.items[item.id], rating: e.target.value } },
                             }))}
-                            className="mt-2 w-full rounded-xl border border-[#C9A84C]/20 bg-[#1A1409] px-3 py-2 text-sm"
+                            className="sr-only"
+                            aria-hidden="true"
+                            tabIndex={-1}
                           >
                             {[5, 4, 3, 2, 1].map((rating) => <option key={rating} value={rating}>{rating} bintang</option>)}
                           </select>
@@ -389,7 +435,7 @@ export default function CustomerOrderPage() {
 
                 {discountAlert && (
                   <div className="mt-5 rounded-3xl border border-emerald-400/25 bg-emerald-500/12 p-4 text-sm text-emerald-100">
-                    Diskon 5% berhasil diterapkan. Potongan: {formatRp(discountAlert.discount_amount)}.
+                    Diskon review berhasil diterapkan. Potongan: {formatRp(discountAlert.discount_amount)}.
                   </div>
                 )}
               </motion.div>
@@ -425,7 +471,8 @@ export default function CustomerOrderPage() {
 
                 <div className="mt-5 space-y-3">
                   <input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Nama pelanggan (opsional)" className="w-full rounded-2xl border border-[#C9A84C]/20 bg-[#0D0A06] px-4 py-3 outline-none" />
-                  <input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="No. HP (opsional)" className="w-full rounded-2xl border border-[#C9A84C]/20 bg-[#0D0A06] px-4 py-3 outline-none" />
+                  <input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="No. HP untuk klaim diskon" className="w-full rounded-2xl border border-[#C9A84C]/20 bg-[#0D0A06] px-4 py-3 outline-none" />
+                  <input value={voucherCode} onChange={(e) => setVoucherCode(e.target.value.toUpperCase())} placeholder="Kode vocher / voucher (opsional)" className="w-full rounded-2xl border border-[#C9A84C]/20 bg-[#0D0A06] px-4 py-3 font-bold uppercase outline-none" />
                   <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Catatan pesanan..." className="w-full rounded-2xl border border-[#C9A84C]/20 bg-[#0D0A06] px-4 py-3 outline-none" />
                 </div>
 

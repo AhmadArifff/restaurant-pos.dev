@@ -21,6 +21,7 @@ const menus = [
   { href: '/admin/customer-orders',     label: 'Pesanan Meja', roles: ['admin','kasir'], anim: 'pulse'  },
   { href: '/pos/history',               label: 'Riwayat POS',   roles: ['admin'],        anim: 'slide'  },
   { href: '/dashboard',                 label: 'Dashboard',    roles: ['admin'],          anim: 'bounce' },
+  { href: '/discounts',                 label: 'Vocher & Diskon', roles: ['admin'],       anim: 'pop'    },
   { href: '/products',                  label: 'Produk',       roles: ['admin'],          anim: 'flip'   },
   { href: '/stock',                     label: 'Stok',         roles: ['admin','kasir'],  anim: 'wave'   },
   { href: '/reports',                   label: 'Laporan',      roles: ['admin'],          anim: 'pulse'  },
@@ -110,6 +111,19 @@ function ReportIcon({ active }) {
       <line x1="12" y1="20" x2="12" y2="4"/>
       <line x1="6"  y1="20" x2="6"  y2="14"/>
       <line x1="2"  y1="20" x2="22" y2="20"/>
+    </svg>
+  );
+}
+function DiscountIcon({ active }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+      stroke={active ? '#fff' : 'currentColor'} strokeWidth="1.8"
+      strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-7"/>
+      <path d="M4 8h16v4H4z"/>
+      <path d="M12 8v13"/>
+      <path d="M12 8H7.5a2.5 2.5 0 1 1 2.2-3.7L12 8z"/>
+      <path d="M12 8h4.5a2.5 2.5 0 1 0-2.2-3.7L12 8z"/>
     </svg>
   );
 }
@@ -244,6 +258,7 @@ const iconMap = {
   '/admin/customer-orders':       TableOrderIcon,
   '/pos/history':                 HistoryIcon,
   '/dashboard':                   DashIcon,
+  '/discounts':                   DiscountIcon,
   '/products':                    ProductIcon,
   '/stock':                       StockIcon,
   '/reports':                     ReportIcon,

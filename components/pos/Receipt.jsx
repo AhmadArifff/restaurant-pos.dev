@@ -7,6 +7,8 @@ const Receipt = forwardRef(function Receipt({ transaction }, ref) {
   const date        = now.toLocaleDateString('id-ID', { day:'2-digit', month:'2-digit', year:'numeric' });
   const time        = now.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
   const total       = Number(transaction.total ?? transaction.total_price ?? 0);
+  const subtotal    = Number(transaction.subtotal ?? transaction.items?.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.qty || 0), 0) ?? total);
+  const discount    = Number(transaction.discount_amount || 0);
   const tunai       = Number(transaction.tunai ?? 0);
   const kembalian   = Number(transaction.kembalian ?? 0);
   const method      = transaction.payment_method || 'cash';
@@ -234,10 +236,11 @@ const Receipt = forwardRef(function Receipt({ transaction }, ref) {
         {/* Subtotal baris */}
         <div className="receipt-row receipt-small" style={{ padding:'2px 4px', fontSize:'9px' }}>
           <span>Subtotal ({transaction.items?.length} item)</span>
-          <span>Rp {total.toLocaleString('id-ID')}</span>
+          <span>Rp {subtotal.toLocaleString('id-ID')}</span>
         </div>
         <div className="receipt-row" style={{ padding:'2px 4px', fontSize:'8px', color:'#888' }}>
-          <span>Diskon</span><span>Rp 0</span>
+          <span>Diskon{transaction.discount_label ? ` (${String(transaction.discount_label).substring(0, 18)})` : ''}</span>
+          <span>-Rp {discount.toLocaleString('id-ID')}</span>
         </div>
         <div className="receipt-row" style={{ padding:'2px 4px', fontSize:'8px', color:'#888' }}>
           <span>Pajak (0%)</span><span>Rp 0</span>
