@@ -20,20 +20,9 @@ const pickString = (value, fallback) => {
   return text || fallback;
 };
 
-const getIconType = (src) => {
-  const path = String(src || '').split('?')[0].toLowerCase();
-  if (path.endsWith('.svg')) return 'image/svg+xml';
-  if (path.endsWith('.ico')) return 'image/x-icon';
-  if (path.endsWith('.webp')) return 'image/webp';
-  if (path.endsWith('.jpg') || path.endsWith('.jpeg')) return 'image/jpeg';
-  return 'image/png';
-};
-
 const buildManifest = (settings = {}) => {
   const name = pickString(settings.store_name, DEFAULT_MANIFEST.name);
   const description = pickString(settings.store_description, DEFAULT_MANIFEST.description);
-  const icon = pickString(settings.favicon_url, DEFAULT_MANIFEST.icon);
-  const iconType = getIconType(icon);
 
   return {
     name,
@@ -48,15 +37,15 @@ const buildManifest = (settings = {}) => {
     categories: ['business', 'productivity'],
     icons: [
       {
-        src: icon,
-        sizes: 'any',
-        type: iconType,
+        src: '/api/app-icon?size=192',
+        sizes: '192x192',
+        type: 'image/png',
         purpose: 'any',
       },
       {
-        src: icon,
-        sizes: 'any',
-        type: iconType,
+        src: '/api/app-icon?size=512',
+        sizes: '512x512',
+        type: 'image/png',
         purpose: 'maskable',
       },
     ],

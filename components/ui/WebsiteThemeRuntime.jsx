@@ -59,10 +59,10 @@ const setManifestLink = () => {
   link.setAttribute('href', `/api/manifest?v=${Date.now()}`);
 };
 
-const setFaviconLinks = (href) => {
+const setFaviconLinks = (href, appIconHref = href) => {
   if (!href) return;
 
-  const ensureIconLink = (rel, selector = `link[rel="${rel}"]`) => {
+  const ensureIconLink = (rel, selector = `link[rel="${rel}"]`, targetHref = href) => {
     let link = document.head?.querySelector(selector);
     if (!link) {
       link = document.createElement('link');
@@ -70,20 +70,21 @@ const setFaviconLinks = (href) => {
       document.head?.appendChild(link);
     }
 
-    link.setAttribute('href', href);
+    link.setAttribute('href', targetHref);
     link.setAttribute('data-dynamic-favicon', 'true');
   };
 
   document.head
     ?.querySelectorAll('link[rel~="icon"], link[rel="apple-touch-icon"]')
     .forEach((link) => {
-      link.setAttribute('href', href);
+      const rel = link.getAttribute('rel') || '';
+      link.setAttribute('href', rel === 'apple-touch-icon' ? appIconHref : href);
       link.setAttribute('data-dynamic-favicon', 'true');
     });
 
   ensureIconLink('icon', 'link[rel~="icon"]');
   ensureIconLink('shortcut icon');
-  ensureIconLink('apple-touch-icon');
+  ensureIconLink('apple-touch-icon', 'link[rel="apple-touch-icon"]', appIconHref);
 };
 
 export default function WebsiteThemeRuntime() {
@@ -112,7 +113,7 @@ export default function WebsiteThemeRuntime() {
       setManifestLink();
 
       const rawFaviconUrl = settings?.favicon_url || DEFAULT_SETTINGS.favicon_url;
-      setFaviconLinks(resolveAssetUrl(rawFaviconUrl, DEFAULT_SETTINGS.favicon_url));
+      setFaviconLinks(resolveAssetUrl(rawFaviconUrl, DEFAULT_SETTINGS.favicon_url), `/api/app-icon?v=${Date.now()}`);
     } catch (error) {
       console.error('WebsiteThemeRuntime: failed to apply website settings', error);
     }

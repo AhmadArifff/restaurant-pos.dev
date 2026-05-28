@@ -60,6 +60,7 @@ export default function CustomerOrderPage() {
   const [submitting, setSubmitting] = useState(false);
   const [review, setReview] = useState({ service_rating: 5, service_comment: '', items: {} });
   const [discountAlert, setDiscountAlert] = useState(null);
+  const [showMobileCart, setShowMobileCart] = useState(false);
 
   useEffect(() => {
     if (!token) return;
@@ -167,6 +168,7 @@ export default function CustomerOrderPage() {
       const nextOrder = res.data.data;
       setOrder(nextOrder);
       setCart([]);
+      setShowMobileCart(false);
       if (storageKey) localStorage.setItem(storageKey, nextOrder.order_code);
     } catch (err) {
       alert(err.response?.data?.message || 'Gagal mengirim pesanan');
@@ -201,6 +203,71 @@ export default function CustomerOrderPage() {
     }
   };
 
+  const renderCartPanel = (isMobile = false) => (
+    <motion.div
+      key={isMobile ? 'mobile-cart' : 'cart'}
+      initial={{ opacity: 0, x: isMobile ? 0 : 18, y: isMobile ? 18 : 0 }}
+      animate={{ opacity: 1, x: 0, y: 0 }}
+      exit={{ opacity: 0, x: isMobile ? 0 : 18, y: isMobile ? 18 : 0 }}
+      className={`${isMobile ? 'rounded-t-3xl border-t' : 'rounded-[2rem] border'} border-[#C9A84C]/20 bg-[#1A1409] p-4 sm:p-5`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs font-black uppercase tracking-[0.24em] text-[#C9A84C]">Keranjang Meja {table.table_number}</p>
+          <h2 className="mt-2 text-2xl font-black">{itemCount} item</h2>
+        </div>
+        {isMobile && (
+          <button
+            type="button"
+            onClick={() => setShowMobileCart(false)}
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-[#C9A84C]/20 text-lg font-black text-[#C9A84C]"
+            aria-label="Tutup keranjang"
+          >
+            x
+          </button>
+        )}
+      </div>
+
+      <div className={`${isMobile ? 'max-h-[34vh] overflow-y-auto pr-1' : ''} mt-5 space-y-3`}>
+        {cart.length === 0 && <p className="rounded-3xl bg-[#241C0E] p-5 text-sm text-[#EDE0C4]/65">Belum ada menu dipilih.</p>}
+        {cart.map((item) => (
+          <div key={item.id} className="rounded-3xl bg-[#241C0E] p-4">
+            <div className="flex justify-between gap-3">
+              <div className="min-w-0">
+                <p className="line-clamp-2 font-bold">{item.name}</p>
+                <p className="text-sm text-[#C9A84C]">{formatRp(item.price)}</p>
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                <button onClick={() => changeQty(item.id, -1)} className="h-8 w-8 rounded-full bg-[#1A1409] font-black">-</button>
+                <span className="w-6 text-center font-black">{item.qty}</span>
+                <button onClick={() => changeQty(item.id, 1)} className="h-8 w-8 rounded-full bg-[#C9A84C] font-black text-[#0D0A06]">+</button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-5 space-y-3">
+        <input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Nama pelanggan (opsional)" className="w-full rounded-2xl border border-[#C9A84C]/20 bg-[#0D0A06] px-4 py-3 outline-none" />
+        <input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="No. HP untuk klaim diskon" className="w-full rounded-2xl border border-[#C9A84C]/20 bg-[#0D0A06] px-4 py-3 outline-none" />
+        <input value={voucherCode} onChange={(e) => setVoucherCode(e.target.value.toUpperCase())} placeholder="Kode vocher / voucher (opsional)" className="w-full rounded-2xl border border-[#C9A84C]/20 bg-[#0D0A06] px-4 py-3 font-bold uppercase outline-none" />
+        <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Catatan pesanan..." className="max-h-28 w-full rounded-2xl border border-[#C9A84C]/20 bg-[#0D0A06] px-4 py-3 outline-none" />
+      </div>
+
+      <div className="mt-5 flex items-center justify-between border-t border-[#C9A84C]/15 pt-4">
+        <span className="text-sm text-[#EDE0C4]/70">Total</span>
+        <strong className="text-2xl text-[#C9A84C]">{formatRp(total)}</strong>
+      </div>
+      <button
+        onClick={submitOrder}
+        disabled={submitting || !cart.length}
+        className="mt-4 w-full rounded-2xl bg-[#C9A84C] py-3 font-black uppercase tracking-[0.12em] text-[#0D0A06] disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        {submitting ? 'Mengirim...' : 'Kirim Pesanan'}
+      </button>
+    </motion.div>
+  );
+
   if (loading) {
     return (
       <main className="grid min-h-screen place-items-center bg-[#0D0A06] text-[#C9A84C]">
@@ -224,17 +291,17 @@ export default function CustomerOrderPage() {
   return (
     <main className="min-h-screen bg-[#0D0A06] text-[#F5EDD8]">
       <header className="sticky top-0 z-40 border-b border-[#C9A84C]/15 bg-[#0D0A06]/92 px-4 py-3 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 overflow-hidden">
           <div className="min-w-0">
             <p className="text-xs font-black uppercase tracking-[0.28em] text-[#C9A84C]">Sultan Kebab</p>
             <h1 className="text-xl font-black">Meja {table.table_number}</h1>
-            <p className="mt-1 text-xs text-[#EDE0C4]/60">{branchLabel}{branchArea ? ` · ${branchArea}` : ''}</p>
+            <p className="mt-1 max-w-[calc(100vw-150px)] truncate text-xs text-[#EDE0C4]/60 sm:max-w-none">{branchLabel}{branchArea ? ` - ${branchArea}` : ''}</p>
           </div>
           <Link href="/order" className="shrink-0 rounded-full border border-[#C9A84C]/35 px-3 py-2 text-sm font-bold text-[#C9A84C]">Ganti Meja</Link>
         </div>
       </header>
 
-      <div className="mx-auto grid max-w-7xl gap-5 px-3 py-4 sm:px-4 sm:py-6 lg:grid-cols-[1fr_380px]">
+      <div className="mx-auto grid max-w-7xl gap-5 px-3 pb-28 pt-4 sm:px-4 sm:py-6 lg:grid-cols-[1fr_380px] lg:pb-6">
         <section>
           <div className="mb-4 rounded-3xl border border-[#C9A84C]/18 bg-[#1A1409] p-4 sm:mb-5 sm:rounded-[2rem] sm:p-5">
             <p className="text-xs font-black uppercase tracking-[0.28em] text-[#C9A84C]">Pesan langsung dari meja</p>
@@ -253,7 +320,7 @@ export default function CustomerOrderPage() {
             </div>
           )}
 
-          <div className="mb-5 flex gap-2 overflow-x-auto pb-1">
+          <div className="sticky top-[73px] z-30 -mx-3 mb-4 flex gap-2 overflow-x-auto border-y border-[#C9A84C]/10 bg-[#0D0A06]/95 px-3 py-2 backdrop-blur sm:static sm:mx-0 sm:mb-5 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0">
             <button
               onClick={() => setActiveCategory('all')}
               className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold ${activeCategory === 'all' ? 'bg-[#C9A84C] text-[#0D0A06]' : 'bg-[#1A1409] text-[#EDE0C4]'}`}
@@ -322,7 +389,7 @@ export default function CustomerOrderPage() {
           </div>
         </section>
 
-        <aside className="lg:sticky lg:top-24 lg:h-fit">
+        <aside className={`${order ? '' : 'hidden lg:block'} lg:sticky lg:top-24 lg:h-fit`}>
           <AnimatePresence mode="wait">
             {order ? (
               <motion.div
@@ -447,59 +514,46 @@ export default function CustomerOrderPage() {
                   </div>
                 )}
               </motion.div>
-            ) : (
-              <motion.div
-                key="cart"
-                initial={{ opacity: 0, x: 18 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 18 }}
-                className="rounded-[2rem] border border-[#C9A84C]/20 bg-[#1A1409] p-5"
-              >
-                <p className="text-xs font-black uppercase tracking-[0.28em] text-[#C9A84C]">Keranjang Meja {table.table_number}</p>
-                <h2 className="mt-2 text-2xl font-black">{itemCount} item</h2>
-
-                <div className="mt-5 space-y-3">
-                  {cart.length === 0 && <p className="rounded-3xl bg-[#241C0E] p-5 text-sm text-[#EDE0C4]/65">Belum ada menu dipilih.</p>}
-                  {cart.map((item) => (
-                    <div key={item.id} className="rounded-3xl bg-[#241C0E] p-4">
-                      <div className="flex justify-between gap-3">
-                        <div>
-                          <p className="font-bold">{item.name}</p>
-                          <p className="text-sm text-[#C9A84C]">{formatRp(item.price)}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button onClick={() => changeQty(item.id, -1)} className="h-8 w-8 rounded-full bg-[#1A1409] font-black">-</button>
-                          <span className="w-6 text-center font-black">{item.qty}</span>
-                          <button onClick={() => changeQty(item.id, 1)} className="h-8 w-8 rounded-full bg-[#C9A84C] font-black text-[#0D0A06]">+</button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="mt-5 space-y-3">
-                  <input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Nama pelanggan (opsional)" className="w-full rounded-2xl border border-[#C9A84C]/20 bg-[#0D0A06] px-4 py-3 outline-none" />
-                  <input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="No. HP untuk klaim diskon" className="w-full rounded-2xl border border-[#C9A84C]/20 bg-[#0D0A06] px-4 py-3 outline-none" />
-                  <input value={voucherCode} onChange={(e) => setVoucherCode(e.target.value.toUpperCase())} placeholder="Kode vocher / voucher (opsional)" className="w-full rounded-2xl border border-[#C9A84C]/20 bg-[#0D0A06] px-4 py-3 font-bold uppercase outline-none" />
-                  <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Catatan pesanan..." className="w-full rounded-2xl border border-[#C9A84C]/20 bg-[#0D0A06] px-4 py-3 outline-none" />
-                </div>
-
-                <div className="mt-5 flex items-center justify-between border-t border-[#C9A84C]/15 pt-4">
-                  <span className="text-sm text-[#EDE0C4]/70">Total</span>
-                  <strong className="text-2xl text-[#C9A84C]">{formatRp(total)}</strong>
-                </div>
-                <button
-                  onClick={submitOrder}
-                  disabled={submitting || !cart.length}
-                  className="mt-4 w-full rounded-2xl bg-[#C9A84C] py-3 font-black uppercase tracking-[0.16em] text-[#0D0A06] disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  {submitting ? 'Mengirim...' : 'Kirim Pesanan'}
-                </button>
-              </motion.div>
-            )}
+            ) : renderCartPanel(false)}
           </AnimatePresence>
         </aside>
       </div>
+      {!order && (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[#C9A84C]/20 bg-[#0D0A06]/95 px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3 backdrop-blur lg:hidden">
+          <button
+            type="button"
+            onClick={() => setShowMobileCart(true)}
+            className="flex w-full items-center justify-between rounded-2xl bg-[#C9A84C] px-4 py-3 font-black text-[#0D0A06] shadow-xl shadow-black/30"
+          >
+            <span>{itemCount ? `${itemCount} item` : 'Buka Keranjang'}</span>
+            <span>{formatRp(total)}</span>
+          </button>
+        </div>
+      )}
+      <AnimatePresence>
+        {!order && showMobileCart && (
+          <>
+            <motion.button
+              type="button"
+              aria-label="Tutup keranjang"
+              className="fixed inset-0 z-50 bg-black/65 backdrop-blur-sm lg:hidden"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowMobileCart(false)}
+            />
+            <motion.div
+              className="fixed inset-x-0 bottom-0 z-[60] max-h-[88vh] overflow-y-auto lg:hidden"
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', stiffness: 420, damping: 38 }}
+            >
+              {renderCartPanel(true)}
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </main>
   );
 }
