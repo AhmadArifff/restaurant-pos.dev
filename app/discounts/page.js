@@ -24,6 +24,9 @@ const emptyForm = {
   min_menu_rating: 1,
   bundle_product_ids: [],
   status: 'active',
+  validity_mode: 'quota_only',
+  start_at: '',
+  end_at: '',
   note: '',
 };
 
@@ -34,6 +37,27 @@ const typeLabel = {
 };
 
 const formatCurrency = (value) => `Rp ${Number(value || 0).toLocaleString('id-ID')}`;
+
+const toDateTimeLocal = (value) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const pad = (number) => String(number).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+};
+
+const getProgramState = (program) => {
+  if (program.status !== 'active') return { label: 'Nonaktif', className: 'bg-slate-700 text-slate-400' };
+  const now = Date.now();
+  const start = program.start_at ? new Date(program.start_at).getTime() : null;
+  const end = program.end_at ? new Date(program.end_at).getTime() : null;
+  if (start && start > now) return { label: 'Terjadwal', className: 'bg-sky-500/15 text-sky-300' };
+  if (end && end < now) return { label: 'Expired', className: 'bg-red-500/15 text-red-300' };
+  if (program.total_usage_limit != null && Number(program.used_count || 0) >= Number(program.total_usage_limit || 0)) {
+    return { label: 'Kuota Habis', className: 'bg-yellow-500/15 text-yellow-300' };
+  }
+  return { label: 'Aktif', className: 'bg-emerald-500/15 text-emerald-300' };
+};
 
 export default function DiscountsPage() {
   const [programs, setPrograms] = useState([]);
@@ -62,11 +86,16 @@ export default function DiscountsPage() {
   }, []);
 
   const stats = useMemo(() => {
-    const active = programs.filter((item) => item.status === 'active').length;
+    const active = programs.filter((item) => getProgramState(item).label === 'Aktif').length;
     const distributed = programs.reduce((sum, item) => sum + Number(item.distributed_amount || 0), 0);
     const used = programs.reduce((sum, item) => sum + Number(item.used_count || 0), 0);
     return { active, distributed, used };
   }, [programs]);
+
+  const allBundleProductIds = useMemo(() => products.map((product) => product.id), [products]);
+  const allBundleSelected = allBundleProductIds.length > 0
+    && allBundleProductIds.every((id) => form.bundle_product_ids.includes(id));
+  const selectedState = getProgramState({ ...form, used_count: 0, total_usage_limit: form.total_usage_limit || null });
 
   const resetForm = () => {
     setForm(emptyForm);
@@ -80,9 +109,19 @@ export default function DiscountsPage() {
       ...program,
       code: program.code || '',
       total_usage_limit: program.total_usage_limit ?? '',
+      validity_mode: program.end_at ? 'date_range' : 'quota_only',
+      start_at: toDateTimeLocal(program.start_at),
+      end_at: toDateTimeLocal(program.end_at),
       bundle_product_ids: Array.isArray(program.bundle_product_ids) ? program.bundle_product_ids : [],
       note: program.note || '',
     });
+  };
+
+  const toggleAllBundleProducts = () => {
+    setForm((prev) => ({
+      ...prev,
+      bundle_product_ids: allBundleSelected ? [] : allBundleProductIds,
+    }));
   };
 
   const toggleBundleProduct = (id) => {
@@ -105,7 +144,10 @@ export default function DiscountsPage() {
         ...form,
         code: form.type === 'voucher' ? form.code : '',
         bundle_product_ids: form.type === 'bundle' ? form.bundle_product_ids : [],
+        start_at: form.validity_mode === 'date_range' ? form.start_at || null : null,
+        end_at: form.validity_mode === 'date_range' ? form.end_at || null : null,
       };
+      delete payload.validity_mode;
       if (editing) await updateDiscountProgram(editing.id, payload);
       else await createDiscountProgram(payload);
       resetForm();
@@ -184,6 +226,57 @@ export default function DiscountsPage() {
                 </label>
               </div>
 
+              <div className="rounded-xl border border-slate-700 bg-slate-900/70 p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm font-semibold text-slate-300">Masa berlaku</p>
+                  <span className={`rounded-full px-2.5 py-1 text-[11px] font-black ${selectedState.className}`}>
+                    {selectedState.label}
+                  </span>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, validity_mode: 'quota_only', start_at: '', end_at: '' })}
+                    className={`rounded-xl border px-3 py-2 text-sm font-bold ${form.validity_mode === 'quota_only' ? 'border-orange-500 bg-orange-500/10 text-orange-300' : 'border-slate-700 text-slate-400'}`}
+                  >
+                    Tidak expired
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, validity_mode: 'date_range' })}
+                    className={`rounded-xl border px-3 py-2 text-sm font-bold ${form.validity_mode === 'date_range' ? 'border-orange-500 bg-orange-500/10 text-orange-300' : 'border-slate-700 text-slate-400'}`}
+                  >
+                    Pakai expired
+                  </button>
+                </div>
+                {form.validity_mode === 'date_range' ? (
+                  <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <label className="block text-xs font-semibold text-slate-400">
+                      Mulai aktif
+                      <input
+                        type="datetime-local"
+                        value={form.start_at}
+                        onChange={(e) => setForm({ ...form, start_at: e.target.value })}
+                        className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-white outline-none focus:border-orange-500"
+                      />
+                    </label>
+                    <label className="block text-xs font-semibold text-slate-400">
+                      Expired pada
+                      <input
+                        type="datetime-local"
+                        value={form.end_at}
+                        onChange={(e) => setForm({ ...form, end_at: e.target.value })}
+                        className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-white outline-none focus:border-orange-500"
+                      />
+                    </label>
+                  </div>
+                ) : (
+                  <p className="mt-3 text-xs leading-5 text-slate-500">
+                    Program tidak punya tanggal expired dan tetap aktif sampai kuota total habis atau dinonaktifkan manual.
+                  </p>
+                )}
+              </div>
+
               {form.type === 'voucher' && (
                 <label className="block text-sm font-semibold text-slate-300">
                   Kode voucher
@@ -231,7 +324,16 @@ export default function DiscountsPage() {
 
               {form.type === 'bundle' && (
                 <div>
-                  <p className="mb-2 text-sm font-semibold text-slate-300">Menu paket bundle</p>
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <p className="text-sm font-semibold text-slate-300">Menu paket bundle</p>
+                    <button
+                      type="button"
+                      onClick={toggleAllBundleProducts}
+                      className="rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-bold text-orange-300 hover:border-orange-500"
+                    >
+                      {allBundleSelected ? 'Hapus semua' : 'Pilih semua'}
+                    </button>
+                  </div>
                   <div className="max-h-52 space-y-2 overflow-y-auto rounded-xl border border-slate-700 bg-slate-900 p-3">
                     {products.map((product) => (
                       <label key={product.id} className="flex items-center gap-2 text-sm text-slate-300">
@@ -258,13 +360,15 @@ export default function DiscountsPage() {
               <div className="mt-4 space-y-3">
                 {loading && <p className="rounded-xl bg-slate-900 p-5 text-slate-400">Memuat data...</p>}
                 {!loading && programs.length === 0 && <p className="rounded-xl bg-slate-900 p-5 text-slate-400">Belum ada program diskon.</p>}
-                {programs.map((program) => (
+                {programs.map((program) => {
+                  const programState = getProgramState(program);
+                  return (
                   <article key={program.id} className="rounded-xl border border-slate-700 bg-slate-900 p-4">
                     <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                       <div>
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="rounded-full bg-orange-500/15 px-2.5 py-1 text-[11px] font-black text-orange-300">{typeLabel[program.type] || program.type}</span>
-                          <span className={`rounded-full px-2.5 py-1 text-[11px] font-black ${program.status === 'active' ? 'bg-emerald-500/15 text-emerald-300' : 'bg-slate-700 text-slate-400'}`}>{program.status}</span>
+                          <span className={`rounded-full px-2.5 py-1 text-[11px] font-black ${programState.className}`}>{programState.label}</span>
                           {program.code && <span className="rounded-full bg-slate-800 px-2.5 py-1 text-[11px] font-black text-white">{program.code}</span>}
                         </div>
                         <h3 className="mt-2 text-lg font-black text-white">{program.name}</h3>
@@ -277,6 +381,11 @@ export default function DiscountsPage() {
                             Bundle: {program.bundle_product_ids?.length || 0} menu dipilih
                           </p>
                         )}
+                        <p className="mt-1 text-xs text-slate-500">
+                          {program.end_at
+                            ? `Berlaku sampai ${new Date(program.end_at).toLocaleString('id-ID')}`
+                            : 'Tidak expired, berhenti saat kuota habis atau dinonaktifkan'}
+                        </p>
                       </div>
                       <div className="text-left md:text-right">
                         <p className="text-sm font-bold text-emerald-400">{formatCurrency(program.distributed_amount)}</p>
@@ -288,7 +397,8 @@ export default function DiscountsPage() {
                       </div>
                     </div>
                   </article>
-                ))}
+                  );
+                })}
               </div>
             </section>
           </div>

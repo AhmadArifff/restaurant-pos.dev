@@ -12,6 +12,7 @@ import {
   submitCustomerOrderReview,
 } from '@/lib/api';
 import { resolveAssetUrl } from '@/lib/assetUrl';
+import { formatIndonesianPhone, normalizeIndonesianPhoneForSubmit } from '@/lib/phoneFormat';
 
 const statusSteps = [
   { key: 'pending', label: 'Menunggu Kasir', desc: 'Pesanan sudah masuk ke dashboard kasir.' },
@@ -51,7 +52,7 @@ export default function CustomerOrderPage() {
   const [products, setProducts] = useState([]);
   const [cart, setCart] = useState([]);
   const [customerName, setCustomerName] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('+62');
   const [voucherCode, setVoucherCode] = useState('');
   const [note, setNote] = useState('');
   const [order, setOrder] = useState(null);
@@ -132,6 +133,7 @@ export default function CustomerOrderPage() {
   const tableBusy = !order && Number(table?.active_orders || 0) > 0;
   const branchLabel = table?.branch_name || 'Cabang Sultan Kebab';
   const branchArea = table?.branch_area || table?.branch_address || '';
+  const customerPhoneForApi = normalizeIndonesianPhoneForSubmit(customerPhone);
 
   const addToCart = (product) => {
     if (tableBusy) return;
@@ -160,7 +162,7 @@ export default function CustomerOrderPage() {
       const res = await createCustomerOrder({
         table_token: token,
         customer_name: customerName,
-        customer_phone: customerPhone,
+        customer_phone: customerPhoneForApi,
         voucher_code: voucherCode,
         note,
         items: cart.map((item) => ({ product_id: item.id, qty: item.qty, note: item.note || null })),
@@ -178,7 +180,8 @@ export default function CustomerOrderPage() {
   };
 
   const submitReview = async () => {
-    if (!String(order?.customer_phone || customerPhone || '').trim()) {
+    const reviewPhone = order?.customer_phone || customerPhoneForApi;
+    if (!String(reviewPhone || '').trim()) {
       alert('Nomor HP wajib diisi untuk klaim diskon review.');
       return;
     }
@@ -193,7 +196,7 @@ export default function CustomerOrderPage() {
       const res = await submitCustomerOrderReview(order.order_code, {
         service_rating: Number(review.service_rating || 5),
         service_comment: review.service_comment,
-        customer_phone: order.customer_phone || customerPhone,
+        customer_phone: reviewPhone,
         items: itemReviews,
       });
       setOrder(res.data.data);
@@ -249,7 +252,7 @@ export default function CustomerOrderPage() {
 
       <div className="mt-5 space-y-3">
         <input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Nama pelanggan (opsional)" className="w-full rounded-2xl border border-[#C9A84C]/20 bg-[#0D0A06] px-4 py-3 outline-none" />
-        <input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="No. HP untuk klaim diskon" className="w-full rounded-2xl border border-[#C9A84C]/20 bg-[#0D0A06] px-4 py-3 outline-none" />
+        <input value={customerPhone} onChange={(e) => setCustomerPhone(formatIndonesianPhone(e.target.value))} inputMode="numeric" placeholder="+62895-3530-25503" className="w-full rounded-2xl border border-[#C9A84C]/20 bg-[#0D0A06] px-4 py-3 outline-none" />
         <input value={voucherCode} onChange={(e) => setVoucherCode(e.target.value.toUpperCase())} placeholder="Kode vocher / voucher (opsional)" className="w-full rounded-2xl border border-[#C9A84C]/20 bg-[#0D0A06] px-4 py-3 font-bold uppercase outline-none" />
         <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Catatan pesanan..." className="max-h-28 w-full rounded-2xl border border-[#C9A84C]/20 bg-[#0D0A06] px-4 py-3 outline-none" />
       </div>

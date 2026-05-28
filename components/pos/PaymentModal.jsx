@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
 import { previewDiscount } from '@/lib/api';
+import { formatIndonesianPhone, normalizeIndonesianPhoneForSubmit } from '@/lib/phoneFormat';
 
 const PECAHAN = [100000, 50000, 20000, 10000, 5000, 2000, 1000, 500, 200, 100, 50];
 
@@ -23,7 +24,7 @@ export default function PaymentModal({
   const [method, setMethod]   = useState('cash');
   const [tunai, setTunai]     = useState(0);
   const [tunaiStr, setTunaiStr] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('+62');
   const [voucherCode, setVoucherCode] = useState('');
   const [discountPreview, setDiscountPreview] = useState(null);
   const [discountLoading, setDiscountLoading] = useState(false);
@@ -36,6 +37,7 @@ export default function PaymentModal({
   const discountAmount = Math.max(0, Number(discountPreview?.discount_amount || 0));
   const kembalian = method === 'cash' ? tunai - payableTotal : 0;
   const canPay    = !processing && (method !== 'cash' || (tunai >= payableTotal));
+  const customerPhoneForApi = normalizeIndonesianPhoneForSubmit(customerPhone);
 
   useEffect(() => {
     let cancelled = false;
@@ -50,7 +52,7 @@ export default function PaymentModal({
         const res = await previewDiscount({
           subtotal: total,
           items: previewItems,
-          customer_phone: customerPhone,
+          customer_phone: customerPhoneForApi,
           voucher_code: voucherCode,
         });
         if (!cancelled) setDiscountPreview(res.data?.applicable ? res.data : null);
@@ -71,7 +73,7 @@ export default function PaymentModal({
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [customerPhone, previewItems, total, voucherCode]);
+  }, [customerPhoneForApi, previewItems, total, voucherCode]);
 
   const addPecahan = (p) => {
     const newVal = tunai + p;
@@ -163,9 +165,10 @@ export default function PaymentModal({
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <input
                 value={customerPhone}
-                onChange={(e) => setCustomerPhone(e.target.value)}
+                onChange={(e) => setCustomerPhone(formatIndonesianPhone(e.target.value))}
                 disabled={processing}
-                placeholder="No. HP pelanggan"
+                inputMode="numeric"
+                placeholder="+62895-3530-25503"
                 className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white outline-none focus:border-orange-500"
               />
               <input
@@ -298,7 +301,7 @@ export default function PaymentModal({
           </button>
           <button
             onClick={() => canPay && onPay(method, tunai, kembalian, {
-              customer_phone: customerPhone,
+              customer_phone: customerPhoneForApi,
               voucher_code: voucherCode,
               discount_amount: discountAmount,
               final_total: payableTotal,
