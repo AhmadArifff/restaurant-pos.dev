@@ -50,6 +50,22 @@ function getRequestedQtyFromIngredient(ingredient) {
   return qty > 0 ? qty : 1;
 }
 
+function mergeStockRequestNotes(items) {
+  return [...new Set(
+    (Array.isArray(items) ? items : [])
+      .map(item => String(item.note || '').trim())
+      .filter(Boolean)
+      .map(note => note.toLowerCase())
+  )]
+    .map(lowerNote => (
+      (Array.isArray(items) ? items : [])
+        .map(item => String(item.note || '').trim())
+        .find(note => note.toLowerCase() === lowerNote)
+    ))
+    .filter(Boolean)
+    .join('; ');
+}
+
 function getPriceTrend(currentPrice, referencePrice) {
   const current = Number(currentPrice || 0);
   const reference = Number(referencePrice || 0);
@@ -2530,7 +2546,7 @@ function KasirStockPage({ successModal, setSuccessModal }) {
                   setOutLoading(true);
                   try {
                     await submitStockRequest({
-                      note: outItems.map(i => i.note).filter(Boolean).join('; '),
+                      note: mergeStockRequestNotes(outItems),
                       items: outItems.map(i => ({
                         stock_item_id: Number(i.stock_item_id),
                         qty:           Number(i.qty),
