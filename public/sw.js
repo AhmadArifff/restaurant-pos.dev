@@ -1,8 +1,7 @@
-const CACHE_NAME = 'banghan-pos-v1';
+const CACHE_NAME = 'sultan-kebab-pos-v2';
 const STATIC_ASSETS = [
   '/',
   '/login',
-  '/manifest.json',
 ];
 
 // Install — cache assets
@@ -30,6 +29,7 @@ self.addEventListener('fetch', (event) => {
   // Only cache http(s) requests, not chrome-extension or other schemes
   const url = new URL(event.request.url);
   if (!url.protocol.startsWith('http')) return;
+  if (url.pathname.includes('manifest')) return;
   
   event.respondWith(
     fetch(event.request)

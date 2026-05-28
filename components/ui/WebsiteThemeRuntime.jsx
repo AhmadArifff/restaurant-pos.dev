@@ -38,6 +38,27 @@ const setThemeColorMeta = (color) => {
   meta.setAttribute('content', color);
 };
 
+const setNamedMeta = (name, content) => {
+  if (!content) return;
+  let meta = document.querySelector(`meta[name="${name}"]`);
+  if (!meta) {
+    meta = document.createElement('meta');
+    meta.setAttribute('name', name);
+    document.head?.appendChild(meta);
+  }
+  meta.setAttribute('content', content);
+};
+
+const setManifestLink = () => {
+  let link = document.head?.querySelector('link[rel="manifest"]');
+  if (!link) {
+    link = document.createElement('link');
+    link.setAttribute('rel', 'manifest');
+    document.head?.appendChild(link);
+  }
+  link.setAttribute('href', `/api/manifest?v=${Date.now()}`);
+};
+
 const setFaviconLinks = (href) => {
   if (!href) return;
 
@@ -85,7 +106,10 @@ export default function WebsiteThemeRuntime() {
       const gold = settings?.gold || DEFAULT_SETTINGS.gold;
       root.style.setProperty('--gold-rgb', hexToRgb(gold));
       document.title = settings?.browser_title || settings?.store_name || DEFAULT_SETTINGS.browser_title;
+      setNamedMeta('application-name', settings?.store_name || DEFAULT_SETTINGS.store_name);
+      setNamedMeta('apple-mobile-web-app-title', settings?.store_name || DEFAULT_SETTINGS.store_name);
       setThemeColorMeta(gold);
+      setManifestLink();
 
       const rawFaviconUrl = settings?.favicon_url || DEFAULT_SETTINGS.favicon_url;
       setFaviconLinks(resolveAssetUrl(rawFaviconUrl, DEFAULT_SETTINGS.favicon_url));

@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AuthGuard from '@/components/ui/AuthGuard';
 import {
@@ -342,11 +342,21 @@ export default function PosPage() {
   };
 
   // ── Filter produk ──────────────────────────────────────────
-  const filtered = products.filter(p => {
-    const matchCat    = activeCategory === 'all' || p.category_id == activeCategory;
-    const matchSearch = p.name.toLowerCase().includes(search.toLowerCase());
-    return matchCat && matchSearch;
-  });
+  const filtered = useMemo(() => products
+    .filter(p => {
+      const matchCat    = activeCategory === 'all' || p.category_id == activeCategory;
+      const matchSearch = p.name.toLowerCase().includes(search.toLowerCase());
+      return matchCat && matchSearch;
+    })
+    .sort((a, b) => {
+      const stockA = Number(getProductStock(a) || 0);
+      const stockB = Number(getProductStock(b) || 0);
+      const availableA = stockA > 0 ? 1 : 0;
+      const availableB = stockB > 0 ? 1 : 0;
+      if (availableA !== availableB) return availableB - availableA;
+      if (stockA !== stockB) return stockB - stockA;
+      return String(a.name || '').localeCompare(String(b.name || ''), 'id');
+    }), [products, activeCategory, search, getProductStock]);
 
   const now     = new Date();
   const timeStr = now.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });

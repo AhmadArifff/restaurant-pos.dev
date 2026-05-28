@@ -14,7 +14,7 @@ const bebasNeue = Bebas_Neue({ subsets: ["latin"], variable: "--font-bebas", wei
 export const metadata = {
   title: "Sultan Kebab POS",
   description: "Point of Sale System - Sultan Kebab",
-  manifest: '/manifest.json',
+  manifest: '/api/manifest',
   icons: {
     icon: '/images/assets/logo.png',
     apple: '/images/assets/logo.png',

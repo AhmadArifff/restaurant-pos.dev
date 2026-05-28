@@ -1,13 +1,13 @@
 {
-  "name": "Lumpia Beef Bang.Han POS",
-  "short_name": "Bang.Han POS",
-  "description": "Point of Sale System - Lumpia Beef Bang.Han",
+  "name": "Sultan Kebab",
+  "short_name": "Sultan Kebab",
+  "description": "Point of Sale System - Sultan Kebab",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#0f172a",
-  "theme_color": "#f97316",
+  "background_color": "#0D0A06",
+  "theme_color": "#C9A84C",
   "categories": ["business", "productivity"],
   "icons": [
     {

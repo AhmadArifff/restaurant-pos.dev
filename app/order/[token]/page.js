@@ -114,9 +114,17 @@ export default function CustomerOrderPage() {
     return [...map.entries()].map(([id, name]) => ({ id, name }));
   }, [products]);
 
-  const filteredProducts = products.filter((product) =>
-    activeCategory === 'all' || String(product.category_id) === String(activeCategory)
-  );
+  const filteredProducts = useMemo(() => products
+    .filter((product) => activeCategory === 'all' || String(product.category_id) === String(activeCategory))
+    .sort((a, b) => {
+      const stockA = Number(a.stock || 0);
+      const stockB = Number(b.stock || 0);
+      const availableA = stockA > 0 ? 1 : 0;
+      const availableB = stockB > 0 ? 1 : 0;
+      if (availableA !== availableB) return availableB - availableA;
+      if (stockA !== stockB) return stockB - stockA;
+      return String(a.name || '').localeCompare(String(b.name || ''), 'id');
+    }), [products, activeCategory]);
 
   const total = cart.reduce((sum, item) => sum + Number(item.price) * item.qty, 0);
   const itemCount = cart.reduce((sum, item) => sum + item.qty, 0);
@@ -215,26 +223,26 @@ export default function CustomerOrderPage() {
 
   return (
     <main className="min-h-screen bg-[#0D0A06] text-[#F5EDD8]">
-      <header className="sticky top-0 z-40 border-b border-[#C9A84C]/15 bg-[#0D0A06]/92 px-4 py-4 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
-          <div>
+      <header className="sticky top-0 z-40 border-b border-[#C9A84C]/15 bg-[#0D0A06]/92 px-4 py-3 backdrop-blur">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
+          <div className="min-w-0">
             <p className="text-xs font-black uppercase tracking-[0.28em] text-[#C9A84C]">Sultan Kebab</p>
             <h1 className="text-xl font-black">Meja {table.table_number}</h1>
             <p className="mt-1 text-xs text-[#EDE0C4]/60">{branchLabel}{branchArea ? ` · ${branchArea}` : ''}</p>
           </div>
-          <Link href="/order" className="rounded-full border border-[#C9A84C]/35 px-4 py-2 text-sm text-[#C9A84C]">Ganti Meja</Link>
+          <Link href="/order" className="shrink-0 rounded-full border border-[#C9A84C]/35 px-3 py-2 text-sm font-bold text-[#C9A84C]">Ganti Meja</Link>
         </div>
       </header>
 
-      <div className="mx-auto grid max-w-7xl gap-6 px-4 py-6 lg:grid-cols-[1fr_380px]">
+      <div className="mx-auto grid max-w-7xl gap-5 px-3 py-4 sm:px-4 sm:py-6 lg:grid-cols-[1fr_380px]">
         <section>
-          <div className="mb-5 rounded-[2rem] border border-[#C9A84C]/18 bg-[#1A1409] p-5">
+          <div className="mb-4 rounded-3xl border border-[#C9A84C]/18 bg-[#1A1409] p-4 sm:mb-5 sm:rounded-[2rem] sm:p-5">
             <p className="text-xs font-black uppercase tracking-[0.28em] text-[#C9A84C]">Pesan langsung dari meja</p>
-            <h2 className="mt-2 font-serif text-3xl font-black">Pilih menu favorit Anda</h2>
+            <h2 className="mt-2 font-serif text-2xl font-black sm:text-3xl">Pilih menu favorit Anda</h2>
             <p className="mt-2 text-sm leading-7 text-[#EDE0C4]/70">
               Pesanan akan masuk ke kasir, lalu statusnya bisa Anda pantau dari halaman ini.
             </p>
-            <div className="mt-4 inline-flex rounded-full border border-[#C9A84C]/25 bg-[#C9A84C]/10 px-4 py-2 text-xs font-bold text-[#F5EDD8]">
+            <div className="mt-4 inline-flex max-w-full rounded-full border border-[#C9A84C]/25 bg-[#C9A84C]/10 px-4 py-2 text-xs font-bold text-[#F5EDD8]">
               Cabang: <span className="ml-1 text-[#C9A84C]">{branchLabel}</span>
             </div>
           </div>
@@ -263,7 +271,7 @@ export default function CustomerOrderPage() {
             ))}
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
             {filteredProducts.map((product, index) => {
               const soldOut = Number(product.stock || 0) <= 0 || tableBusy;
               const stockSource = product.stock_source_user?.user_name
@@ -275,31 +283,31 @@ export default function CustomerOrderPage() {
                   initial={{ opacity: 0, y: 14 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.025 }}
-                  className="overflow-hidden rounded-[1.6rem] border border-[#C9A84C]/16 bg-[#1A1409]"
+                  className="flex min-h-[132px] overflow-hidden rounded-3xl border border-[#C9A84C]/16 bg-[#1A1409] sm:block sm:min-h-0 sm:rounded-[1.6rem]"
                 >
-                  <div className="h-44 overflow-hidden bg-[#241C0E]">
+                  <div className="h-auto w-28 shrink-0 overflow-hidden bg-[#241C0E] sm:h-44 sm:w-full">
                     {product.image_url ? (
                       <img src={resolveAssetUrl(product.image_url)} alt={product.name} className="h-full w-full object-cover" />
                     ) : (
                       <div className="grid h-full place-items-center text-5xl">K</div>
                     )}
                   </div>
-                  <div className="p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <h3 className="text-lg font-black">{product.name}</h3>
+                  <div className="flex min-w-0 flex-1 flex-col p-3 sm:p-4">
+                    <div className="flex min-w-0 items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <h3 className="line-clamp-2 text-base font-black leading-snug sm:text-lg">{product.name}</h3>
                         <p className="mt-1 text-sm text-[#EDE0C4]/58">{product.category_name || 'Menu'}</p>
                       </div>
-                      <strong className="text-[#C9A84C]">{formatRp(product.price)}</strong>
+                      <strong className="shrink-0 text-sm text-[#C9A84C] sm:text-base">{formatRp(product.price)}</strong>
                     </div>
-                    <div className="mt-4 flex items-center justify-between">
-                      <span className={`rounded-full px-3 py-1 text-xs font-bold ${soldOut ? 'bg-red-500/15 text-red-200' : 'bg-emerald-500/15 text-emerald-200'}`}>
+                    <div className="mt-auto flex flex-wrap items-center justify-between gap-2 pt-3 sm:mt-4 sm:pt-0">
+                      <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${soldOut ? 'bg-red-500/15 text-red-200' : 'bg-emerald-500/15 text-emerald-200'}`}>
                         {tableBusy ? 'Meja sedang aktif' : soldOut ? 'Stok habis' : `${product.stock} porsi siap`}
                       </span>
                       <button
                         onClick={() => addToCart(product)}
                         disabled={soldOut}
-                        className="rounded-xl bg-[#C9A84C] px-4 py-2 text-sm font-black text-[#0D0A06] disabled:cursor-not-allowed disabled:opacity-40"
+                        className="min-h-10 rounded-xl bg-[#C9A84C] px-4 py-2 text-sm font-black text-[#0D0A06] disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         Tambah
                       </button>
