@@ -38,6 +38,21 @@ const typeLabel = {
 
 const formatCurrency = (value) => `Rp ${Number(value || 0).toLocaleString('id-ID')}`;
 
+const generateVoucherCode = () => {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const randomValues = new Uint32Array(13);
+
+  if (typeof window !== 'undefined' && window.crypto?.getRandomValues) {
+    window.crypto.getRandomValues(randomValues);
+  } else {
+    for (let index = 0; index < randomValues.length; index += 1) {
+      randomValues[index] = Math.floor(Math.random() * chars.length);
+    }
+  }
+
+  return Array.from(randomValues, (value) => chars[value % chars.length]).join('');
+};
+
 const toDateTimeLocal = (value) => {
   if (!value) return '';
   const date = new Date(value);
@@ -134,6 +149,10 @@ export default function DiscountsPage() {
           : [...prev.bundle_product_ids, id],
       };
     });
+  };
+
+  const handleGenerateVoucherCode = () => {
+    setForm((prev) => ({ ...prev, code: generateVoucherCode() }));
   };
 
   const saveProgram = async (event) => {
@@ -280,7 +299,23 @@ export default function DiscountsPage() {
               {form.type === 'voucher' && (
                 <label className="block text-sm font-semibold text-slate-300">
                   Kode voucher
-                  <input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })} className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 font-black uppercase text-white outline-none focus:border-orange-500" required />
+                  <div className="mt-1 flex gap-2">
+                    <input
+                      value={form.code}
+                      onChange={(e) => setForm({ ...form, code: e.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 13) })}
+                      maxLength={13}
+                      className="min-w-0 flex-1 rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 font-black uppercase tracking-[0.16em] text-white outline-none focus:border-orange-500"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={handleGenerateVoucherCode}
+                      className="shrink-0 rounded-xl border border-orange-500/35 bg-orange-500/10 px-3 py-2 text-xs font-black text-orange-300 transition hover:bg-orange-500/20"
+                    >
+                      Generate
+                    </button>
+                  </div>
+                  <span className="mt-1 block text-xs font-medium text-slate-500">Kode voucher 13 karakter, huruf besar dan angka.</span>
                 </label>
               )}
 

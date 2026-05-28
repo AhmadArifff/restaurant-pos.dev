@@ -16,6 +16,7 @@ export default function TransactionHistoryPage() {
   const [dateTo, setDateTo] = useState('');
   const [search, setSearch] = useState('');
   const [appliedFilters, setAppliedFilters] = useState({});
+  const [deleteModal, setDeleteModal] = useState({ open: false, tx: null, reason: '', submitting: false });
 
   // Set default date range to today
   useEffect(() => {
@@ -78,20 +79,27 @@ export default function TransactionHistoryPage() {
   };
 
   const handleDeleteTransaction = async (tx) => {
-    const reason = window.prompt(
-      `Alasan hapus/void transaksi ${tx.invoice_number}:\n\nStok akan dikembalikan sesuai bahan yang keluar dari transaksi ini.`
-    );
-    if (!reason?.trim()) return;
-    if (!window.confirm(`Yakin hapus transaksi ${tx.invoice_number}? Aksi ini akan mengembalikan stok.`)) return;
+    setDeleteModal({ open: true, tx, reason: '', submitting: false });
+  };
+
+  const closeDeleteModal = () => {
+    if (deleteModal.submitting) return;
+    setDeleteModal({ open: false, tx: null, reason: '', submitting: false });
+  };
+
+  const confirmDeleteTransaction = async () => {
+    const tx = deleteModal.tx;
+    const reason = deleteModal.reason.trim();
+    if (!tx || !reason) return;
 
     try {
-      setLoading(true);
-      await deleteTransaction(tx.id, { reason: reason.trim() });
+      setDeleteModal((prev) => ({ ...prev, submitting: true }));
+      await deleteTransaction(tx.id, { reason });
       await loadTransactions(appliedFilters);
-      alert('Transaksi berhasil dihapus dan stok sudah dikembalikan.');
+      setDeleteModal({ open: false, tx: null, reason: '', submitting: false });
     } catch (err) {
       alert(err.response?.data?.message || 'Gagal menghapus transaksi');
-      setLoading(false);
+      setDeleteModal((prev) => ({ ...prev, submitting: false }));
     }
   };
 
@@ -680,6 +688,54 @@ export default function TransactionHistoryPage() {
               Data tidak dapat diubah (read-only). Gunakan filter tanggal dan pencarian untuk menemukan transaksi tertentu.
             </p>
           </div>
+
+          {deleteModal.open && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+              <div className="w-full max-w-lg rounded-2xl border border-red-400/25 bg-slate-900 shadow-2xl">
+                <div className="border-b border-slate-700 px-5 py-4">
+                  <p className="text-xs font-black uppercase tracking-[0.22em] text-red-300">Konfirmasi void transaksi</p>
+                  <h2 className="mt-2 text-xl font-black text-white">Hapus & Kembalikan Stok</h2>
+                  <p className="mt-2 text-sm leading-6 text-slate-400">
+                    Transaksi {deleteModal.tx?.invoice_number} akan dihapus dari riwayat aktif dan stok bahan akan dikembalikan sesuai item transaksi.
+                  </p>
+                </div>
+                <div className="space-y-4 px-5 py-4">
+                  <div className="rounded-xl border border-yellow-400/20 bg-yellow-500/10 p-3 text-sm leading-6 text-yellow-100">
+                    Aksi ini dicatat sebagai void. Isi alasan yang jelas agar audit operasional mudah dilacak.
+                  </div>
+                  <label className="block text-sm font-semibold text-slate-300">
+                    Alasan
+                    <textarea
+                      value={deleteModal.reason}
+                      onChange={(e) => setDeleteModal((prev) => ({ ...prev, reason: e.target.value }))}
+                      disabled={deleteModal.submitting}
+                      rows={4}
+                      placeholder="Contoh: salah input pembayaran, pesanan batal, atau transaksi duplikat."
+                      className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm text-white outline-none focus:border-red-400 disabled:opacity-60"
+                    />
+                  </label>
+                </div>
+                <div className="flex flex-col-reverse gap-3 border-t border-slate-700 px-5 py-4 sm:flex-row sm:justify-end">
+                  <button
+                    type="button"
+                    onClick={closeDeleteModal}
+                    disabled={deleteModal.submitting}
+                    className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-bold text-slate-300 transition hover:bg-slate-800 disabled:opacity-50"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="button"
+                    onClick={confirmDeleteTransaction}
+                    disabled={deleteModal.submitting || !deleteModal.reason.trim()}
+                    className="rounded-xl bg-red-500 px-4 py-2 text-sm font-black text-white transition hover:bg-red-400 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {deleteModal.submitting ? 'Memproses...' : 'Ya, Hapus & Kembalikan Stok'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </AdminLayout>
     </AuthGuard>
