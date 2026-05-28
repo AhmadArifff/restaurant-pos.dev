@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { getCustomerOrder } from '@/lib/api';
 import { useReactToPrint } from 'react-to-print';
+import Receipt from '@/components/pos/Receipt';
 
 const statusSteps = [
   { key: 'pending', label: 'Menunggu', desc: 'Pesanan menunggu konfirmasi kasir/admin.' },
@@ -74,6 +75,28 @@ export default function OrderStatusPage() {
 
   const currentIndex = statusSteps.findIndex((item) => item.key === order.status);
   const isCancelled = order.status === 'cancelled';
+  const orderTotal = Number(order.final_total || order.subtotal || 0);
+  const receiptStatusUrl = typeof window !== 'undefined'
+    ? `${window.location.origin}/order/status/${order.order_code}`
+    : '';
+  const receiptTransaction = {
+    invoice_number: order.order_code,
+    total: orderTotal,
+    total_price: orderTotal,
+    tunai: orderTotal,
+    kembalian: 0,
+    payment_method: order.payment_status === 'paid' ? 'cash' : 'cash',
+    kasir_name: order.accepted_by_name || 'Kasir',
+    created_by_type: 'customer',
+    table_number: order.table_number,
+    receipt_status_url: receiptStatusUrl,
+    items: (order.items || []).map((item) => ({
+      ...item,
+      name: item.product_name,
+      price: Number(item.price || 0),
+      qty: Number(item.qty || 0),
+    })),
+  };
 
   return (
     <main className="min-h-screen bg-[#0D0A06] px-4 py-8 text-[#F5EDD8]">
@@ -149,25 +172,7 @@ export default function OrderStatusPage() {
         </motion.div>
 
         <div className="hidden">
-          <div ref={receiptRef} style={{ width: '58mm', padding: 12, fontFamily: 'monospace', color: '#000', background: '#fff' }}>
-            <h2 style={{ textAlign: 'center', margin: 0 }}>LUMPIA BEEF BANG.HAN</h2>
-            <p style={{ textAlign: 'center', fontSize: 10 }}>{order.order_code}</p>
-            <hr />
-            <p>Meja: {order.table_number}</p>
-            <p>Status: {statusLabels[order.status] || order.status}</p>
-            {(order.items || []).map((item) => (
-              <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11 }}>
-                <span>{item.product_name} x{item.qty}</span>
-                <span>{formatRp(item.subtotal)}</span>
-              </div>
-            ))}
-            <hr />
-            <strong style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span>Total</span>
-              <span>{formatRp(order.final_total || order.subtotal)}</span>
-            </strong>
-            {order.cancel_reason && <p>Alasan batal: {order.cancel_reason}</p>}
-          </div>
+          <Receipt ref={receiptRef} transaction={receiptTransaction} />
         </div>
       </section>
     </main>
