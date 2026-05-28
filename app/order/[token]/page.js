@@ -101,6 +101,8 @@ export default function CustomerOrderPage() {
   const total = cart.reduce((sum, item) => sum + Number(item.price) * item.qty, 0);
   const itemCount = cart.reduce((sum, item) => sum + item.qty, 0);
   const tableBusy = !order && Number(table?.active_orders || 0) > 0;
+  const branchLabel = table?.branch_name || 'Cabang Sultan Kebab';
+  const branchArea = table?.branch_area || table?.branch_address || '';
 
   const addToCart = (product) => {
     if (tableBusy) return;
@@ -191,6 +193,7 @@ export default function CustomerOrderPage() {
           <div>
             <p className="text-xs font-black uppercase tracking-[0.28em] text-[#C9A84C]">Sultan Kebab</p>
             <h1 className="text-xl font-black">Meja {table.table_number}</h1>
+            <p className="mt-1 text-xs text-[#EDE0C4]/60">{branchLabel}{branchArea ? ` · ${branchArea}` : ''}</p>
           </div>
           <Link href="/order" className="rounded-full border border-[#C9A84C]/35 px-4 py-2 text-sm text-[#C9A84C]">Ganti Meja</Link>
         </div>
@@ -204,6 +207,9 @@ export default function CustomerOrderPage() {
             <p className="mt-2 text-sm leading-7 text-[#EDE0C4]/70">
               Pesanan akan masuk ke kasir, lalu statusnya bisa Anda pantau dari halaman ini.
             </p>
+            <div className="mt-4 inline-flex rounded-full border border-[#C9A84C]/25 bg-[#C9A84C]/10 px-4 py-2 text-xs font-bold text-[#F5EDD8]">
+              Cabang: <span className="ml-1 text-[#C9A84C]">{branchLabel}</span>
+            </div>
           </div>
 
           {tableBusy && (
@@ -233,6 +239,9 @@ export default function CustomerOrderPage() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {filteredProducts.map((product, index) => {
               const soldOut = Number(product.stock || 0) <= 0 || tableBusy;
+              const stockSource = product.stock_source_user?.user_name
+                ? `Stok dari ${product.stock_source_user.user_name}`
+                : 'Stok siap cabang';
               return (
                 <motion.article
                   key={product.id}
@@ -258,7 +267,7 @@ export default function CustomerOrderPage() {
                     </div>
                     <div className="mt-4 flex items-center justify-between">
                       <span className={`rounded-full px-3 py-1 text-xs font-bold ${soldOut ? 'bg-red-500/15 text-red-200' : 'bg-emerald-500/15 text-emerald-200'}`}>
-                        {tableBusy ? 'Meja sedang aktif' : soldOut ? 'Stok habis' : `${product.stock} porsi tersedia`}
+                        {tableBusy ? 'Meja sedang aktif' : soldOut ? 'Stok habis' : `${product.stock} porsi siap`}
                       </span>
                       <button
                         onClick={() => addToCart(product)}
@@ -268,6 +277,9 @@ export default function CustomerOrderPage() {
                         Tambah
                       </button>
                     </div>
+                    {!tableBusy && !soldOut && (
+                      <p className="mt-2 text-xs font-semibold text-[#EDE0C4]/55">{stockSource}</p>
+                    )}
                   </div>
                 </motion.article>
               );
