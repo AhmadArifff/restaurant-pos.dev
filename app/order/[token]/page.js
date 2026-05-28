@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   createCustomerOrder,
+  getActiveDiscountPrograms,
   getCustomerMenu,
   getCustomerOrder,
   getDiningTableByToken,
@@ -62,6 +63,7 @@ export default function CustomerOrderPage() {
   const [review, setReview] = useState({ service_rating: 5, service_comment: '', items: {} });
   const [discountAlert, setDiscountAlert] = useState(null);
   const [showMobileCart, setShowMobileCart] = useState(false);
+  const [reviewRewardProgram, setReviewRewardProgram] = useState(null);
 
   useEffect(() => {
     if (!token) return;
@@ -70,11 +72,15 @@ export default function CustomerOrderPage() {
     const load = async () => {
       const savedOrderCode = storageKey ? localStorage.getItem(storageKey) : null;
       const tableRes = await getDiningTableByToken(token);
-      const menuRes = await getCustomerMenu({ branch_id: tableRes.data?.branch_id });
-      const orderRes = savedOrderCode ? await getCustomerOrder(savedOrderCode).catch(() => null) : null;
+      const [menuRes, rewardRes, orderRes] = await Promise.all([
+        getCustomerMenu({ branch_id: tableRes.data?.branch_id }),
+        getActiveDiscountPrograms({ type: 'review_reward' }).catch(() => ({ data: [] })),
+        savedOrderCode ? getCustomerOrder(savedOrderCode).catch(() => null) : Promise.resolve(null),
+      ]);
       if (!mounted) return;
       setTable(tableRes.data);
       setProducts(menuRes.data || []);
+      setReviewRewardProgram(Array.isArray(rewardRes.data) ? rewardRes.data[0] || null : null);
       if (orderRes?.data) setOrder(orderRes.data);
       setLoading(false);
     };
@@ -134,6 +140,13 @@ export default function CustomerOrderPage() {
   const branchLabel = table?.branch_name || 'Cabang Sultan Kebab';
   const branchArea = table?.branch_area || table?.branch_address || '';
   const customerPhoneForApi = normalizeIndonesianPhoneForSubmit(customerPhone);
+  const reviewRewardText = reviewRewardProgram
+    ? `Review semua menu dan dapatkan diskon ${
+        reviewRewardProgram.discount_type === 'percent'
+          ? `${Number(reviewRewardProgram.discount_value || 0)}%`
+          : formatRp(reviewRewardProgram.discount_value)
+      }`
+    : 'Review semua menu';
 
   const addToCart = (product) => {
     if (tableBusy) return;
@@ -445,7 +458,7 @@ export default function CustomerOrderPage() {
 
                 {order.status === 'completed' && !order.reviewed_at && (
                   <div className="mt-5 rounded-3xl border border-[#C9A84C]/20 bg-[#0D0A06]/55 p-4">
-                    <p className="font-black text-[#C9A84C]">Review semua menu dan dapatkan diskon 5%</p>
+                    <p className="font-black text-[#C9A84C]">{reviewRewardText}</p>
                     <label className="mt-4 block text-sm font-bold">Rating pelayanan</label>
                     <div className="mt-2 rounded-2xl border border-[#C9A84C]/15 bg-[#1A1409] p-3">
                       <StarPicker
