@@ -26,6 +26,24 @@ const statusSteps = [
 
 const formatRp = (value) => `Rp ${Number(value || 0).toLocaleString('id-ID')}`;
 
+const getDiscountedBundleItems = ({ sourceItems = [], bundleItems = [] }) => {
+  const requirementByProduct = new Map(
+    (bundleItems || [])
+      .map((item) => [Number(item.product_id || item.id || item), Math.max(1, Number(item.qty || 1))])
+      .filter(([id]) => id)
+  );
+  if (!requirementByProduct.size) return [];
+
+  return (sourceItems || [])
+    .filter((item) => requirementByProduct.has(Number(item.product_id || item.id)))
+    .map((item) => ({
+      id: item.id || item.product_id,
+      name: item.product_name || item.name,
+      qty: Math.min(Number(item.qty || 0), Number(requirementByProduct.get(Number(item.product_id || item.id)) || 1)),
+      subtotal: Number(item.subtotal || Number(item.price || 0) * Number(item.qty || 0)),
+    }));
+};
+
 function StarPicker({ value = 5, onChange }) {
   const rating = Number(value || 0);
   return (
@@ -145,6 +163,14 @@ export default function CustomerOrderPage() {
   const itemCount = cart.reduce((sum, item) => sum + item.qty, 0);
   const discountAmount = Math.max(0, Number(discountPreview?.discount_amount || 0));
   const payableTotal = Math.max(0, Number(discountPreview?.final_total ?? total));
+  const previewDiscountedItems = getDiscountedBundleItems({
+    sourceItems: cart,
+    bundleItems: discountPreview?.type === 'bundle' ? discountPreview.bundle_items : [],
+  });
+  const orderDiscountedItems = getDiscountedBundleItems({
+    sourceItems: order?.items || [],
+    bundleItems: order?.discount_program_type === 'bundle' ? order.discount_bundle_items : [],
+  });
   const tableBusy = !order && Number(table?.active_orders || 0) > 0;
   const branchLabel = table?.branch_name || 'Cabang Sultan Kebab';
   const branchArea = table?.branch_area || table?.branch_address || '';
@@ -341,7 +367,7 @@ export default function CustomerOrderPage() {
     const nextCart = buildCartWithBundle(bundlePrompt);
     setCart(nextCart);
     setBundlePrompt(null);
-    await submitOrderWithCart(nextCart);
+    setShowMobileCart(true);
   };
 
   const submitReview = async () => {
@@ -438,6 +464,14 @@ export default function CustomerOrderPage() {
                 <span>{discountPreview.label}</span>
                 <strong>-{formatRp(discountAmount)}</strong>
               </div>
+              {previewDiscountedItems.length > 0 && (
+                <div className="rounded-xl bg-emerald-500/10 p-2 text-[11px] leading-5 text-emerald-100/90">
+                  <p className="font-black">Menu yang mendapat diskon:</p>
+                  {previewDiscountedItems.map((item) => (
+                    <p key={item.id}>{item.name} x{item.qty} - dasar {formatRp(item.subtotal)}</p>
+                  ))}
+                </div>
+              )}
               <div className="flex justify-between gap-3 border-t border-[#C9A84C]/10 pt-2 text-[#C9A84C]">
                 <span>Total bayar</span>
                 <strong>{formatRp(payableTotal)}</strong>
@@ -669,9 +703,17 @@ export default function CustomerOrderPage() {
                     <strong>{formatRp(order.final_total || order.subtotal)}</strong>
                   </div>
                   {Number(order.discount_amount || 0) > 0 && (
-                    <div className="mt-1 flex justify-between text-xs text-emerald-300">
-                      <span>{order.discount_label || `Diskon review ${order.discount_rate}%`}</span>
-                      <strong>-{formatRp(order.discount_amount)}</strong>
+                  <div className="mt-1 flex justify-between text-xs text-emerald-300">
+                    <span>{order.discount_label || `Diskon review ${order.discount_rate}%`}</span>
+                    <strong>-{formatRp(order.discount_amount)}</strong>
+                  </div>
+                )}
+                  {orderDiscountedItems.length > 0 && (
+                    <div className="mt-2 rounded-2xl bg-emerald-500/10 p-3 text-xs leading-5 text-emerald-100/90">
+                      <p className="font-black text-emerald-200">Menu paket yang mendapat diskon:</p>
+                      {orderDiscountedItems.map((item) => (
+                        <p key={item.id}>{item.name} x{item.qty} - dasar {formatRp(item.subtotal)}</p>
+                      ))}
                     </div>
                   )}
                 </div>
@@ -811,7 +853,7 @@ export default function CustomerOrderPage() {
               <p className="text-xs font-black uppercase tracking-[0.22em] text-[#C9A84C]">Paket Bundle</p>
               <h2 className="mt-2 text-xl font-black">{bundlePrompt.name}</h2>
               <p className="mt-2 text-sm leading-6 text-[#EDE0C4]/70">
-                Pesanan Anda hampir memenuhi paket ini. Tambahkan menu berikut agar diskon {bundlePrompt.discountText} bisa diklaim:
+                Pesanan Anda hampir memenuhi paket ini. Tambahkan menu berikut agar potongan {bundlePrompt.discountText} bisa terlihat di keranjang sebelum pesanan dikirim:
               </p>
               <div className="mt-4 space-y-2">
                 {bundlePrompt.missingProducts.map((item) => (
@@ -838,7 +880,7 @@ export default function CustomerOrderPage() {
                   onClick={confirmBundleAndSubmit}
                   className="rounded-2xl bg-[#C9A84C] px-4 py-3 text-sm font-black text-[#0D0A06]"
                 >
-                  Tambah & Kirim
+                  Tambah ke Keranjang
                 </button>
               </div>
             </motion.div>

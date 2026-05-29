@@ -63,6 +63,12 @@ const getProgramBundleItems = (program) => {
   return normalizeBundleItems(program.bundle_product_ids);
 };
 
+const formatClaimCount = (program) => {
+  const used = Number(program.used_count || 0);
+  if (program.total_usage_limit == null || program.total_usage_limit === '') return `${used} klaim`;
+  return `${used}/${Number(program.total_usage_limit || 0)} klaim`;
+};
+
 const generateVoucherCode = () => {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   const randomValues = new Uint32Array(13);
@@ -554,7 +560,7 @@ export default function DiscountsPage() {
                       </div>
                       <div className="text-left md:text-right">
                         <p className="text-sm font-bold text-emerald-400">{formatCurrency(program.distributed_amount)}</p>
-                        <p className="text-xs text-slate-500">{program.used_count || 0} klaim</p>
+                        <p className="text-xs text-slate-500">{formatClaimCount(program)}</p>
                         <div className="mt-3 flex flex-wrap gap-2 md:justify-end">
                           <button onClick={() => editProgram(program)} className="rounded-lg bg-slate-700 px-3 py-1.5 text-xs font-bold text-white">Edit</button>
                           <button onClick={() => toggleProgramStatus(program)} className="rounded-lg bg-yellow-500/15 px-3 py-1.5 text-xs font-bold text-yellow-200">
