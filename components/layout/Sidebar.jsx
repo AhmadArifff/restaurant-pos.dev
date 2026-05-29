@@ -22,6 +22,7 @@ const menus = [
   { href: '/pos/history',               label: 'Riwayat POS',   roles: ['admin'],        anim: 'slide'  },
   { href: '/dashboard',                 label: 'Dashboard',    roles: ['admin'],          anim: 'bounce' },
   { href: '/discounts',                 label: 'Vocher & Diskon', roles: ['admin'],       anim: 'pop'    },
+  { href: '/payment',                   label: 'Payment',      roles: ['admin'],          anim: 'pulse'  },
   { href: '/products',                  label: 'Produk',       roles: ['admin'],          anim: 'flip'   },
   { href: '/stock',                     label: 'Stok',         roles: ['admin','kasir'],  anim: 'wave'   },
   { href: '/reports',                   label: 'Laporan',      roles: ['admin'],          anim: 'pulse'  },
@@ -124,6 +125,18 @@ function DiscountIcon({ active }) {
       <path d="M12 8v13"/>
       <path d="M12 8H7.5a2.5 2.5 0 1 1 2.2-3.7L12 8z"/>
       <path d="M12 8h4.5a2.5 2.5 0 1 0-2.2-3.7L12 8z"/>
+    </svg>
+  );
+}
+function PaymentIcon({ active }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+      stroke={active ? '#fff' : 'currentColor'} strokeWidth="1.8"
+      strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="5" width="18" height="14" rx="2"/>
+      <path d="M3 10h18"/>
+      <path d="M7 15h3"/>
+      <path d="M15 14h2v2h-2z"/>
     </svg>
   );
 }
@@ -259,6 +272,7 @@ const iconMap = {
   '/pos/history':                 HistoryIcon,
   '/dashboard':                   DashIcon,
   '/discounts':                   DiscountIcon,
+  '/payment':                     PaymentIcon,
   '/products':                    ProductIcon,
   '/stock':                       StockIcon,
   '/reports':                     ReportIcon,

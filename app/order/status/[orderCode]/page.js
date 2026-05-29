@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 import { getCustomerOrder } from '@/lib/api';
 import { useReactToPrint } from 'react-to-print';
 import Receipt from '@/components/pos/Receipt';
+import CustomerPaymentPanel from '@/components/customer/CustomerPaymentPanel';
 
 const statusSteps = [
   { key: 'pending', label: 'Menunggu', desc: 'Pesanan menunggu konfirmasi kasir/admin.' },
@@ -34,21 +35,29 @@ export default function OrderStatusPage() {
   const receiptRef = useRef(null);
   const printReceipt = useReactToPrint({ contentRef: receiptRef });
 
-  const load = async () => {
-    if (!orderCode) return;
-    const res = await getCustomerOrder(orderCode);
-    setOrder(res.data);
-    setLoading(false);
-  };
-
   useEffect(() => {
-    load().catch(() => setLoading(false));
+    let mounted = true;
+    if (!orderCode) return undefined;
+    getCustomerOrder(orderCode)
+      .then((res) => {
+        if (!mounted) return;
+        setOrder(res.data);
+        setLoading(false);
+      })
+      .catch(() => {
+        if (mounted) setLoading(false);
+      });
+    return () => {
+      mounted = false;
+    };
   }, [orderCode]);
 
   useEffect(() => {
     if (!orderCode || ['completed', 'cancelled'].includes(order?.status)) return;
     const timer = window.setInterval(() => {
-      load().catch(() => {});
+      getCustomerOrder(orderCode)
+        .then((res) => setOrder(res.data))
+        .catch(() => {});
     }, 5000);
     return () => window.clearInterval(timer);
   }, [orderCode, order?.status]);
@@ -85,7 +94,7 @@ export default function OrderStatusPage() {
     total_price: orderTotal,
     tunai: orderTotal,
     kembalian: 0,
-    payment_method: order.payment_status === 'paid' ? 'cash' : 'cash',
+    payment_method: order.payment_method_key || order.payment_method?.type || 'cash',
     kasir_name: order.accepted_by_name || 'Kasir',
     created_by_type: 'customer',
     table_number: order.table_number,
@@ -161,6 +170,8 @@ export default function OrderStatusPage() {
               <span>{formatRp(order.final_total || order.subtotal)}</span>
             </div>
           </div>
+
+          <CustomerPaymentPanel order={order} onOrderUpdate={setOrder} />
 
           <button
             type="button"

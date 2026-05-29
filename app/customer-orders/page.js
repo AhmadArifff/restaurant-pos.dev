@@ -15,6 +15,7 @@ import {
   updateDiningTable,
 } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
+import { resolveAssetUrl } from '@/lib/assetUrl';
 
 const emptyTable = {
   table_number: '',
@@ -52,6 +53,9 @@ const statusFilters = [
 ];
 
 const formatRp = (value) => `Rp ${Number(value || 0).toLocaleString('id-ID')}`;
+const formatDateTime = (value) => value
+  ? new Date(value).toLocaleString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+  : '-';
 
 function Stars({ value = 0, size = 'text-sm' }) {
   const rating = Math.max(0, Math.min(5, Number(value || 0)));
@@ -318,6 +322,36 @@ export default function CustomerOrdersPage() {
                         </div>
                       )}
                       <p className="mt-3 text-xs italic text-slate-500">Catatan: {order.note || 'Tidak ada'}</p>
+                      {order.payment_method && (
+                        <div className="mt-3 rounded-xl border border-sky-500/20 bg-sky-500/10 p-3 text-xs text-sky-100">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <span className="font-bold">Pembayaran: {order.payment_method.name || order.payment_method_key || 'Payment'}</span>
+                            <span className={`rounded-full px-2 py-1 font-black uppercase ${
+                              order.payment_status === 'paid'
+                                ? 'bg-emerald-500/20 text-emerald-200'
+                                : order.payment_proof_url
+                                  ? 'bg-yellow-500/20 text-yellow-100'
+                                  : 'bg-slate-700 text-slate-300'
+                            }`}>
+                              {order.payment_status === 'paid' ? 'Terkonfirmasi' : order.payment_proof_url ? 'Bukti dikirim' : 'Menunggu bukti'}
+                            </span>
+                          </div>
+                          <p className="mt-1 text-sky-100/70">
+                            Deadline: {formatDateTime(order.payment_due_at)}
+                          </p>
+                          {order.payment_proof_url && (
+                            <a
+                              href={resolveAssetUrl(order.payment_proof_url)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="mt-2 inline-flex font-black text-sky-200 underline"
+                            >
+                              Lihat bukti pembayaran
+                            </a>
+                          )}
+                          {order.payment_proof_note && <p className="mt-1 text-sky-100/70">Catatan bayar: {order.payment_proof_note}</p>}
+                        </div>
+                      )}
                       {order.service_review && (
                         <div className="mt-3 rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-xs text-emerald-100">
                           <div className="flex items-center justify-between gap-3">

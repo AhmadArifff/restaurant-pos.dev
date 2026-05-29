@@ -10,9 +10,11 @@ import {
   getCustomerMenu,
   getCustomerOrder,
   getDiningTableByToken,
+  getPublicPaymentMethods,
   previewDiscount,
   submitCustomerOrderReview,
 } from '@/lib/api';
+import CustomerPaymentPanel from '@/components/customer/CustomerPaymentPanel';
 import { resolveAssetUrl } from '@/lib/assetUrl';
 import { formatIndonesianPhone, normalizeIndonesianPhoneForSubmit } from '@/lib/phoneFormat';
 
@@ -179,6 +181,8 @@ export default function CustomerOrderPage() {
   const [discountPreview, setDiscountPreview] = useState(null);
   const [discountLoading, setDiscountLoading] = useState(false);
   const [bundlePrompt, setBundlePrompt] = useState(null);
+  const [paymentMethods, setPaymentMethods] = useState([]);
+  const [selectedPaymentMethodId, setSelectedPaymentMethodId] = useState('');
 
   useEffect(() => {
     if (!token) return;
@@ -187,10 +191,11 @@ export default function CustomerOrderPage() {
     const load = async () => {
       const savedOrderCode = storageKey ? localStorage.getItem(storageKey) : null;
       const tableRes = await getDiningTableByToken(token);
-      const [menuRes, rewardRes, bundleRes, orderRes] = await Promise.all([
+      const [menuRes, rewardRes, bundleRes, paymentRes, orderRes] = await Promise.all([
         getCustomerMenu({ branch_id: tableRes.data?.branch_id }),
         getActiveDiscountPrograms({ type: 'review_reward' }).catch(() => ({ data: [] })),
         getActiveDiscountPrograms({ type: 'bundle' }).catch(() => ({ data: [] })),
+        getPublicPaymentMethods().catch(() => ({ data: [] })),
         savedOrderCode ? getCustomerOrder(savedOrderCode).catch(() => null) : Promise.resolve(null),
       ]);
       if (!mounted) return;
@@ -198,6 +203,9 @@ export default function CustomerOrderPage() {
       setProducts(menuRes.data || []);
       setReviewRewardProgram(Array.isArray(rewardRes.data) ? rewardRes.data[0] || null : null);
       setBundlePrograms(Array.isArray(bundleRes.data) ? bundleRes.data : []);
+      const activePayments = Array.isArray(paymentRes.data) ? paymentRes.data : [];
+      setPaymentMethods(activePayments);
+      setSelectedPaymentMethodId((prev) => prev || String(activePayments[0]?.id || ''));
       if (orderRes?.data) setOrder(orderRes.data);
       setLoading(false);
     };
@@ -458,6 +466,7 @@ export default function CustomerOrderPage() {
         customer_name: customerName,
         customer_phone: customerPhoneForApi,
         voucher_code: voucherCode,
+        payment_method_id: selectedPaymentMethodId || null,
         note,
         items: orderCart.map((item) => ({ product_id: item.id, qty: item.qty, note: item.note || null })),
       });
@@ -572,6 +581,48 @@ export default function CustomerOrderPage() {
         <input value={voucherCode} onChange={(e) => setVoucherCode(e.target.value.toUpperCase())} placeholder="Kode vocher / voucher (opsional)" className="w-full rounded-2xl border border-[#C9A84C]/20 bg-[#0D0A06] px-4 py-3 font-bold uppercase outline-none" />
         <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Catatan pesanan..." className="max-h-28 w-full rounded-2xl border border-[#C9A84C]/20 bg-[#0D0A06] px-4 py-3 outline-none" />
       </div>
+
+      {cart.length > 0 && (
+        <div className="mt-5 rounded-3xl border border-sky-300/20 bg-sky-400/10 p-3">
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-sky-200">Metode pembayaran</p>
+          {paymentMethods.length > 0 ? (
+            <div className="mt-3 grid gap-2">
+              {paymentMethods.map((method) => {
+                const active = String(selectedPaymentMethodId) === String(method.id);
+                return (
+                  <button
+                    key={method.id}
+                    type="button"
+                    onClick={() => setSelectedPaymentMethodId(String(method.id))}
+                    className={`rounded-2xl border p-3 text-left transition ${
+                      active
+                        ? 'border-sky-200 bg-sky-300/15 text-sky-50'
+                        : 'border-sky-100/15 bg-[#0D0A06]/45 text-sky-50/75'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-black">{method.name}</p>
+                        <p className="mt-1 text-xs text-sky-50/60">
+                          {method.provider_name || method.type?.toUpperCase()}
+                          {method.account_number ? ` - ${method.account_number}` : ''}
+                        </p>
+                      </div>
+                      <span className="shrink-0 rounded-full bg-[#0D0A06]/70 px-2.5 py-1 text-[11px] font-black text-sky-200">
+                        {Number(method.payment_timeout_minutes || 0)} menit
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="mt-2 text-sm leading-6 text-sky-50/70">
+              Metode pembayaran online belum diatur admin. Pesanan tetap bisa dikirim dan pelanggan dapat konfirmasi ke kasir.
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="mt-5 flex items-center justify-between border-t border-[#C9A84C]/15 pt-4">
         <span className="text-sm text-[#EDE0C4]/70">Subtotal</span>
@@ -876,6 +927,8 @@ export default function CustomerOrderPage() {
                     </div>
                   )}
                 </div>
+
+                <CustomerPaymentPanel order={order} onOrderUpdate={setOrder} compact />
 
                 {order.status === 'completed' && !order.reviewed_at && (
                   <div className="mt-5 rounded-3xl border border-[#C9A84C]/20 bg-[#0D0A06]/55 p-4">
