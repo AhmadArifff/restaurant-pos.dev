@@ -47,17 +47,19 @@ const getDiscountedBundleItems = ({ sourceItems = [], bundleItems = [] }) => {
     }));
 };
 
-const getDiscountedScopeItems = ({ sourceItems = [], discountType, bundleItems = [] }) => {
+const getDiscountedScopeItems = ({ sourceItems = [], discountType, bundleItems = [], excludedProductIds = new Set() }) => {
   if (discountType === 'bundle') {
     return getDiscountedBundleItems({ sourceItems, bundleItems });
   }
   if (['voucher', 'review_reward'].includes(discountType)) {
-    return (sourceItems || []).map((item) => ({
-      id: item.id || item.product_id,
-      name: item.product_name || item.name,
-      qty: Number(item.qty || 0),
-      subtotal: getItemSubtotal(item),
-    }));
+    return (sourceItems || [])
+      .filter((item) => !excludedProductIds.has(getItemProductId(item)))
+      .map((item) => ({
+        id: item.id || item.product_id,
+        name: item.product_name || item.name,
+        qty: Number(item.qty || 0),
+        subtotal: getItemSubtotal(item),
+      }));
   }
   return [];
 };
@@ -82,6 +84,30 @@ const getBundleDiscountBase = (program, sourceItems = []) => {
     bundleIds.has(getItemProductId(item)) ? sum + getItemSubtotal(item) : sum
   ), 0);
 };
+
+const normalizeDiscountBreakdown = (discount) => {
+  if (!discount) return [];
+  if (Array.isArray(discount.breakdown) && discount.breakdown.length) return discount.breakdown;
+  if (Number(discount.discount_amount || 0) <= 0) return [];
+  return [{
+    program_id: discount.program_id || discount.discount_program_id,
+    label: discount.label || discount.discount_label,
+    type: discount.type || discount.discount_program_type,
+    discount_rate: discount.discount_rate,
+    discount_amount: discount.discount_amount,
+    discount_base: discount.discount_base || discount.subtotal,
+    voucher_code: discount.voucher_code,
+    bundle_items: discount.bundle_items || discount.discount_bundle_items || [],
+  }];
+};
+
+const getBundleExcludedIds = (breakdown = []) => new Set(
+  breakdown
+    .filter((item) => item.type === 'bundle')
+    .flatMap((item) => item.bundle_items || [])
+    .map((item) => Number(item.product_id || item.id || item))
+    .filter(Boolean)
+);
 
 function StarPicker({ value = 5, onChange }) {
   const rating = Number(value || 0);
@@ -202,18 +228,33 @@ export default function CustomerOrderPage() {
   const itemCount = cart.reduce((sum, item) => sum + item.qty, 0);
   const discountAmount = Math.max(0, Number(discountPreview?.discount_amount || 0));
   const payableTotal = Math.max(0, Number(discountPreview?.final_total ?? total));
-  const previewDiscountedItems = getDiscountedScopeItems({
-    sourceItems: cart,
-    discountType: discountPreview?.type,
-    bundleItems: discountPreview?.type === 'bundle' ? discountPreview.bundle_items : [],
-  });
-  const previewDiscountScopeTitle = getDiscountScopeTitle(discountPreview?.type);
-  const orderDiscountedItems = getDiscountedScopeItems({
-    sourceItems: order?.items || [],
-    discountType: order?.discount_program_type,
-    bundleItems: order?.discount_program_type === 'bundle' ? order.discount_bundle_items : [],
-  });
-  const orderDiscountScopeTitle = getDiscountScopeTitle(order?.discount_program_type);
+  const previewBreakdown = normalizeDiscountBreakdown(discountPreview);
+  const previewBundleExcludedIds = getBundleExcludedIds(previewBreakdown);
+  const previewDiscountBreakdown = previewBreakdown.map((component) => ({
+    ...component,
+    scopeItems: getDiscountedScopeItems({
+      sourceItems: cart,
+      discountType: component.type,
+      bundleItems: component.bundle_items || [],
+      excludedProductIds: component.type === 'bundle' ? new Set() : previewBundleExcludedIds,
+    }),
+  }));
+  const orderBreakdown = normalizeDiscountBreakdown(order ? {
+    ...order,
+    breakdown: order.discount_breakdown,
+    type: order.discount_program_type,
+    bundle_items: order.discount_bundle_items,
+  } : null);
+  const orderBundleExcludedIds = getBundleExcludedIds(orderBreakdown);
+  const orderDiscountBreakdown = orderBreakdown.map((component) => ({
+    ...component,
+    scopeItems: getDiscountedScopeItems({
+      sourceItems: order?.items || [],
+      discountType: component.type,
+      bundleItems: component.bundle_items || [],
+      excludedProductIds: component.type === 'bundle' ? new Set() : orderBundleExcludedIds,
+    }),
+  }));
   const tableBusy = !order && Number(table?.active_orders || 0) > 0;
   const branchLabel = table?.branch_name || 'Cabang Sultan Kebab';
   const branchArea = table?.branch_area || table?.branch_address || '';
@@ -521,20 +562,24 @@ export default function CustomerOrderPage() {
                 <span>{discountPreview.label}</span>
                 <strong>-{formatRp(discountAmount)}</strong>
               </div>
-              {previewDiscountedItems.length > 0 && (
-                <div className="rounded-xl bg-emerald-500/10 p-2 text-[11px] leading-5 text-emerald-100/90">
-                  <p className="font-black">{previewDiscountScopeTitle}</p>
-                  {previewDiscountedItems.map((item) => (
+              {previewDiscountBreakdown.map((component) => (
+                <div key={`${component.type}-${component.program_id || component.label}`} className="rounded-xl bg-emerald-500/10 p-2 text-[11px] leading-5 text-emerald-100/90">
+                  <div className="flex justify-between gap-2 font-black text-emerald-200">
+                    <span>{component.label}</span>
+                    <span>-{formatRp(component.discount_amount)}</span>
+                  </div>
+                  <p className="font-black">{getDiscountScopeTitle(component.type)}</p>
+                  {component.scopeItems.map((item) => (
                     <p key={item.id}>{item.name} x{item.qty} - dasar {formatRp(item.subtotal)}</p>
                   ))}
                   <p className="mt-1 text-emerald-100/70">
-                    {discountPreview?.type === 'bundle'
+                    {component.type === 'bundle'
                       ? 'Potongan paket bundle hanya dihitung dari menu paket di atas.'
-                      : `Potongan ${discountPreview?.label || 'voucher'} dihitung dari dasar ${formatRp(discountPreview?.discount_base || total)}.`}
+                      : `Potongan ${component.label || 'voucher'} dihitung dari menu di luar paket bundle dengan dasar ${formatRp(component.discount_base || 0)}.`}
                   </p>
                 </div>
-              )}
-              {discountPreview?.type !== 'bundle' && qualifiedBundleAlternatives.length > 0 && (
+              ))}
+              {!previewDiscountBreakdown.some((component) => component.type === 'bundle') && qualifiedBundleAlternatives.length > 0 && (
                 <div className="rounded-xl border border-[#C9A84C]/15 bg-[#C9A84C]/10 p-2 text-[11px] leading-5 text-[#F5EDD8]/85">
                   <p className="font-black text-[#C9A84C]">Paket bundle yang juga memenuhi syarat:</p>
                   {qualifiedBundleAlternatives.slice(0, 2).map((program) => (
@@ -545,7 +590,7 @@ export default function CustomerOrderPage() {
                       </p>
                     </div>
                   ))}
-                  <p className="mt-1 text-[#EDE0C4]/65">Sistem memakai diskon valid dengan potongan terbaik untuk transaksi ini.</p>
+                  <p className="mt-1 text-[#EDE0C4]/65">Paket bundle akan memotong menu paket saja, sedangkan voucher memotong menu di luar paket.</p>
                 </div>
               )}
               <div className="flex justify-between gap-3 border-t border-[#C9A84C]/10 pt-2 text-[#C9A84C]">
@@ -784,17 +829,25 @@ export default function CustomerOrderPage() {
                     <strong>-{formatRp(order.discount_amount)}</strong>
                   </div>
                 )}
-                  {orderDiscountedItems.length > 0 && (
-                    <div className="mt-2 rounded-2xl bg-emerald-500/10 p-3 text-xs leading-5 text-emerald-100/90">
-                      <p className="font-black text-emerald-200">{orderDiscountScopeTitle}</p>
-                      {orderDiscountedItems.map((item) => (
-                        <p key={item.id}>{item.name} x{item.qty} - dasar {formatRp(item.subtotal)}</p>
+                  {orderDiscountBreakdown.length > 0 && (
+                    <div className="mt-2 space-y-2">
+                      {orderDiscountBreakdown.map((component) => (
+                        <div key={`${component.type}-${component.program_id || component.label}`} className="rounded-2xl bg-emerald-500/10 p-3 text-xs leading-5 text-emerald-100/90">
+                          <div className="flex justify-between gap-2 font-black text-emerald-200">
+                            <span>{component.label}</span>
+                            <span>-{formatRp(component.discount_amount)}</span>
+                          </div>
+                          <p className="font-black text-emerald-200">{getDiscountScopeTitle(component.type)}</p>
+                          {component.scopeItems.map((item) => (
+                            <p key={item.id}>{item.name} x{item.qty} - dasar {formatRp(item.subtotal)}</p>
+                          ))}
+                          <p className="mt-1 text-emerald-100/70">
+                            {component.type === 'bundle'
+                              ? 'Potongan paket bundle hanya dihitung dari menu paket di atas.'
+                              : `Potongan ${component.type === 'review_reward' ? 'reward review' : 'voucher'} dihitung dari menu di luar paket bundle.`}
+                          </p>
+                        </div>
                       ))}
-                      <p className="mt-1 text-emerald-100/70">
-                        {order.discount_program_type === 'bundle'
-                          ? 'Potongan paket bundle hanya dihitung dari menu paket di atas.'
-                          : `Potongan ${order.discount_program_type === 'review_reward' ? 'reward review' : 'voucher'} dihitung dari semua menu pesanan di atas.`}
-                      </p>
                     </div>
                   )}
                 </div>
