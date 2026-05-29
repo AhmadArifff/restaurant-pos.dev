@@ -85,6 +85,7 @@ export default function CustomerOrdersPage() {
   const [editingTable, setEditingTable] = useState(null);
   const [selectedTable, setSelectedTable] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [proofModal, setProofModal] = useState(null);
 
   const load = async ({ silent = false } = {}) => {
     if (!silent) setLoading(true);
@@ -352,14 +353,16 @@ export default function CustomerOrdersPage() {
                             Deadline: {formatDateTime(order.payment_due_at)}
                           </p>
                           {order.payment_proof_url && (
-                            <a
-                              href={resolveAssetUrl(order.payment_proof_url)}
-                              target="_blank"
-                              rel="noreferrer"
+                            <button
+                              type="button"
+                              onClick={() => setProofModal({
+                                order_code: order.order_code,
+                                url: resolveAssetUrl(order.payment_proof_url),
+                              })}
                               className="mt-2 inline-flex font-black text-sky-200 underline"
                             >
                               Lihat bukti pembayaran
-                            </a>
+                            </button>
                           )}
                           {order.payment_proof_note && <p className="mt-1 text-sky-100/70">Catatan bayar: {order.payment_proof_note}</p>}
                         </div>
@@ -490,6 +493,31 @@ export default function CustomerOrdersPage() {
               </aside>
             )}
           </div>
+          {proofModal && (
+            <div className="fixed inset-0 z-[90] grid place-items-center bg-black/75 p-4 backdrop-blur-sm" role="dialog" aria-modal="true">
+              <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl border border-slate-700 bg-slate-900 p-4 shadow-2xl shadow-black/50">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-[0.18em] text-sky-300">Bukti Pembayaran</p>
+                    <h3 className="mt-1 text-lg font-black text-white">{proofModal.order_code}</h3>
+                  </div>
+                  <button type="button" onClick={() => setProofModal(null)} className="grid h-10 w-10 place-items-center rounded-full border border-white/15 text-lg font-black text-white">
+                    x
+                  </button>
+                </div>
+                {String(proofModal.url).toLowerCase().includes('.pdf') ? (
+                  <div className="mt-4 rounded-2xl bg-black/25 p-5 text-sm text-slate-200">
+                    File bukti berupa PDF.
+                    <a href={proofModal.url} target="_blank" rel="noreferrer" className="mt-3 inline-flex rounded-xl bg-sky-300 px-4 py-2 font-black text-slate-950">
+                      Buka PDF
+                    </a>
+                  </div>
+                ) : (
+                  <img src={proofModal.url} alt="Bukti pembayaran" className="mt-4 max-h-[70vh] w-full rounded-2xl bg-white object-contain" />
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </AdminLayout>
     </AuthGuard>

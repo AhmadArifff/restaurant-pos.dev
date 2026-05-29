@@ -729,8 +729,10 @@ export default function CustomerOrderPage() {
         </div>
       </header>
 
-      <div className="mx-auto grid max-w-7xl gap-5 px-3 pb-28 pt-4 sm:px-4 sm:py-6 lg:grid-cols-[1fr_380px] lg:pb-6">
-        <section>
+      <div className={`mx-auto grid gap-5 px-3 pb-28 pt-4 sm:px-4 sm:py-6 lg:pb-6 ${
+        order ? 'max-w-5xl lg:grid-cols-1' : 'max-w-7xl lg:grid-cols-[1fr_380px]'
+      }`}>
+        <section className={order ? 'hidden' : ''}>
           <div className="mb-4 rounded-3xl border border-[#C9A84C]/18 bg-[#1A1409] p-4 sm:mb-5 sm:rounded-[2rem] sm:p-5">
             <p className="text-xs font-black uppercase tracking-[0.28em] text-[#C9A84C]">Pesan langsung dari meja</p>
             <h2 className="mt-2 font-serif text-2xl font-black sm:text-3xl">Pilih menu favorit Anda</h2>
@@ -857,7 +859,7 @@ export default function CustomerOrderPage() {
           </div>
         </section>
 
-        <aside className={`${order ? '' : 'hidden lg:block'} lg:sticky lg:top-24 lg:h-fit`}>
+        <aside className={`${order ? '' : 'hidden lg:block'} ${order ? '' : 'lg:sticky lg:top-24'} lg:h-fit`}>
           <AnimatePresence mode="wait">
             {order ? (
               <motion.div
