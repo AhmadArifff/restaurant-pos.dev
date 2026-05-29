@@ -48,13 +48,9 @@ export async function GET(request) {
   const settings = await getSettings();
   const iconUrl = absolutize(settings.favicon_url, request.url);
   const background = settings.dark || DEFAULT_SETTINGS.dark;
-  const accent = settings.gold || DEFAULT_SETTINGS.gold;
   const initials = String(settings.store_name || DEFAULT_SETTINGS.store_name).slice(0, 2).toUpperCase();
-  const borderWidth = Math.max(5, Math.round(size * 0.024));
   const outerRadius = Math.round(size * 0.22);
-  const frameSize = Math.round(size * 0.74);
-  const frameRadius = Math.round(size * 0.18);
-  const logoSize = Math.round(frameSize * 0.72);
+  const logoSize = Math.round(size * 0.86);
 
   return new ImageResponse(
     (
@@ -68,34 +64,19 @@ export async function GET(request) {
           background,
           borderRadius: outerRadius,
           overflow: 'hidden',
-          border: `${borderWidth}px solid ${accent}`,
           boxSizing: 'border-box',
-          padding: Math.round(size * 0.08),
+          padding: Math.round(size * 0.04),
         }}
       >
-        <div
+        <img
+          src={iconUrl}
+          alt={initials}
           style={{
-            width: frameSize,
-            height: frameSize,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderRadius: frameRadius,
-            background: 'rgba(245, 237, 216, 0.08)',
-            border: `${Math.max(2, Math.round(size * 0.012))}px solid ${accent}`,
-            boxSizing: 'border-box',
+            width: logoSize,
+            height: logoSize,
+            objectFit: 'contain',
           }}
-        >
-          <img
-            src={iconUrl}
-            alt={initials}
-            style={{
-              width: logoSize,
-              height: logoSize,
-              objectFit: 'contain',
-            }}
-          />
-        </div>
+        />
       </div>
     ),
     {
