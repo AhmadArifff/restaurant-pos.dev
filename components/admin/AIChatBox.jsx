@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getAIChatModels, sendAIQuery } from '@/lib/api';
 import { useAIChatStore } from '@/store/aiChatStore';
-import ElectricBorder from '@/components/ui/ElectricBorder';
 import AgentPlan from '@/components/ui/agent-plan';
 
 const MAX_MESSAGE_LENGTH = 500;
@@ -485,16 +484,7 @@ export default function AIChatBox({ isModal = false }) {
   const charsLeft = MAX_MESSAGE_LENGTH - inputValue.length;
 
   return (
-    <ElectricBorder
-      className={`ai-chat-electric ${isModal ? 'ai-chat-electric-modal' : ''}`}
-      color="#7df9ff"
-      speed={1.05}
-      chaos={0.1}
-      thickness={2}
-      borderRadius={14}
-      style={{ borderRadius: 14 }}
-    >
-      <section className={`ai-chat-shell ${isModal ? 'ai-chat-modal' : ''}`}>
+    <section className={`ai-chat-shell ${isModal ? 'ai-chat-modal' : ''}`}>
       <header className="ai-chat-header">
         <div className="ai-title-group">
           <div className="ai-title-mark">
@@ -556,34 +546,24 @@ export default function AIChatBox({ isModal = false }) {
 
       {error && <div className="ai-error-line">{error}</div>}
 
-      <ElectricBorder
-        className="ai-composer-electric"
-        color="#7df9ff"
-        speed={1.25}
-        chaos={0.08}
-        thickness={1.6}
-        borderRadius={12}
-        style={{ borderRadius: 12 }}
-      >
-        <footer className="ai-composer">
-          <textarea
-            ref={inputRef}
-            value={inputValue}
-            onChange={(event) => setInputValue(event.target.value.slice(0, MAX_MESSAGE_LENGTH))}
-            onInput={(event) => {
-              event.currentTarget.style.height = 'auto';
-              event.currentTarget.style.height = `${Math.min(event.currentTarget.scrollHeight, 108)}px`;
-            }}
-            onKeyDown={handleKeyDown}
-            placeholder="Tanya revenue, stok, profit, atau performa produk..."
-            rows={1}
-            disabled={isLoading || !selectedModelId}
-          />
-          <button type="button" onClick={() => handleSend()} disabled={isLoading || !inputValue.trim() || !selectedModelId}>
-            {isLoading ? '...' : 'Kirim'}
-          </button>
-        </footer>
-      </ElectricBorder>
+      <footer className="ai-composer">
+        <textarea
+          ref={inputRef}
+          value={inputValue}
+          onChange={(event) => setInputValue(event.target.value.slice(0, MAX_MESSAGE_LENGTH))}
+          onInput={(event) => {
+            event.currentTarget.style.height = 'auto';
+            event.currentTarget.style.height = `${Math.min(event.currentTarget.scrollHeight, 108)}px`;
+          }}
+          onKeyDown={handleKeyDown}
+          placeholder="Tanya revenue, stok, profit, atau performa produk..."
+          rows={1}
+          disabled={isLoading || !selectedModelId}
+        />
+        <button type="button" onClick={() => handleSend()} disabled={isLoading || !inputValue.trim() || !selectedModelId}>
+          {isLoading ? '...' : 'Kirim'}
+        </button>
+      </footer>
 
       {inputValue.length > 420 && (
         <div className={`ai-char-count ${charsLeft < 40 ? 'ai-char-danger' : ''}`}>
@@ -1292,6 +1272,5 @@ export default function AIChatBox({ isModal = false }) {
         }
       `}</style>
       </section>
-    </ElectricBorder>
   );
 }

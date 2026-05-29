@@ -14,7 +14,7 @@ import {
   addStockPurchase, getAllStockRequests, getMyStockRequests,
   submitStockRequest, deleteStockRequest, approveStockRequest,
   updateStockPurchase, deleteStockPurchase, addManualStockOut,
-  getUsers,resubmitStockRequest
+  getUsers, resubmitStockRequest, getProducts
 } from '@/lib/api';
 // Di AdminStockPage — tambah useEffect untuk baca query params dari POS
 import { useSearchParams } from 'next/navigation';
@@ -64,6 +64,140 @@ function mergeStockRequestNotes(items) {
     ))
     .filter(Boolean)
     .join('; ');
+}
+
+const getIngredientStockItemId = (ingredient) => Number(ingredient?.stock_item_id || ingredient?.id || 0);
+
+function buildRecipeRows(product, menuQty = 1, stockRows = []) {
+  if (!product?.ingredients?.length) return [];
+  const qtyMultiplier = Math.max(1, Number(menuQty || 1));
+  const byStockItem = new Map();
+
+  product.ingredients.forEach((ingredient) => {
+    const stockItemId = getIngredientStockItemId(ingredient);
+    if (!stockItemId) return;
+    const requiredQty = Number(ingredient.qty || ingredient.qty_per_portion || 1) * qtyMultiplier;
+    const previous = byStockItem.get(stockItemId);
+    byStockItem.set(stockItemId, {
+      stock_item_id: stockItemId,
+      ingredient_name: ingredient.ingredient_name || ingredient.name || `Bahan #${stockItemId}`,
+      qty: Number(previous?.qty || 0) + requiredQty,
+      unit: ingredient.unit || previous?.unit || '',
+    });
+  });
+
+  return [...byStockItem.values()].map((row) => {
+    const stock = stockRows.find((item) => Number(item.id) === Number(row.stock_item_id));
+    const price = Number(stock?.price_per_unit || stock?.latest_cost_per_unit || 0);
+    return {
+      ...row,
+      ingredient_name: stock?.name || row.ingredient_name,
+      unit: stock?.unit || row.unit,
+      current_stock: Number(stock?.current_stock || 0),
+      price_per_unit: price,
+      total_value: Number(row.qty || 0) * price,
+    };
+  });
+}
+
+function buildRecipeOutItems(product, menuQty = 1) {
+  return buildRecipeRows(product, menuQty).map((row) => ({
+    stock_item_id: String(row.stock_item_id),
+    qty: String(row.qty),
+    note: `Stok untuk ${product?.name || 'produk'}`,
+  }));
+}
+
+function RecipeMenuPicker({
+  products = [],
+  productId,
+  menuQty,
+  onProductChange,
+  onQtyChange,
+  title = 'Buat stok menu',
+}) {
+  const recipeProducts = products.filter((product) => Array.isArray(product.ingredients) && product.ingredients.length > 0);
+
+  return (
+    <div className="rounded-xl border border-orange-500/20 bg-orange-500/10 p-4 space-y-3">
+      <div>
+        <p className="text-orange-300 text-sm font-black">{title}</p>
+        <p className="text-slate-400 text-xs mt-0.5">
+          Pilih menu dan jumlah porsi, bahan resep akan dihitung otomatis.
+        </p>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-[1fr_120px] gap-3">
+        <div>
+          <label className="text-slate-500 text-xs mb-1 block">Menu pesanan</label>
+          <select
+            value={productId}
+            onChange={(event) => onProductChange(event.target.value)}
+            className="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-orange-500/50"
+          >
+            <option value="">-- Manual / pilih menu --</option>
+            {recipeProducts.map((product) => (
+              <option key={product.id} value={product.id}>
+                {product.name} · {product.ingredients.length} bahan
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="text-slate-500 text-xs mb-1 block">Qty menu</label>
+          <input
+            type="number"
+            min="1"
+            value={menuQty}
+            onChange={(event) => onQtyChange(Math.max(1, Number(event.target.value || 1)))}
+            className="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-orange-500/50"
+          />
+        </div>
+      </div>
+      {productId && (
+        <p className="text-[11px] leading-5 text-slate-400">
+          Bahan baku dikunci dari resep produk. Ubah menu atau qty menu untuk menghitung ulang kebutuhan bahan.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function ReadOnlyRecipeSummary({ rows = [], title = 'Ringkasan bahan resep' }) {
+  if (!rows.length) {
+    return (
+      <div className="rounded-xl border border-yellow-500/25 bg-yellow-500/10 p-4 text-xs text-yellow-200">
+        Resep menu belum memiliki bahan baku.
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-slate-600/40 bg-slate-700/40 p-4 space-y-3">
+      <div>
+        <p className="text-slate-200 text-sm font-black">{title}</p>
+        <p className="text-slate-500 text-xs">Bahan tampil sebagai ringkasan, tidak bisa dipilih manual.</p>
+      </div>
+      {rows.map((row) => (
+        <div key={row.stock_item_id} className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2 rounded-lg bg-slate-800/50 px-3 py-2 text-xs">
+          <div>
+            <p className="text-white font-semibold">{row.ingredient_name}</p>
+            <p className="text-slate-500">
+              {fmtQty(row.qty)} {row.unit} · Stok gudang {fmtQty(row.current_stock)} {row.unit} · Rp {Number(row.price_per_unit || 0).toLocaleString('id-ID')}/{row.unit}
+            </p>
+          </div>
+          <p className="text-orange-300 font-black sm:text-right">
+            Rp {Number(row.total_value || 0).toLocaleString('id-ID')}
+          </p>
+        </div>
+      ))}
+      <div className="flex items-center justify-between border-t border-slate-600/50 pt-2">
+        <span className="text-slate-400 text-xs">{rows.length} bahan</span>
+        <strong className="text-white text-lg">
+          Rp {rows.reduce((sum, row) => sum + Number(row.total_value || 0), 0).toLocaleString('id-ID')}
+        </strong>
+      </div>
+    </div>
+  );
 }
 
 function getPriceTrend(currentPrice, referencePrice) {
@@ -185,9 +319,23 @@ function AdminStockPage({ successModal, setSuccessModal }) {
   const availableForOut = summary.filter(s => Number(s.current_stock) > 0);
   const [users,      setUsers]      = useState([]);
   const [outUserId,  setOutUserId]  = useState('');
+  const [productOptions, setProductOptions] = useState([]);
+  const [outProductId, setOutProductId] = useState('');
+  const [outProductQty, setOutProductQty] = useState(1);
 
   // Tambah state di AdminStockPage (setelah state daily)
   const [outTypeFilter, setOutTypeFilter] = useState('all');
+
+  const selectedOutProduct = productOptions.find((product) => String(product.id) === String(outProductId));
+  const outRecipeRows = selectedOutProduct ? buildRecipeRows(selectedOutProduct, outProductQty, summary) : [];
+  const applyOutRecipe = (productId, qty = outProductQty) => {
+    const product = productOptions.find((item) => String(item.id) === String(productId));
+    if (!product) {
+      setOutItems([{ stock_item_id:'', qty:'', note:'' }]);
+      return;
+    }
+    setOutItems(buildRecipeOutItems(product, qty));
+  };
 
   // // Update loadDaily — tambah type_filter
   // const loadDaily = useCallback(() =>
@@ -291,6 +439,8 @@ function AdminStockPage({ successModal, setSuccessModal }) {
         setTab('main');
         setMainTab('out');
         setShowOutForm(true);
+        setOutProductId('');
+        setOutProductQty(1);
         setOutItems(parsedIngs.map(ing => ({
           stock_item_id: String(ing.stock_item_id),
           qty: String(getRequestedQtyFromIngredient(ing)),
@@ -304,6 +454,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
   // Load users saat component mount
   useEffect(() => {
     getUsers().then(r => setUsers(r.data)).catch(() => {});
+    getProducts().then(r => setProductOptions(Array.isArray(r.data) ? r.data : [])).catch(() => setProductOptions([]));
   }, []);
   // Ganti reqDate dengan range
   const [reqDateFrom2,  setReqDateFrom2]  = useState(new Date().toISOString().split('T')[0]);
@@ -870,7 +1021,12 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                   </button>
                 </div>
               <button
-                  onClick={() => setShowOutForm(true)}
+                  onClick={() => {
+                    setOutProductId('');
+                    setOutProductQty(1);
+                    setOutItems([{ stock_item_id:'', qty:'', note:'' }]);
+                    setShowOutForm(true);
+                  }}
                   className="px-4 py-2 rounded-xl text-xs font-semibold
                     bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 transition-all">
                   + Catat Pengeluaran
@@ -1395,6 +1551,8 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                 setShowOutForm(false);
                 setOutItems([{ stock_item_id:'', qty:'', note:'' }]);
                 setOutUserId('');
+                setOutProductId('');
+                setOutProductQty(1);
                 // Redirect ke tab pengajuan supaya admin bisa lihat & approve
                 setTab('requests');
                 loadRequests();
@@ -1431,6 +1589,24 @@ function AdminStockPage({ successModal, setSuccessModal }) {
               </div>
 
               {/* ── Items ── */}
+              <RecipeMenuPicker
+                products={productOptions}
+                productId={outProductId}
+                menuQty={outProductQty}
+                title="Buat stok dari menu"
+                onProductChange={(value) => {
+                  setOutProductId(value);
+                  applyOutRecipe(value, outProductQty);
+                }}
+                onQtyChange={(qty) => {
+                  setOutProductQty(qty);
+                  if (outProductId) applyOutRecipe(outProductId, qty);
+                }}
+              />
+
+              {selectedOutProduct ? (
+                <ReadOnlyRecipeSummary rows={outRecipeRows} title={`Ringkasan bahan untuk ${selectedOutProduct.name}`} />
+              ) : (
               <div className="space-y-3">
                 {outItems.map((item, i) => {
                   const si      = summary.find(s => s.id == item.stock_item_id);
@@ -1560,14 +1736,17 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                   );
                 })}
               </div>
+              )}
 
               {/* Tambah bahan */}
+              {!selectedOutProduct && (
               <button
                 onClick={() => setOutItems(p => [...p, { stock_item_id:'', qty:'', note:'' }])}
                 className="w-full py-2.5 rounded-xl border border-dashed border-slate-600
                   text-slate-500 hover:text-slate-300 hover:border-slate-500 text-sm transition-all">
                 + Tambah Bahan Lain
               </button>
+              )}
 
               {/* Ringkasan total */}
               <div className="bg-slate-700/50 rounded-xl p-4 border border-slate-600/40 space-y-2">
@@ -1616,6 +1795,10 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                     setShowOutForm(false);
                     setOutItems([{ stock_item_id:'', qty:'', note:'' }]);
                     setOutUserId('');
+                    setOutProductId('');
+                    setOutProductQty(1);
+                    setOutProductId('');
+                    setOutProductQty(1);
                     // Redirect ke tab pengajuan supaya admin bisa lihat & approve
                     setTab('requests');
                     loadRequests();
@@ -1711,7 +1894,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                 </div>
               </div>
               {approveModal.note && (
-                <p className="text-slate-500 text-xs mt-2 italic ml-10">"{approveModal.note}"</p>
+                <p className="text-slate-500 text-xs mt-2 italic ml-10">&quot;{approveModal.note}&quot;</p>
               )}
             </div>
 
@@ -1856,6 +2039,20 @@ function KasirStockPage({ successModal, setSuccessModal }) {
   const [summaryLoading, setSummaryLoading] = useState(true);
   const [dailyLoading, setDailyLoading] = useState(false);
   const [requestsLoading, setRequestsLoading] = useState(false);
+  const [productOptions, setProductOptions] = useState([]);
+  const [outProductId, setOutProductId] = useState('');
+  const [outProductQty, setOutProductQty] = useState(1);
+
+  const selectedOutProduct = productOptions.find((product) => String(product.id) === String(outProductId));
+  const outRecipeRows = selectedOutProduct ? buildRecipeRows(selectedOutProduct, outProductQty, summary) : [];
+  const applyOutRecipe = (productId, qty = outProductQty) => {
+    const product = productOptions.find((item) => String(item.id) === String(productId));
+    if (!product) {
+      setOutItems([{ stock_item_id:'', qty:'', note:'' }]);
+      return;
+    }
+    setOutItems(buildRecipeOutItems(product, qty));
+  };
 
   // Di dalam function KasirStockPage(), tambah setelah state declarations:
   const searchParams = useSearchParams();
@@ -1891,6 +2088,8 @@ function KasirStockPage({ successModal, setSuccessModal }) {
           setTab('gudang');
           setMainTab('out');
           setShowOutForm(true);
+          setOutProductId('');
+          setOutProductQty(1);
           setOutItems(parsedIngs.map(ing => ({
             stock_item_id: String(ing.stock_item_id),
             qty:           String(getRequestedQtyFromIngredient(ing)),
@@ -1902,6 +2101,10 @@ function KasirStockPage({ successModal, setSuccessModal }) {
       loadSummary();
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    getProducts().then(r => setProductOptions(Array.isArray(r.data) ? r.data : [])).catch(() => setProductOptions([]));
+  }, []);
 
   // Filter daily hanya milik user ini
   // Di KasirStockPage — loadDaily sudah benar kirim user_id
@@ -2109,7 +2312,12 @@ function KasirStockPage({ successModal, setSuccessModal }) {
                     🔍 Cari
                   </button>
                 </div>
-                <button onClick={() => setShowOutForm(true)}
+                <button onClick={() => {
+                  setOutProductId('');
+                  setOutProductQty(1);
+                  setOutItems([{ stock_item_id:'', qty:'', note:'' }]);
+                  setShowOutForm(true);
+                }}
                   className="px-4 py-2 rounded-xl text-xs font-semibold
                     bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 transition-all">
                   + Catat Pengeluaran
@@ -2289,7 +2497,7 @@ function KasirStockPage({ successModal, setSuccessModal }) {
                       </p>
                       <StatusBadge status={req.status} />
                     </div>
-                    {req.note && <p className="text-slate-500 text-xs mt-0.5 italic">"{req.note}"</p>}
+                    {req.note && <p className="text-slate-500 text-xs mt-0.5 italic">&quot;{req.note}&quot;</p>}
                     {req.approved_by_name && (
                       <p className="text-slate-600 text-xs mt-0.5">
                         Diproses: <span className="text-slate-400">{req.approved_by_name}</span>
@@ -2382,7 +2590,12 @@ function KasirStockPage({ successModal, setSuccessModal }) {
                 <h3 className="text-white font-bold">📤 Ajukan Stok Cabang</h3>
                 <p className="text-slate-500 text-xs mt-0.5">Bahan resep otomatis terpilih · Bisa diajukan meski stok cabang 0</p>
               </div>
-              <button onClick={() => { setShowOutForm(false); setOutItems([{ stock_item_id:'', qty:'', note:'' }]); }}
+              <button onClick={() => {
+                setShowOutForm(false);
+                setOutItems([{ stock_item_id:'', qty:'', note:'' }]);
+                setOutProductId('');
+                setOutProductQty(1);
+              }}
                 className="text-slate-500 hover:text-white p-2 rounded-xl hover:bg-slate-700 transition-colors">✕</button>
             </div>
 
@@ -2394,6 +2607,24 @@ function KasirStockPage({ successModal, setSuccessModal }) {
                 </p>
               </div>
 
+              <RecipeMenuPicker
+                products={productOptions}
+                productId={outProductId}
+                menuQty={outProductQty}
+                title="Ajukan stok dari menu"
+                onProductChange={(value) => {
+                  setOutProductId(value);
+                  applyOutRecipe(value, outProductQty);
+                }}
+                onQtyChange={(qty) => {
+                  setOutProductQty(qty);
+                  if (outProductId) applyOutRecipe(outProductId, qty);
+                }}
+              />
+
+              {selectedOutProduct ? (
+                <ReadOnlyRecipeSummary rows={outRecipeRows} title={`Ringkasan bahan untuk ${selectedOutProduct.name}`} />
+              ) : (
               <div className="space-y-3">
                 {outItems.map((item, i) => {
                   const si       = summary.find(s => s.id == item.stock_item_id);
@@ -2493,12 +2724,15 @@ function KasirStockPage({ successModal, setSuccessModal }) {
                   );
                 })}
               </div>
+              )}
 
+              {!selectedOutProduct && (
               <button onClick={() => setOutItems(p => [...p, { stock_item_id:'', qty:'', note:'' }])}
                 className="w-full py-2.5 rounded-xl border border-dashed border-slate-600
                   text-slate-500 hover:text-slate-300 hover:border-slate-500 text-sm transition-all">
                 + Tambah Bahan Lain
               </button>
+              )}
 
               <div className="bg-slate-700/50 rounded-xl p-4 border border-slate-600/40 space-y-2">
                 {outItems.filter(it => it.stock_item_id && Number(it.qty) > 0).map((it, i) => {
@@ -2535,7 +2769,12 @@ function KasirStockPage({ successModal, setSuccessModal }) {
             </div>
 
             <div className="flex gap-3 p-5 pt-0">
-              <button onClick={() => { setShowOutForm(false); setOutItems([{ stock_item_id:'', qty:'', note:'' }]); }}
+              <button onClick={() => {
+                setShowOutForm(false);
+                setOutItems([{ stock_item_id:'', qty:'', note:'' }]);
+                setOutProductId('');
+                setOutProductQty(1);
+              }}
                 className="flex-1 py-3 rounded-xl bg-slate-700 text-slate-300 hover:bg-slate-600 text-sm font-semibold">
                 Batal
               </button>
@@ -2554,6 +2793,8 @@ function KasirStockPage({ successModal, setSuccessModal }) {
                     });
                     setShowOutForm(false);
                     setOutItems([{ stock_item_id:'', qty:'', note:'' }]);
+                    setOutProductId('');
+                    setOutProductQty(1);
                     setTab('requests');
                     loadRequests();
                     setSuccessModal({

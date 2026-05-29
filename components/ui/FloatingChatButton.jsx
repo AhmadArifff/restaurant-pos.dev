@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import AIChatBox from '../admin/AIChatBox';
-import ElectricBorder from './ElectricBorder';
 
 function AssistantLogo({ isOpen }) {
   if (isOpen) {
@@ -60,27 +59,17 @@ export default function FloatingChatButton() {
       )}
 
       <div className="fixed bottom-6 right-6 z-50 ai-floating-button-wrap">
-        <ElectricBorder
-          className="ai-floating-electric"
-          color={isOpen ? '#fef3c7' : '#7df9ff'}
-          speed={isOpen ? 1.35 : 1}
-          chaos={isOpen ? 0.16 : 0.09}
-          thickness={2}
-          borderRadius={999}
-          style={{ borderRadius: 999 }}
+        <button
+          type="button"
+          onClick={() => setIsOpen((value) => !value)}
+          className={`ai-floating-button ${isOpen ? 'ai-floating-button-open' : ''}`}
+          title={isOpen ? 'Close AI Assistant' : 'Open AI Assistant'}
+          aria-label={isOpen ? 'Close AI Assistant' : 'Open AI Assistant'}
+          aria-expanded={isOpen}
         >
-          <button
-            type="button"
-            onClick={() => setIsOpen((value) => !value)}
-            className={`ai-floating-button ${isOpen ? 'ai-floating-button-open' : ''}`}
-            title={isOpen ? 'Close AI Assistant' : 'Open AI Assistant'}
-            aria-label={isOpen ? 'Close AI Assistant' : 'Open AI Assistant'}
-            aria-expanded={isOpen}
-          >
-            <span className="ai-floating-button-shine" aria-hidden="true" />
-            <AssistantLogo isOpen={isOpen} />
-          </button>
-        </ElectricBorder>
+          <span className="ai-floating-button-shine" aria-hidden="true" />
+          <AssistantLogo isOpen={isOpen} />
+        </button>
       </div>
 
       <style jsx global>{`
@@ -89,11 +78,6 @@ export default function FloatingChatButton() {
         }
 
         .ai-floating-button-wrap {
-          width: 64px;
-          height: 64px;
-        }
-
-        .ai-floating-electric {
           width: 64px;
           height: 64px;
         }
