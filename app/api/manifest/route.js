@@ -40,13 +40,13 @@ const buildManifest = (settings = {}) => {
         src: '/api/app-icon?size=192',
         sizes: '192x192',
         type: 'image/png',
-        purpose: 'any',
+        purpose: 'any maskable',
       },
       {
         src: '/api/app-icon?size=512',
         sizes: '512x512',
         type: 'image/png',
-        purpose: 'maskable',
+        purpose: 'any maskable',
       },
     ],
   };

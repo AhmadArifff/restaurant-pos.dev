@@ -43,14 +43,18 @@ const absolutize = (src, requestUrl) => {
 
 export async function GET(request) {
   const requestUrl = new URL(request.url);
-  const size = requestUrl.searchParams.get('size') === '192' ? 192 : 512;
+  const requestedSize = Number(requestUrl.searchParams.get('size') || 512);
+  const size = [180, 192, 512].includes(requestedSize) ? requestedSize : 512;
   const settings = await getSettings();
   const iconUrl = absolutize(settings.favicon_url, request.url);
   const background = settings.dark || DEFAULT_SETTINGS.dark;
   const accent = settings.gold || DEFAULT_SETTINGS.gold;
   const initials = String(settings.store_name || DEFAULT_SETTINGS.store_name).slice(0, 2).toUpperCase();
-  const borderWidth = Math.max(7, Math.round(size * 0.035));
-  const logoSize = Math.round(size * 0.64);
+  const borderWidth = Math.max(5, Math.round(size * 0.024));
+  const outerRadius = Math.round(size * 0.22);
+  const frameSize = Math.round(size * 0.74);
+  const frameRadius = Math.round(size * 0.18);
+  const logoSize = Math.round(frameSize * 0.72);
 
   return new ImageResponse(
     (
@@ -62,18 +66,36 @@ export async function GET(request) {
           alignItems: 'center',
           justifyContent: 'center',
           background,
+          borderRadius: outerRadius,
+          overflow: 'hidden',
           border: `${borderWidth}px solid ${accent}`,
+          boxSizing: 'border-box',
+          padding: Math.round(size * 0.08),
         }}
       >
-        <img
-          src={iconUrl}
-          alt={initials}
+        <div
           style={{
-            width: logoSize,
-            height: logoSize,
-            objectFit: 'contain',
+            width: frameSize,
+            height: frameSize,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: frameRadius,
+            background: 'rgba(245, 237, 216, 0.08)',
+            border: `${Math.max(2, Math.round(size * 0.012))}px solid ${accent}`,
+            boxSizing: 'border-box',
           }}
-        />
+        >
+          <img
+            src={iconUrl}
+            alt={initials}
+            style={{
+              width: logoSize,
+              height: logoSize,
+              objectFit: 'contain',
+            }}
+          />
+        </div>
       </div>
     ),
     {

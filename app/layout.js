@@ -16,8 +16,13 @@ export const metadata = {
   description: "Point of Sale System - Sultan Kebab",
   manifest: '/api/manifest',
   icons: {
-    icon: '/images/assets/logo.png',
-    apple: '/images/assets/logo.png',
+    icon: [
+      { url: '/api/app-icon?size=192', sizes: '192x192', type: 'image/png' },
+      { url: '/api/app-icon?size=512', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/api/app-icon?size=180', sizes: '180x180', type: 'image/png' },
+    ],
   },
 };
 
