@@ -194,7 +194,7 @@ export default function PaymentModal({
                 <span className="text-yellow-300">Nomor HP wajib diisi agar diskon paket bundle bisa diklaim.</span>
               ) : bundleHints.some((program) => !program.complete && program.missingProducts?.length) ? (
                 <span className="text-orange-300">
-                  Tambah {bundleHints.find((program) => !program.complete && program.missingProducts?.length)?.missingProducts?.map((item) => item.name).join(', ')} untuk membuka diskon paket.
+                  Tambah {bundleHints.find((program) => !program.complete && program.missingProducts?.length)?.missingProducts?.map((item) => `${item.name} x${Math.max(1, Number(item.required_qty || 1) - Number(item.current_qty || 0))}`).join(', ')} untuk membuka diskon paket.
                 </span>
               ) : (
                 <span className="text-slate-500">Bundle aktif otomatis terdeteksi. Voucher memakai batas klaim berdasarkan nomor HP.</span>

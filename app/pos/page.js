@@ -363,19 +363,34 @@ export default function PosPage() {
 
   const bundleHints = useMemo(() => {
     const productById = new Map(products.map((product) => [Number(product.id), product]));
-    const cartIds = new Set(items.map((item) => Number(item.id || item.product_id)));
+    const cartQtyById = new Map();
+    items.forEach((item) => {
+      const productId = Number(item.id || item.product_id);
+      if (!productId) return;
+      cartQtyById.set(productId, Number(cartQtyById.get(productId) || 0) + Number(item.qty || 0));
+    });
 
     return (bundlePrograms || [])
       .map((program) => {
-        const bundleIds = Array.isArray(program.bundle_product_ids)
-          ? program.bundle_product_ids.map(Number).filter(Boolean)
-          : [];
-        const bundleProducts = bundleIds.map((id) => productById.get(id)).filter(Boolean);
+        const bundleItems = Array.isArray(program.bundle_items) && program.bundle_items.length
+          ? program.bundle_items
+          : (program.bundle_product_ids || []).map((id) => ({ product_id: id, qty: 1 }));
+        const uniqueBundleItems = [...new Map(bundleItems
+          .map((item) => [Number(item.product_id || item.id || item), {
+            product_id: Number(item.product_id || item.id || item),
+            qty: Math.max(1, Number(item.qty || 1)),
+          }])
+          .filter(([id]) => id)).values()];
+        const bundleProducts = uniqueBundleItems.map((item) => ({
+          ...productById.get(Number(item.product_id)),
+          required_qty: Number(item.qty || 1),
+          current_qty: Number(cartQtyById.get(Number(item.product_id)) || 0),
+        })).filter((product) => product.id);
         if (bundleProducts.length === 0) return null;
 
-        const missingProducts = bundleProducts.filter((product) => !cartIds.has(Number(product.id)));
+        const missingProducts = bundleProducts.filter((product) => Number(product.current_qty || 0) < Number(product.required_qty || 1));
         const selectedCount = bundleProducts.length - missingProducts.length;
-        const unavailable = missingProducts.filter((product) => Number(getProductStock(product) || 0) <= 0);
+        const unavailable = missingProducts.filter((product) => Number(getProductStock(product) || 0) < Number(product.required_qty || 1));
         const discountText = program.discount_type === 'percent'
           ? `${Number(program.discount_value || 0)}%`
           : `Rp ${Number(program.discount_value || 0).toLocaleString('id-ID')}`;
@@ -391,14 +406,16 @@ export default function PosPage() {
         };
       })
       .filter(Boolean)
-      .filter((program) => !program.complete || program.selectedCount > 0)
       .sort((a, b) => Number(b.selectedCount) - Number(a.selectedCount));
   }, [bundlePrograms, getProductStock, items, products]);
 
   const handleAddBundle = (program) => {
     const targets = (program.missingProducts?.length ? program.missingProducts : program.bundleProducts)
       .filter((product) => Number(getProductStock(product) || 0) > 0);
-    targets.forEach((product) => handleAddItem(product));
+    targets.forEach((product) => {
+      const needed = Math.max(1, Number(product.required_qty || 1) - Number(product.current_qty || 0));
+      for (let index = 0; index < needed; index += 1) handleAddItem(product);
+    });
     if (targets.length > 0) {
       showFeedback(
         'success',
@@ -618,7 +635,7 @@ export default function PosPage() {
 
               {!loading && bundleHints.length > 0 && (
                 <div className="mb-4 grid gap-3 md:grid-cols-2">
-                  {bundleHints.slice(0, 2).map((program) => {
+                  {bundleHints.map((program) => {
                     const disabled = !program.complete && program.unavailable.length > 0;
                     return (
                       <button
@@ -648,7 +665,7 @@ export default function PosPage() {
                             ? 'Syarat paket sudah lengkap, diskon akan otomatis dicek saat pembayaran.'
                             : disabled
                               ? `Belum bisa diklaim karena ${program.unavailable.map((item) => item.name).join(', ')} sedang habis.`
-                              : `Tambah ${program.missingProducts.map((item) => item.name).join(', ')} untuk klaim diskon paket.`}
+                              : `Tambah ${program.missingProducts.map((item) => `${item.name} x${Math.max(1, Number(item.required_qty || 1) - Number(item.current_qty || 0))}`).join(', ')} untuk klaim diskon paket.`}
                         </p>
                       </button>
                     );

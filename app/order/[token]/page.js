@@ -68,6 +68,7 @@ export default function CustomerOrderPage() {
   const [bundlePrograms, setBundlePrograms] = useState([]);
   const [discountPreview, setDiscountPreview] = useState(null);
   const [discountLoading, setDiscountLoading] = useState(false);
+  const [bundlePrompt, setBundlePrompt] = useState(null);
 
   useEffect(() => {
     if (!token) return;
@@ -158,19 +159,34 @@ export default function CustomerOrderPage() {
 
   const bundleHints = useMemo(() => {
     const productById = new Map(products.map((product) => [Number(product.id), product]));
-    const cartIds = new Set(cart.map((item) => Number(item.id || item.product_id)));
+    const cartQtyById = new Map();
+    cart.forEach((item) => {
+      const productId = Number(item.id || item.product_id);
+      if (!productId) return;
+      cartQtyById.set(productId, Number(cartQtyById.get(productId) || 0) + Number(item.qty || 0));
+    });
 
     return (bundlePrograms || [])
       .map((program) => {
-        const bundleIds = Array.isArray(program.bundle_product_ids)
-          ? program.bundle_product_ids.map(Number).filter(Boolean)
-          : [];
-        const bundleProducts = bundleIds.map((id) => productById.get(id)).filter(Boolean);
+        const bundleItems = Array.isArray(program.bundle_items) && program.bundle_items.length
+          ? program.bundle_items
+          : (program.bundle_product_ids || []).map((id) => ({ product_id: id, qty: 1 }));
+        const uniqueBundleItems = [...new Map(bundleItems
+          .map((item) => [Number(item.product_id || item.id || item), {
+            product_id: Number(item.product_id || item.id || item),
+            qty: Math.max(1, Number(item.qty || 1)),
+          }])
+          .filter(([id]) => id)).values()];
+        const bundleProducts = uniqueBundleItems.map((item) => ({
+          ...productById.get(Number(item.product_id)),
+          required_qty: Number(item.qty || 1),
+          current_qty: Number(cartQtyById.get(Number(item.product_id)) || 0),
+        })).filter((product) => product.id);
         if (bundleProducts.length === 0) return null;
 
-        const missingProducts = bundleProducts.filter((product) => !cartIds.has(Number(product.id)));
+        const missingProducts = bundleProducts.filter((product) => Number(product.current_qty || 0) < Number(product.required_qty || 1));
         const selectedCount = bundleProducts.length - missingProducts.length;
-        const unavailable = missingProducts.filter((product) => Number(product.stock || 0) <= 0);
+        const unavailable = missingProducts.filter((product) => Number(product.stock || 0) < Number(product.required_qty || 1));
         const discountText = program.discount_type === 'percent'
           ? `${Number(program.discount_value || 0)}%`
           : formatRp(program.discount_value);
@@ -186,7 +202,6 @@ export default function CustomerOrderPage() {
         };
       })
       .filter(Boolean)
-      .filter((program) => !program.complete || program.selectedCount > 0)
       .sort((a, b) => Number(b.selectedCount) - Number(a.selectedCount));
   }, [bundlePrograms, cart, products]);
 
@@ -249,12 +264,31 @@ export default function CustomerOrderPage() {
       let next = prev;
       targets.forEach((product) => {
         const existing = next.find((item) => item.id === product.id);
-        if (existing) return;
-        next = [...next, { ...product, qty: 1, note: '' }];
+        const needed = Math.max(1, Number(product.required_qty || 1) - Number(existing?.qty || product.current_qty || 0));
+        if (existing) {
+          next = next.map((item) => item.id === product.id ? { ...item, qty: item.qty + needed } : item);
+          return;
+        }
+        next = [...next, { ...product, qty: needed, note: '' }];
       });
       return next;
     });
     setShowMobileCart(true);
+  };
+
+  const buildCartWithBundle = (program) => {
+    let next = [...cart];
+    (program.missingProducts || []).forEach((product) => {
+      if (Number(product.stock || 0) <= 0) return;
+      const existing = next.find((item) => item.id === product.id);
+      const needed = Math.max(1, Number(product.required_qty || 1) - Number(existing?.qty || product.current_qty || 0));
+      if (existing) {
+        next = next.map((item) => item.id === product.id ? { ...item, qty: item.qty + needed } : item);
+      } else {
+        next = [...next, { ...product, qty: needed, note: '' }];
+      }
+    });
+    return next;
   };
 
   const changeQty = (productId, delta) => {
@@ -263,9 +297,9 @@ export default function CustomerOrderPage() {
       .filter((item) => item.qty > 0));
   };
 
-  const submitOrder = async () => {
+  const submitOrderWithCart = async (orderCart) => {
     if (tableBusy) return alert('Meja ini masih memiliki pesanan aktif. Silakan hubungi kasir atau pilih meja lain.');
-    if (!cart.length) return alert('Pilih menu terlebih dahulu');
+    if (!orderCart.length) return alert('Pilih menu terlebih dahulu');
     setSubmitting(true);
     try {
       const res = await createCustomerOrder({
@@ -274,7 +308,7 @@ export default function CustomerOrderPage() {
         customer_phone: customerPhoneForApi,
         voucher_code: voucherCode,
         note,
-        items: cart.map((item) => ({ product_id: item.id, qty: item.qty, note: item.note || null })),
+        items: orderCart.map((item) => ({ product_id: item.id, qty: item.qty, note: item.note || null })),
       });
       const nextOrder = res.data.data;
       setOrder(nextOrder);
@@ -286,6 +320,28 @@ export default function CustomerOrderPage() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const submitOrder = async () => {
+    const candidate = bundleHints.find((program) => (
+      !program.complete
+      && program.selectedCount > 0
+      && program.missingProducts?.length
+      && program.unavailable.length === 0
+    ));
+    if (candidate) {
+      setBundlePrompt(candidate);
+      return;
+    }
+    await submitOrderWithCart(cart);
+  };
+
+  const confirmBundleAndSubmit = async () => {
+    if (!bundlePrompt) return;
+    const nextCart = buildCartWithBundle(bundlePrompt);
+    setCart(nextCart);
+    setBundlePrompt(null);
+    await submitOrderWithCart(nextCart);
   };
 
   const submitReview = async () => {
@@ -391,7 +447,7 @@ export default function CustomerOrderPage() {
             <p className="text-yellow-200">Isi nomor HP agar diskon paket bundle bisa diklaim.</p>
           ) : bundleHints.some((program) => !program.complete && program.missingProducts?.length) ? (
             <p className="text-[#C9A84C]">
-              Tambah {bundleHints.find((program) => !program.complete && program.missingProducts?.length)?.missingProducts?.map((item) => item.name).join(', ')} untuk membuka diskon paket.
+              Tambah {bundleHints.find((program) => !program.complete && program.missingProducts?.length)?.missingProducts?.map((item) => `${item.name} x${Math.max(1, Number(item.required_qty || 1) - Number(item.current_qty || 0))}`).join(', ')} untuk membuka diskon paket.
             </p>
           ) : (
             <p className="text-[#EDE0C4]/55">Voucher dan paket bundle otomatis dicek sebelum pesanan dikirim.</p>
@@ -480,7 +536,7 @@ export default function CustomerOrderPage() {
 
           {!tableBusy && bundleHints.length > 0 && (
             <div className="mb-4 grid gap-3 sm:grid-cols-2">
-              {bundleHints.slice(0, 2).map((program) => {
+              {bundleHints.map((program) => {
                 const disabled = !program.complete && program.unavailable.length > 0;
                 return (
                   <button
@@ -510,7 +566,7 @@ export default function CustomerOrderPage() {
                         ? 'Syarat paket sudah lengkap. Isi nomor HP agar diskon bisa diklaim.'
                         : disabled
                           ? `Belum bisa diklaim karena ${program.unavailable.map((item) => item.name).join(', ')} sedang habis.`
-                          : `Ambil ${program.missingProducts.map((item) => item.name).join(', ')} untuk dapat diskon paket.`}
+                          : `Ambil ${program.missingProducts.map((item) => `${item.name} x${Math.max(1, Number(item.required_qty || 1) - Number(item.current_qty || 0))}`).join(', ')} untuk dapat diskon paket.`}
                     </p>
                   </button>
                 );
@@ -730,6 +786,61 @@ export default function CustomerOrderPage() {
               transition={{ type: 'spring', stiffness: 420, damping: 38 }}
             >
               {renderCartPanel(true)}
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {bundlePrompt && (
+          <>
+            <motion.button
+              type="button"
+              aria-label="Tutup penawaran paket bundle"
+              className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setBundlePrompt(null)}
+            />
+            <motion.div
+              className="fixed inset-x-3 bottom-4 z-[80] mx-auto max-w-md rounded-3xl border border-[#C9A84C]/25 bg-[#1A1409] p-5 shadow-2xl shadow-black/60 sm:inset-x-0 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2"
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 24 }}
+            >
+              <p className="text-xs font-black uppercase tracking-[0.22em] text-[#C9A84C]">Paket Bundle</p>
+              <h2 className="mt-2 text-xl font-black">{bundlePrompt.name}</h2>
+              <p className="mt-2 text-sm leading-6 text-[#EDE0C4]/70">
+                Pesanan Anda hampir memenuhi paket ini. Tambahkan menu berikut agar diskon {bundlePrompt.discountText} bisa diklaim:
+              </p>
+              <div className="mt-4 space-y-2">
+                {bundlePrompt.missingProducts.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between gap-3 rounded-2xl bg-[#241C0E] px-3 py-2 text-sm">
+                    <span className="line-clamp-1">{item.name}</span>
+                    <strong className="text-[#C9A84C]">x{Math.max(1, Number(item.required_qty || 1) - Number(item.current_qty || 0))}</strong>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-5 grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const currentCart = cart;
+                    setBundlePrompt(null);
+                    submitOrderWithCart(currentCart);
+                  }}
+                  className="rounded-2xl border border-[#C9A84C]/25 px-4 py-3 text-sm font-black text-[#C9A84C]"
+                >
+                  Lewati
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmBundleAndSubmit}
+                  className="rounded-2xl bg-[#C9A84C] px-4 py-3 text-sm font-black text-[#0D0A06]"
+                >
+                  Tambah & Kirim
+                </button>
+              </div>
             </motion.div>
           </>
         )}

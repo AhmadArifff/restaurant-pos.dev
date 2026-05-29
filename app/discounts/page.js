@@ -5,9 +5,9 @@ import AdminLayout from '@/components/layout/AdminLayout';
 import AuthGuard from '@/components/ui/AuthGuard';
 import {
   createDiscountProgram,
-  deleteDiscountProgram,
   getDiscountPrograms,
   getProducts,
+  hardDeleteDiscountProgram,
   updateDiscountProgram,
 } from '@/lib/api';
 
@@ -22,6 +22,7 @@ const emptyForm = {
   total_usage_limit: '',
   min_service_rating: 1,
   min_menu_rating: 1,
+  bundle_items: [],
   bundle_product_ids: [],
   status: 'active',
   validity_mode: 'quota_only',
@@ -37,6 +38,30 @@ const typeLabel = {
 };
 
 const formatCurrency = (value) => `Rp ${Number(value || 0).toLocaleString('id-ID')}`;
+
+const uniqueNumbers = (items) => [...new Set((items || []).map(Number).filter(Boolean))];
+
+const normalizeBundleItems = (value) => {
+  const raw = Array.isArray(value) ? value : [];
+  const byProduct = new Map();
+  raw.forEach((item) => {
+    const productId = Number(item?.product_id || item?.id || item);
+    if (!productId) return;
+    const qty = Math.max(1, Number(item?.qty || item?.min_qty || 1));
+    const prev = byProduct.get(productId);
+    byProduct.set(productId, {
+      product_id: productId,
+      qty: prev ? Math.max(Number(prev.qty || 1), qty) : qty,
+    });
+  });
+  return [...byProduct.values()];
+};
+
+const getProgramBundleItems = (program) => {
+  const items = normalizeBundleItems(program.bundle_items);
+  if (items.length) return items;
+  return normalizeBundleItems(program.bundle_product_ids);
+};
 
 const generateVoucherCode = () => {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -123,7 +148,10 @@ export default function DiscountsPage() {
 
   const allBundleProductIds = useMemo(() => products.map((product) => product.id), [products]);
   const allBundleSelected = allBundleProductIds.length > 0
-    && allBundleProductIds.every((id) => form.bundle_product_ids.includes(id));
+    && allBundleProductIds.every((id) => form.bundle_items.some((item) => Number(item.product_id) === Number(id)));
+  const productNameById = useMemo(() => (
+    new Map(products.map((product) => [Number(product.id), product.name]))
+  ), [products]);
   const selectedState = getProgramState({ ...form, used_count: 0, total_usage_limit: form.total_usage_limit || null });
 
   const resetForm = () => {
@@ -141,7 +169,8 @@ export default function DiscountsPage() {
       validity_mode: program.end_at ? 'date_range' : 'quota_only',
       start_at: toDateTimeLocal(program.start_at),
       end_at: toDateTimeLocal(program.end_at),
-      bundle_product_ids: Array.isArray(program.bundle_product_ids) ? program.bundle_product_ids : [],
+      bundle_items: getProgramBundleItems(program),
+      bundle_product_ids: uniqueNumbers(program.bundle_product_ids),
       note: program.note || '',
     });
   };
@@ -149,18 +178,40 @@ export default function DiscountsPage() {
   const toggleAllBundleProducts = () => {
     setForm((prev) => ({
       ...prev,
+      bundle_items: allBundleSelected
+        ? []
+        : allBundleProductIds.map((id) => ({ product_id: Number(id), qty: 1 })),
       bundle_product_ids: allBundleSelected ? [] : allBundleProductIds,
     }));
   };
 
   const toggleBundleProduct = (id) => {
     setForm((prev) => {
-      const exists = prev.bundle_product_ids.includes(id);
+      const productId = Number(id);
+      const exists = prev.bundle_items.some((item) => Number(item.product_id) === productId);
+      const nextItems = exists
+        ? prev.bundle_items.filter((item) => Number(item.product_id) !== productId)
+        : [...prev.bundle_items, { product_id: productId, qty: 1 }];
       return {
         ...prev,
-        bundle_product_ids: exists
-          ? prev.bundle_product_ids.filter((item) => item !== id)
-          : [...prev.bundle_product_ids, id],
+        bundle_items: nextItems,
+        bundle_product_ids: nextItems.map((item) => item.product_id),
+      };
+    });
+  };
+
+  const updateBundleQty = (id, qty) => {
+    const productId = Number(id);
+    setForm((prev) => {
+      const nextItems = normalizeBundleItems(prev.bundle_items).map((item) => (
+        Number(item.product_id) === productId
+          ? { ...item, qty: Math.max(1, Number(qty || 1)) }
+          : item
+      ));
+      return {
+        ...prev,
+        bundle_items: nextItems,
+        bundle_product_ids: nextItems.map((item) => item.product_id),
       };
     });
   };
@@ -176,7 +227,8 @@ export default function DiscountsPage() {
       const payload = {
         ...form,
         code: form.type === 'voucher' ? form.code : '',
-        bundle_product_ids: form.type === 'bundle' ? form.bundle_product_ids : [],
+        bundle_items: form.type === 'bundle' ? normalizeBundleItems(form.bundle_items) : [],
+        bundle_product_ids: form.type === 'bundle' ? normalizeBundleItems(form.bundle_items) : [],
         start_at: form.validity_mode === 'date_range' ? form.start_at || null : null,
         end_at: form.validity_mode === 'date_range' ? form.end_at || null : null,
       };
@@ -192,9 +244,23 @@ export default function DiscountsPage() {
     }
   };
 
-  const disableProgram = async (program) => {
-    if (!window.confirm(`Nonaktifkan ${program.name}?`)) return;
-    await deleteDiscountProgram(program.id);
+  const toggleProgramStatus = async (program) => {
+    const nextStatus = program.status === 'active' ? 'inactive' : 'active';
+    if (!window.confirm(`${nextStatus === 'active' ? 'Aktifkan' : 'Nonaktifkan'} ${program.name}?`)) return;
+    await updateDiscountProgram(program.id, {
+      ...program,
+      status: nextStatus,
+      bundle_items: getProgramBundleItems(program),
+      bundle_product_ids: getProgramBundleItems(program),
+      start_at: program.start_at || null,
+      end_at: program.end_at || null,
+    });
+    await load();
+  };
+
+  const removeProgram = async (program) => {
+    if (!window.confirm(`Hapus permanen ${program.name}? Histori klaim program ini juga akan ikut terhapus.`)) return;
+    await hardDeleteDiscountProgram(program.id);
     await load();
   };
 
@@ -384,13 +450,29 @@ export default function DiscountsPage() {
                     </button>
                   </div>
                   <div className="max-h-52 space-y-2 overflow-y-auto rounded-xl border border-slate-700 bg-slate-900 p-3">
-                    {products.map((product) => (
-                      <label key={product.id} className="flex items-center gap-2 text-sm text-slate-300">
-                        <input type="checkbox" checked={form.bundle_product_ids.includes(product.id)} onChange={() => toggleBundleProduct(product.id)} />
-                        <span>{product.name}</span>
-                      </label>
-                    ))}
+                    {products.map((product) => {
+                      const selectedItem = form.bundle_items.find((item) => Number(item.product_id) === Number(product.id));
+                      const checked = Boolean(selectedItem);
+                      return (
+                        <div key={product.id} className="grid grid-cols-[minmax(0,1fr)_92px] items-center gap-3 rounded-lg bg-slate-950/40 px-2 py-2 text-sm text-slate-300">
+                          <label className="flex min-w-0 items-center gap-2">
+                            <input type="checkbox" checked={checked} onChange={() => toggleBundleProduct(product.id)} />
+                            <span className="truncate">{product.name}</span>
+                          </label>
+                          <input
+                            type="number"
+                            min="1"
+                            value={selectedItem?.qty || 1}
+                            onChange={(e) => updateBundleQty(product.id, e.target.value)}
+                            disabled={!checked}
+                            aria-label={`Qty minimum ${product.name}`}
+                            className="w-full rounded-lg border border-slate-700 bg-slate-900 px-2 py-1 text-right text-xs font-bold text-white outline-none disabled:cursor-not-allowed disabled:opacity-40"
+                          />
+                        </div>
+                      );
+                    })}
                   </div>
+                  <p className="mt-2 text-xs text-slate-500">Qty adalah minimum porsi tiap menu yang harus ada di pesanan agar paket bundle bisa diklaim.</p>
                 </div>
               )}
 
@@ -435,6 +517,7 @@ export default function DiscountsPage() {
                 )}
                 {filteredPrograms.map((program) => {
                   const programState = getProgramState(program);
+                  const bundleItems = getProgramBundleItems(program);
                   return (
                   <article key={program.id} className="rounded-xl border border-slate-700 bg-slate-900 p-4">
                     <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
@@ -450,22 +533,34 @@ export default function DiscountsPage() {
                           {' '}diskon, {program.usage_limit_per_phone}x klaim per nomor HP
                         </p>
                         {program.type === 'bundle' && (
-                          <p className="mt-1 text-xs text-slate-500">
-                            Bundle: {program.bundle_product_ids?.length || 0} menu dipilih
-                          </p>
+                          <div className="mt-2 rounded-xl border border-slate-800 bg-slate-950/55 p-3">
+                            <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                              Bundle: {bundleItems.length} menu dipilih
+                            </p>
+                            <div className="mt-2 flex flex-wrap gap-1.5">
+                              {bundleItems.map((item) => (
+                                <span key={item.product_id} className="rounded-full bg-slate-800 px-2.5 py-1 text-[11px] font-bold text-slate-300">
+                                  {productNameById.get(Number(item.product_id)) || `Menu #${item.product_id}`} x{item.qty || 1}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
                         )}
                         <p className="mt-1 text-xs text-slate-500">
-                          {program.end_at
-                            ? `Berlaku sampai ${new Date(program.end_at).toLocaleString('id-ID')}`
+                          {program.start_at || program.end_at
+                            ? `Mulai ${program.start_at ? new Date(program.start_at).toLocaleString('id-ID') : 'sekarang'}${program.end_at ? ` - sampai ${new Date(program.end_at).toLocaleString('id-ID')}` : ''}`
                             : 'Tidak expired, berhenti saat kuota habis atau dinonaktifkan'}
                         </p>
                       </div>
                       <div className="text-left md:text-right">
                         <p className="text-sm font-bold text-emerald-400">{formatCurrency(program.distributed_amount)}</p>
                         <p className="text-xs text-slate-500">{program.used_count || 0} klaim</p>
-                        <div className="mt-3 flex gap-2 md:justify-end">
+                        <div className="mt-3 flex flex-wrap gap-2 md:justify-end">
                           <button onClick={() => editProgram(program)} className="rounded-lg bg-slate-700 px-3 py-1.5 text-xs font-bold text-white">Edit</button>
-                          <button onClick={() => disableProgram(program)} className="rounded-lg bg-red-500/15 px-3 py-1.5 text-xs font-bold text-red-200">Nonaktif</button>
+                          <button onClick={() => toggleProgramStatus(program)} className="rounded-lg bg-yellow-500/15 px-3 py-1.5 text-xs font-bold text-yellow-200">
+                            {program.status === 'active' ? 'Nonaktif' : 'Aktif'}
+                          </button>
+                          <button onClick={() => removeProgram(program)} className="rounded-lg bg-red-500/15 px-3 py-1.5 text-xs font-bold text-red-200">Hapus</button>
                         </div>
                       </div>
                     </div>
