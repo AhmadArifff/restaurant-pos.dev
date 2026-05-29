@@ -71,6 +71,33 @@ const getDiscountScopeTitle = (discountType) => {
   return 'Menu yang mendapat diskon:';
 };
 
+const getDiscountCardClass = (discountType) => {
+  if (discountType === 'bundle') {
+    return 'border border-emerald-400/20 bg-emerald-500/10 text-emerald-100/90';
+  }
+  if (discountType === 'voucher') {
+    return 'border border-sky-300/20 bg-sky-400/10 text-sky-100/90';
+  }
+  if (discountType === 'review_reward') {
+    return 'border border-[#C9A84C]/20 bg-[#C9A84C]/10 text-[#F5EDD8]/90';
+  }
+  return 'border border-emerald-400/20 bg-emerald-500/10 text-emerald-100/90';
+};
+
+const getDiscountTitleClass = (discountType) => {
+  if (discountType === 'bundle') return 'text-emerald-200';
+  if (discountType === 'voucher') return 'text-sky-100';
+  if (discountType === 'review_reward') return 'text-[#C9A84C]';
+  return 'text-emerald-200';
+};
+
+const getDiscountNote = (component) => {
+  if (component.type === 'bundle') return 'Note: Potongan paket bundle hanya dihitung dari menu paket di atas.';
+  if (component.type === 'voucher') return 'Note: Potongan Kode Vocher dihitung dari menu di luar paket bundle.';
+  if (component.type === 'review_reward') return 'Note: Potongan reward review dihitung dari menu di luar paket bundle.';
+  return 'Note: Potongan diskon dihitung sesuai scope program.';
+};
+
 const calculateProgramDiscountAmount = (base, program) => {
   const discountValue = Number(program?.discount_value || 0);
   if (!base || !discountValue) return 0;
@@ -558,24 +585,23 @@ export default function CustomerOrderPage() {
             <p className="text-yellow-200">{discountPreview.message}</p>
           ) : discountAmount > 0 ? (
             <div className="space-y-2">
-              <div className="flex justify-between gap-3 text-emerald-200">
+              <div className="flex justify-between gap-3 text-[#F5EDD8]">
                 <span>{discountPreview.label}</span>
-                <strong>-{formatRp(discountAmount)}</strong>
+                <strong className="text-red-300">-{formatRp(discountAmount)}</strong>
               </div>
               {previewDiscountBreakdown.map((component) => (
-                <div key={`${component.type}-${component.program_id || component.label}`} className="rounded-xl bg-emerald-500/10 p-2 text-[11px] leading-5 text-emerald-100/90">
-                  <div className="flex justify-between gap-2 font-black text-emerald-200">
+                <div key={`${component.type}-${component.program_id || component.label}`} className={`rounded-xl p-2 text-[11px] leading-5 ${getDiscountCardClass(component.type)}`}>
+                  <div className={`flex justify-between gap-2 font-black ${getDiscountTitleClass(component.type)}`}>
                     <span>{component.label}</span>
-                    <span>-{formatRp(component.discount_amount)}</span>
+                    <span className="text-red-300">-{formatRp(component.discount_amount)}</span>
                   </div>
                   <p className="font-black">{getDiscountScopeTitle(component.type)}</p>
                   {component.scopeItems.map((item) => (
                     <p key={item.id}>{item.name} x{item.qty} - dasar {formatRp(item.subtotal)}</p>
                   ))}
-                  <p className="mt-1 text-emerald-100/70">
-                    {component.type === 'bundle'
-                      ? 'Potongan paket bundle hanya dihitung dari menu paket di atas.'
-                      : `Potongan ${component.label || 'voucher'} dihitung dari menu di luar paket bundle dengan dasar ${formatRp(component.discount_base || 0)}.`}
+                  <p className="mt-1 opacity-75">
+                    {getDiscountNote(component)}
+                    {component.type !== 'bundle' ? ` Dasar potongan ${formatRp(component.discount_base || 0)}.` : ''}
                   </p>
                 </div>
               ))}
@@ -593,9 +619,9 @@ export default function CustomerOrderPage() {
                   <p className="mt-1 text-[#EDE0C4]/65">Paket bundle akan memotong menu paket saja, sedangkan voucher memotong menu di luar paket.</p>
                 </div>
               )}
-              <div className="flex justify-between gap-3 border-t border-[#C9A84C]/10 pt-2 text-[#C9A84C]">
+              <div className="flex justify-between gap-3 border-t border-[#C9A84C]/10 pt-2 text-emerald-300">
                 <span>Total bayar</span>
-                <strong>{formatRp(payableTotal)}</strong>
+                <strong className="text-emerald-200">{formatRp(payableTotal)}</strong>
               </div>
             </div>
           ) : bundleHints.some((program) => program.complete) && !customerPhoneForApi ? (
@@ -824,27 +850,26 @@ export default function CustomerOrderPage() {
                     <strong>{formatRp(order.final_total || order.subtotal)}</strong>
                   </div>
                   {Number(order.discount_amount || 0) > 0 && (
-                  <div className="mt-1 flex justify-between text-xs text-emerald-300">
+                  <div className="mt-1 flex justify-between text-xs text-[#F5EDD8]">
                     <span>{order.discount_label || `Diskon review ${order.discount_rate}%`}</span>
-                    <strong>-{formatRp(order.discount_amount)}</strong>
+                    <strong className="text-red-300">-{formatRp(order.discount_amount)}</strong>
                   </div>
                 )}
                   {orderDiscountBreakdown.length > 0 && (
                     <div className="mt-2 space-y-2">
                       {orderDiscountBreakdown.map((component) => (
-                        <div key={`${component.type}-${component.program_id || component.label}`} className="rounded-2xl bg-emerald-500/10 p-3 text-xs leading-5 text-emerald-100/90">
-                          <div className="flex justify-between gap-2 font-black text-emerald-200">
+                        <div key={`${component.type}-${component.program_id || component.label}`} className={`rounded-2xl p-3 text-xs leading-5 ${getDiscountCardClass(component.type)}`}>
+                          <div className={`flex justify-between gap-2 font-black ${getDiscountTitleClass(component.type)}`}>
                             <span>{component.label}</span>
-                            <span>-{formatRp(component.discount_amount)}</span>
+                            <span className="text-red-300">-{formatRp(component.discount_amount)}</span>
                           </div>
-                          <p className="font-black text-emerald-200">{getDiscountScopeTitle(component.type)}</p>
+                          <p className={`font-black ${getDiscountTitleClass(component.type)}`}>{getDiscountScopeTitle(component.type)}</p>
                           {component.scopeItems.map((item) => (
                             <p key={item.id}>{item.name} x{item.qty} - dasar {formatRp(item.subtotal)}</p>
                           ))}
-                          <p className="mt-1 text-emerald-100/70">
-                            {component.type === 'bundle'
-                              ? 'Potongan paket bundle hanya dihitung dari menu paket di atas.'
-                              : `Potongan ${component.type === 'review_reward' ? 'reward review' : 'voucher'} dihitung dari menu di luar paket bundle.`}
+                          <p className="mt-1 opacity-75">
+                            {getDiscountNote(component)}
+                            {component.type !== 'bundle' ? ` Dasar potongan ${formatRp(component.discount_base || 0)}.` : ''}
                           </p>
                         </div>
                       ))}
