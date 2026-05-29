@@ -100,66 +100,163 @@ function buildRecipeRows(product, menuQty = 1, stockRows = []) {
   });
 }
 
-function buildRecipeOutItems(product, menuQty = 1) {
-  return buildRecipeRows(product, menuQty).map((row) => ({
+const createEmptyRecipeSelection = () => ({ product_id: '', qty: 1 });
+
+function getRecipeProducts(products = []) {
+  return products.filter((product) => Array.isArray(product.ingredients) && product.ingredients.length > 0);
+}
+
+function getRecipeSelectionDetails(products = [], selections = []) {
+  return (Array.isArray(selections) ? selections : [])
+    .map((selection) => {
+      const product = products.find((item) => String(item.id) === String(selection.product_id));
+      if (!product) return null;
+      return {
+        product,
+        qty: Math.max(1, Number(selection.qty || 1)),
+      };
+    })
+    .filter(Boolean);
+}
+
+function getRecipeSelectionLabel(products = [], selections = []) {
+  return getRecipeSelectionDetails(products, selections)
+    .map(({ product, qty }) => `${product.name} x${qty}`)
+    .join(', ');
+}
+
+function buildRecipeRowsForSelections(products = [], selections = [], stockRows = []) {
+  const byStockItem = new Map();
+
+  getRecipeSelectionDetails(products, selections).forEach(({ product, qty }) => {
+    buildRecipeRows(product, qty, stockRows).forEach((row) => {
+      const previous = byStockItem.get(row.stock_item_id);
+      const nextQty = Number(previous?.qty || 0) + Number(row.qty || 0);
+      const sourceMenus = [
+        ...(previous?.source_menus || []),
+        `${product.name} x${qty}`,
+      ];
+      const price = Number(row.price_per_unit || previous?.price_per_unit || 0);
+
+      byStockItem.set(row.stock_item_id, {
+        ...row,
+        qty: nextQty,
+        source_menus: [...new Set(sourceMenus)],
+        total_value: nextQty * price,
+      });
+    });
+  });
+
+  return [...byStockItem.values()];
+}
+
+function buildRecipeOutItemsForSelections(products = [], selections = []) {
+  const label = getRecipeSelectionLabel(products, selections);
+
+  return buildRecipeRowsForSelections(products, selections).map((row) => ({
     stock_item_id: String(row.stock_item_id),
     qty: String(row.qty),
-    note: `Stok untuk ${product?.name || 'produk'}`,
+    note: `Stok untuk ${label || 'produk'}`,
   }));
 }
 
 function RecipeMenuPicker({
   products = [],
-  productId,
-  menuQty,
-  onProductChange,
-  onQtyChange,
+  selections = [createEmptyRecipeSelection()],
+  onSelectionsChange,
   title = 'Buat stok menu',
 }) {
-  const recipeProducts = products.filter((product) => Array.isArray(product.ingredients) && product.ingredients.length > 0);
+  const recipeProducts = getRecipeProducts(products);
+  const normalizedSelections = selections.length ? selections : [createEmptyRecipeSelection()];
+  const selectedIds = normalizedSelections.map((selection) => String(selection.product_id)).filter(Boolean);
+
+  const updateSelection = (index, patch) => {
+    const next = normalizedSelections.map((selection, selectionIndex) => (
+      selectionIndex === index ? { ...selection, ...patch } : selection
+    ));
+    onSelectionsChange(next);
+  };
+
+  const addSelection = () => {
+    onSelectionsChange([...normalizedSelections, createEmptyRecipeSelection()]);
+  };
+
+  const removeSelection = (index) => {
+    const next = normalizedSelections.filter((_, selectionIndex) => selectionIndex !== index);
+    onSelectionsChange(next.length ? next : [createEmptyRecipeSelection()]);
+  };
 
   return (
     <div className="rounded-xl border border-orange-500/20 bg-orange-500/10 p-4 space-y-3">
       <div>
         <p className="text-orange-300 text-sm font-black">{title}</p>
         <p className="text-slate-400 text-xs mt-0.5">
-          Pilih menu dan jumlah porsi, bahan resep akan dihitung otomatis.
+          Pilih satu atau beberapa menu dan jumlah porsi, bahan resep akan dihitung otomatis.
         </p>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-[1fr_120px] gap-3">
-        <div>
-          <label className="text-slate-500 text-xs mb-1 block">Menu pesanan</label>
-          <select
-            value={productId}
-            onChange={(event) => onProductChange(event.target.value)}
-            className="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-orange-500/50"
-          >
-            <option value="">-- Manual / pilih menu --</option>
-            {recipeProducts.map((product) => (
-              <option key={product.id} value={product.id}>
-                {product.name} · {product.ingredients.length} bahan
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="text-slate-500 text-xs mb-1 block">Qty menu</label>
-          <input
-            type="number"
-            min="1"
-            value={menuQty}
-            onChange={(event) => onQtyChange(Math.max(1, Number(event.target.value || 1)))}
-            className="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-orange-500/50"
-          />
-        </div>
+      <div className="space-y-3">
+        {normalizedSelections.map((selection, index) => {
+          const currentId = String(selection.product_id || '');
+          const selectableProducts = recipeProducts.filter((product) => (
+            currentId === String(product.id) || !selectedIds.includes(String(product.id))
+          ));
+
+          return (
+            <div key={index} className="grid grid-cols-1 sm:grid-cols-[1fr_120px_auto] gap-3">
+              <div>
+                <label className="text-slate-500 text-xs mb-1 block">Menu pesanan {index + 1}</label>
+                <select
+                  value={selection.product_id}
+                  onChange={(event) => updateSelection(index, { product_id: event.target.value })}
+                  className="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-orange-500/50"
+                >
+                  <option value="">-- Manual / pilih menu --</option>
+                  {selectableProducts.map((product) => (
+                    <option key={product.id} value={product.id}>
+                      {product.name} - {product.ingredients.length} bahan
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-slate-500 text-xs mb-1 block">Qty menu</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={selection.qty}
+                  onChange={(event) => updateSelection(index, { qty: Math.max(1, Number(event.target.value || 1)) })}
+                  className="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-orange-500/50"
+                />
+              </div>
+              {normalizedSelections.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => removeSelection(index)}
+                  className="self-end rounded-xl border border-red-500/30 px-3 py-2.5 text-xs font-bold text-red-300 hover:bg-red-500/10"
+                >
+                  Hapus
+                </button>
+              )}
+            </div>
+          );
+        })}
+        <button
+          type="button"
+          onClick={addSelection}
+          disabled={selectedIds.length >= recipeProducts.length}
+          className="w-full rounded-xl border border-dashed border-orange-500/35 py-2.5 text-sm font-semibold text-orange-300 transition-all hover:bg-orange-500/10 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          + Tambah Menu
+        </button>
       </div>
-      {productId && (
+      {selectedIds.length > 0 && (
         <p className="text-[11px] leading-5 text-slate-400">
           Bahan baku dikunci dari resep produk. Ubah menu atau qty menu untuk menghitung ulang kebutuhan bahan.
         </p>
       )}
     </div>
   );
+
 }
 
 function ReadOnlyRecipeSummary({ rows = [], title = 'Ringkasan bahan resep' }) {
@@ -320,21 +417,21 @@ function AdminStockPage({ successModal, setSuccessModal }) {
   const [users,      setUsers]      = useState([]);
   const [outUserId,  setOutUserId]  = useState('');
   const [productOptions, setProductOptions] = useState([]);
-  const [outProductId, setOutProductId] = useState('');
-  const [outProductQty, setOutProductQty] = useState(1);
+  const [outMenuSelections, setOutMenuSelections] = useState([createEmptyRecipeSelection()]);
 
   // Tambah state di AdminStockPage (setelah state daily)
   const [outTypeFilter, setOutTypeFilter] = useState('all');
 
-  const selectedOutProduct = productOptions.find((product) => String(product.id) === String(outProductId));
-  const outRecipeRows = selectedOutProduct ? buildRecipeRows(selectedOutProduct, outProductQty, summary) : [];
-  const applyOutRecipe = (productId, qty = outProductQty) => {
-    const product = productOptions.find((item) => String(item.id) === String(productId));
-    if (!product) {
+  const hasOutRecipeSelection = getRecipeSelectionDetails(productOptions, outMenuSelections).length > 0;
+  const outRecipeRows = hasOutRecipeSelection ? buildRecipeRowsForSelections(productOptions, outMenuSelections, summary) : [];
+  const outRecipeSelectionLabel = getRecipeSelectionLabel(productOptions, outMenuSelections);
+  const syncOutRecipeSelections = (nextSelections) => {
+    setOutMenuSelections(nextSelections);
+    if (!getRecipeSelectionDetails(productOptions, nextSelections).length) {
       setOutItems([{ stock_item_id:'', qty:'', note:'' }]);
       return;
     }
-    setOutItems(buildRecipeOutItems(product, qty));
+    setOutItems(buildRecipeOutItemsForSelections(productOptions, nextSelections));
   };
 
   // // Update loadDaily — tambah type_filter
@@ -439,8 +536,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
         setTab('main');
         setMainTab('out');
         setShowOutForm(true);
-        setOutProductId('');
-        setOutProductQty(1);
+        setOutMenuSelections([createEmptyRecipeSelection()]);
         setOutItems(parsedIngs.map(ing => ({
           stock_item_id: String(ing.stock_item_id),
           qty: String(getRequestedQtyFromIngredient(ing)),
@@ -1022,8 +1118,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                 </div>
               <button
                   onClick={() => {
-                    setOutProductId('');
-                    setOutProductQty(1);
+                    setOutMenuSelections([createEmptyRecipeSelection()]);
                     setOutItems([{ stock_item_id:'', qty:'', note:'' }]);
                     setShowOutForm(true);
                   }}
@@ -1551,8 +1646,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                 setShowOutForm(false);
                 setOutItems([{ stock_item_id:'', qty:'', note:'' }]);
                 setOutUserId('');
-                setOutProductId('');
-                setOutProductQty(1);
+                setOutMenuSelections([createEmptyRecipeSelection()]);
                 // Redirect ke tab pengajuan supaya admin bisa lihat & approve
                 setTab('requests');
                 loadRequests();
@@ -1591,21 +1685,13 @@ function AdminStockPage({ successModal, setSuccessModal }) {
               {/* ── Items ── */}
               <RecipeMenuPicker
                 products={productOptions}
-                productId={outProductId}
-                menuQty={outProductQty}
+                selections={outMenuSelections}
                 title="Buat stok dari menu"
-                onProductChange={(value) => {
-                  setOutProductId(value);
-                  applyOutRecipe(value, outProductQty);
-                }}
-                onQtyChange={(qty) => {
-                  setOutProductQty(qty);
-                  if (outProductId) applyOutRecipe(outProductId, qty);
-                }}
+                onSelectionsChange={syncOutRecipeSelections}
               />
 
-              {selectedOutProduct ? (
-                <ReadOnlyRecipeSummary rows={outRecipeRows} title={`Ringkasan bahan untuk ${selectedOutProduct.name}`} />
+              {hasOutRecipeSelection ? (
+                <ReadOnlyRecipeSummary rows={outRecipeRows} title={`Ringkasan bahan untuk ${outRecipeSelectionLabel || 'menu terpilih'}`} />
               ) : (
               <div className="space-y-3">
                 {outItems.map((item, i) => {
@@ -1739,7 +1825,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
               )}
 
               {/* Tambah bahan */}
-              {!selectedOutProduct && (
+              {!hasOutRecipeSelection && (
               <button
                 onClick={() => setOutItems(p => [...p, { stock_item_id:'', qty:'', note:'' }])}
                 className="w-full py-2.5 rounded-xl border border-dashed border-slate-600
@@ -1795,10 +1881,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                     setShowOutForm(false);
                     setOutItems([{ stock_item_id:'', qty:'', note:'' }]);
                     setOutUserId('');
-                    setOutProductId('');
-                    setOutProductQty(1);
-                    setOutProductId('');
-                    setOutProductQty(1);
+                    setOutMenuSelections([createEmptyRecipeSelection()]);
                     // Redirect ke tab pengajuan supaya admin bisa lihat & approve
                     setTab('requests');
                     loadRequests();
@@ -2040,18 +2123,18 @@ function KasirStockPage({ successModal, setSuccessModal }) {
   const [dailyLoading, setDailyLoading] = useState(false);
   const [requestsLoading, setRequestsLoading] = useState(false);
   const [productOptions, setProductOptions] = useState([]);
-  const [outProductId, setOutProductId] = useState('');
-  const [outProductQty, setOutProductQty] = useState(1);
+  const [outMenuSelections, setOutMenuSelections] = useState([createEmptyRecipeSelection()]);
 
-  const selectedOutProduct = productOptions.find((product) => String(product.id) === String(outProductId));
-  const outRecipeRows = selectedOutProduct ? buildRecipeRows(selectedOutProduct, outProductQty, summary) : [];
-  const applyOutRecipe = (productId, qty = outProductQty) => {
-    const product = productOptions.find((item) => String(item.id) === String(productId));
-    if (!product) {
+  const hasOutRecipeSelection = getRecipeSelectionDetails(productOptions, outMenuSelections).length > 0;
+  const outRecipeRows = hasOutRecipeSelection ? buildRecipeRowsForSelections(productOptions, outMenuSelections, summary) : [];
+  const outRecipeSelectionLabel = getRecipeSelectionLabel(productOptions, outMenuSelections);
+  const syncOutRecipeSelections = (nextSelections) => {
+    setOutMenuSelections(nextSelections);
+    if (!getRecipeSelectionDetails(productOptions, nextSelections).length) {
       setOutItems([{ stock_item_id:'', qty:'', note:'' }]);
       return;
     }
-    setOutItems(buildRecipeOutItems(product, qty));
+    setOutItems(buildRecipeOutItemsForSelections(productOptions, nextSelections));
   };
 
   // Di dalam function KasirStockPage(), tambah setelah state declarations:
@@ -2088,8 +2171,7 @@ function KasirStockPage({ successModal, setSuccessModal }) {
           setTab('gudang');
           setMainTab('out');
           setShowOutForm(true);
-          setOutProductId('');
-          setOutProductQty(1);
+          setOutMenuSelections([createEmptyRecipeSelection()]);
           setOutItems(parsedIngs.map(ing => ({
             stock_item_id: String(ing.stock_item_id),
             qty:           String(getRequestedQtyFromIngredient(ing)),
@@ -2313,8 +2395,7 @@ function KasirStockPage({ successModal, setSuccessModal }) {
                   </button>
                 </div>
                 <button onClick={() => {
-                  setOutProductId('');
-                  setOutProductQty(1);
+                  setOutMenuSelections([createEmptyRecipeSelection()]);
                   setOutItems([{ stock_item_id:'', qty:'', note:'' }]);
                   setShowOutForm(true);
                 }}
@@ -2593,8 +2674,7 @@ function KasirStockPage({ successModal, setSuccessModal }) {
               <button onClick={() => {
                 setShowOutForm(false);
                 setOutItems([{ stock_item_id:'', qty:'', note:'' }]);
-                setOutProductId('');
-                setOutProductQty(1);
+                setOutMenuSelections([createEmptyRecipeSelection()]);
               }}
                 className="text-slate-500 hover:text-white p-2 rounded-xl hover:bg-slate-700 transition-colors">✕</button>
             </div>
@@ -2609,21 +2689,13 @@ function KasirStockPage({ successModal, setSuccessModal }) {
 
               <RecipeMenuPicker
                 products={productOptions}
-                productId={outProductId}
-                menuQty={outProductQty}
+                selections={outMenuSelections}
                 title="Ajukan stok dari menu"
-                onProductChange={(value) => {
-                  setOutProductId(value);
-                  applyOutRecipe(value, outProductQty);
-                }}
-                onQtyChange={(qty) => {
-                  setOutProductQty(qty);
-                  if (outProductId) applyOutRecipe(outProductId, qty);
-                }}
+                onSelectionsChange={syncOutRecipeSelections}
               />
 
-              {selectedOutProduct ? (
-                <ReadOnlyRecipeSummary rows={outRecipeRows} title={`Ringkasan bahan untuk ${selectedOutProduct.name}`} />
+              {hasOutRecipeSelection ? (
+                <ReadOnlyRecipeSummary rows={outRecipeRows} title={`Ringkasan bahan untuk ${outRecipeSelectionLabel || 'menu terpilih'}`} />
               ) : (
               <div className="space-y-3">
                 {outItems.map((item, i) => {
@@ -2726,7 +2798,7 @@ function KasirStockPage({ successModal, setSuccessModal }) {
               </div>
               )}
 
-              {!selectedOutProduct && (
+              {!hasOutRecipeSelection && (
               <button onClick={() => setOutItems(p => [...p, { stock_item_id:'', qty:'', note:'' }])}
                 className="w-full py-2.5 rounded-xl border border-dashed border-slate-600
                   text-slate-500 hover:text-slate-300 hover:border-slate-500 text-sm transition-all">
@@ -2772,8 +2844,7 @@ function KasirStockPage({ successModal, setSuccessModal }) {
               <button onClick={() => {
                 setShowOutForm(false);
                 setOutItems([{ stock_item_id:'', qty:'', note:'' }]);
-                setOutProductId('');
-                setOutProductQty(1);
+                setOutMenuSelections([createEmptyRecipeSelection()]);
               }}
                 className="flex-1 py-3 rounded-xl bg-slate-700 text-slate-300 hover:bg-slate-600 text-sm font-semibold">
                 Batal
@@ -2793,8 +2864,7 @@ function KasirStockPage({ successModal, setSuccessModal }) {
                     });
                     setShowOutForm(false);
                     setOutItems([{ stock_item_id:'', qty:'', note:'' }]);
-                    setOutProductId('');
-                    setOutProductQty(1);
+                    setOutMenuSelections([createEmptyRecipeSelection()]);
                     setTab('requests');
                     loadRequests();
                     setSuccessModal({
