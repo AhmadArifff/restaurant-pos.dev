@@ -192,8 +192,20 @@ export default function CustomerOrdersPage() {
 
   const getStatusActions = (order) => {
     if (['completed', 'cancelled'].includes(order.status)) return [];
+    const nextAction = nextActionByStatus[order.status];
+    const waitingPaymentProof = order.status === 'pending'
+      && order.payment_method
+      && order.payment_status !== 'paid'
+      && !order.payment_proof_url;
     return [
-      nextActionByStatus[order.status],
+      nextAction && waitingPaymentProof
+        ? {
+            ...nextAction,
+            label: 'Tunggu Bukti Bayar',
+            color: 'bg-slate-600',
+            disabled: true,
+          }
+        : nextAction,
       { status: 'cancelled', label: 'Batalkan', color: 'bg-red-500 hover:bg-red-400' },
     ].filter(Boolean);
   };
@@ -375,6 +387,7 @@ export default function CustomerOrdersPage() {
                         <button
                           key={action.status}
                           onClick={() => changeStatus(order, action.status)}
+                          disabled={action.disabled}
                           className={`${action.color} rounded-xl px-3 py-2 text-xs font-black text-white transition disabled:cursor-not-allowed disabled:opacity-35`}
                         >
                           {action.label}
