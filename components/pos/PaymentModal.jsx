@@ -10,6 +10,98 @@ const fmtPecahan = (n) => {
   return `Rp ${n}`;
 };
 
+const formatRp = (value) => `Rp ${Number(value || 0).toLocaleString('id-ID')}`;
+
+const getItemProductId = (item) => Number(item?.product_id || item?.id);
+const getItemSubtotal = (item) => Number(item?.subtotal || Number(item?.price || 0) * Number(item?.qty || 0));
+
+const getDiscountedBundleItems = ({ sourceItems = [], bundleItems = [] }) => {
+  const requirementByProduct = new Map(
+    (bundleItems || [])
+      .map((item) => [Number(item.product_id || item.id || item), Math.max(1, Number(item.qty || 1))])
+      .filter(([id]) => id)
+  );
+  if (!requirementByProduct.size) return [];
+
+  return (sourceItems || [])
+    .filter((item) => requirementByProduct.has(getItemProductId(item)))
+    .map((item) => ({
+      id: item.id || item.product_id,
+      name: item.product_name || item.name,
+      qty: Number(item.qty || 0),
+      subtotal: getItemSubtotal(item),
+    }));
+};
+
+const getDiscountedScopeItems = ({ sourceItems = [], discountType, bundleItems = [], excludedProductIds = new Set() }) => {
+  if (discountType === 'bundle') {
+    return getDiscountedBundleItems({ sourceItems, bundleItems });
+  }
+  if (['voucher', 'review_reward'].includes(discountType)) {
+    return (sourceItems || [])
+      .filter((item) => !excludedProductIds.has(getItemProductId(item)))
+      .map((item) => ({
+        id: item.id || item.product_id,
+        name: item.product_name || item.name,
+        qty: Number(item.qty || 0),
+        subtotal: getItemSubtotal(item),
+      }));
+  }
+  return [];
+};
+
+const normalizeDiscountBreakdown = (discount) => {
+  if (!discount) return [];
+  if (Array.isArray(discount.breakdown) && discount.breakdown.length) return discount.breakdown;
+  if (Number(discount.discount_amount || 0) <= 0) return [];
+  return [{
+    program_id: discount.program_id,
+    label: discount.label,
+    type: discount.type,
+    discount_rate: discount.discount_rate,
+    discount_amount: discount.discount_amount,
+    discount_base: discount.discount_base || 0,
+    voucher_code: discount.voucher_code,
+    bundle_items: discount.bundle_items || [],
+  }];
+};
+
+const getBundleExcludedIds = (breakdown = []) => new Set(
+  breakdown
+    .filter((item) => item.type === 'bundle')
+    .flatMap((item) => item.bundle_items || [])
+    .map((item) => Number(item.product_id || item.id || item))
+    .filter(Boolean)
+);
+
+const getDiscountScopeTitle = (discountType) => {
+  if (discountType === 'bundle') return 'Menu paket yang mendapat diskon:';
+  if (discountType === 'voucher') return 'Menu yang terkena kode voucher:';
+  if (discountType === 'review_reward') return 'Menu yang terkena reward review:';
+  return 'Menu yang mendapat diskon:';
+};
+
+const getDiscountCardClass = (discountType) => {
+  if (discountType === 'bundle') return 'border-emerald-400/20 bg-emerald-500/10 text-emerald-100/90';
+  if (discountType === 'voucher') return 'border-sky-300/20 bg-sky-400/10 text-sky-100/90';
+  if (discountType === 'review_reward') return 'border-orange-300/20 bg-orange-400/10 text-orange-100/90';
+  return 'border-emerald-400/20 bg-emerald-500/10 text-emerald-100/90';
+};
+
+const getDiscountTitleClass = (discountType) => {
+  if (discountType === 'bundle') return 'text-emerald-200';
+  if (discountType === 'voucher') return 'text-sky-100';
+  if (discountType === 'review_reward') return 'text-orange-200';
+  return 'text-emerald-200';
+};
+
+const getDiscountNote = (component) => {
+  if (component.type === 'bundle') return 'Note: Potongan paket bundle hanya dihitung dari menu paket di atas.';
+  if (component.type === 'voucher') return 'Note: Potongan Kode Vocher dihitung dari menu di luar paket bundle.';
+  if (component.type === 'review_reward') return 'Note: Potongan reward review dihitung dari menu di luar paket bundle.';
+  return 'Note: Potongan diskon dihitung sesuai scope program.';
+};
+
 export default function PaymentModal({
   total,
   itemCount = 0,
@@ -36,6 +128,17 @@ export default function PaymentModal({
   );
   const payableTotal = Math.max(0, Number(discountPreview?.final_total ?? total));
   const discountAmount = Math.max(0, Number(discountPreview?.discount_amount || 0));
+  const discountBreakdown = normalizeDiscountBreakdown(discountPreview);
+  const bundleExcludedIds = getBundleExcludedIds(discountBreakdown);
+  const scopedDiscountBreakdown = discountBreakdown.map((component) => ({
+    ...component,
+    scopeItems: getDiscountedScopeItems({
+      sourceItems: items,
+      discountType: component.type,
+      bundleItems: component.bundle_items || [],
+      excludedProductIds: component.type === 'bundle' ? new Set() : bundleExcludedIds,
+    }),
+  }));
   const kembalian = method === 'cash' ? tunai - payableTotal : 0;
   const canPay    = !processing && (method !== 'cash' || (tunai >= payableTotal));
   const customerPhoneForApi = normalizeIndonesianPhoneForSubmit(customerPhone);
@@ -186,9 +289,34 @@ export default function PaymentModal({
               ) : discountPreview?.error ? (
                 <span className="text-yellow-300">{discountPreview.message}</span>
               ) : discountAmount > 0 ? (
-                <div className="flex items-center justify-between gap-2 text-emerald-300">
-                  <span>{discountPreview.label}</span>
-                  <strong>-Rp {discountAmount.toLocaleString('id-ID')}</strong>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-2 text-slate-100">
+                    <span>{discountPreview.label}</span>
+                    <strong className="text-red-300">-{formatRp(discountAmount)}</strong>
+                  </div>
+                  {scopedDiscountBreakdown.map((component) => (
+                    <div
+                      key={`${component.type}-${component.program_id || component.label}`}
+                      className={`rounded-xl border p-2 leading-5 ${getDiscountCardClass(component.type)}`}
+                    >
+                      <div className={`flex justify-between gap-2 font-black ${getDiscountTitleClass(component.type)}`}>
+                        <span>{component.label}</span>
+                        <span className="text-red-300">-{formatRp(component.discount_amount)}</span>
+                      </div>
+                      <p className={`font-black ${getDiscountTitleClass(component.type)}`}>{getDiscountScopeTitle(component.type)}</p>
+                      {component.scopeItems.map((item) => (
+                        <p key={item.id}>{item.name} x{item.qty} - dasar {formatRp(item.subtotal)}</p>
+                      ))}
+                      <p className="mt-1 opacity-75">
+                        {getDiscountNote(component)}
+                        {component.type !== 'bundle' ? ` Dasar potongan ${formatRp(component.discount_base || 0)}.` : ''}
+                      </p>
+                    </div>
+                  ))}
+                  <div className="flex items-center justify-between gap-2 border-t border-slate-700 pt-2 text-emerald-300">
+                    <span>Total bayar</span>
+                    <strong className="text-emerald-200">{formatRp(payableTotal)}</strong>
+                  </div>
                 </div>
               ) : bundleHints.some((program) => program.complete) && !customerPhoneForApi ? (
                 <span className="text-yellow-300">Nomor HP wajib diisi agar diskon paket bundle bisa diklaim.</span>
