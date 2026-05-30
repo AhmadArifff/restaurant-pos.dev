@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -27,6 +27,25 @@ const statusSteps = [
 ];
 
 const formatRp = (value) => `Rp ${Number(value || 0).toLocaleString('id-ID')}`;
+
+const formatDateTime = (value) => {
+  if (!value) return '-';
+  return new Date(value).toLocaleString('id-ID', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+
+const formatPaymentTimeLeft = (value) => {
+  if (!value) return '-';
+  const seconds = Math.max(0, Math.floor((new Date(value).getTime() - Date.now()) / 1000));
+  const minutes = Math.floor(seconds / 60);
+  const rest = seconds % 60;
+  return `${String(minutes).padStart(2, '0')}:${String(rest).padStart(2, '0')}`;
+};
 
 const getItemProductId = (item) => Number(item?.product_id || item?.id);
 const getItemSubtotal = (item) => Number(item?.subtotal || Number(item?.price || 0) * Number(item?.qty || 0));
@@ -161,6 +180,7 @@ export default function CustomerOrderPage() {
   const params = useParams();
   const token = params?.token;
   const storageKey = token ? `customer-order-${token}` : '';
+  const paymentSectionRef = useRef(null);
 
   const [table, setTable] = useState(null);
   const [products, setProducts] = useState([]);
@@ -183,6 +203,7 @@ export default function CustomerOrderPage() {
   const [bundlePrompt, setBundlePrompt] = useState(null);
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [selectedPaymentMethodId, setSelectedPaymentMethodId] = useState('');
+  const [paymentConfirmOrder, setPaymentConfirmOrder] = useState(null);
 
   useEffect(() => {
     if (!token) return;
@@ -474,6 +495,7 @@ export default function CustomerOrderPage() {
       setOrder(nextOrder);
       setCart([]);
       setShowMobileCart(false);
+      if (nextOrder?.payment_method) setPaymentConfirmOrder(nextOrder);
       if (storageKey) localStorage.setItem(storageKey, nextOrder.order_code);
     } catch (err) {
       alert(err.response?.data?.message || 'Gagal mengirim pesanan');
@@ -502,6 +524,13 @@ export default function CustomerOrderPage() {
     setCart(nextCart);
     setBundlePrompt(null);
     setShowMobileCart(true);
+  };
+
+  const scrollToPayment = () => {
+    setPaymentConfirmOrder(null);
+    window.setTimeout(() => {
+      paymentSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 120);
   };
 
   const submitReview = async () => {
@@ -930,7 +959,9 @@ export default function CustomerOrderPage() {
                   )}
                 </div>
 
-                <CustomerPaymentPanel order={order} onOrderUpdate={setOrder} compact />
+                <div ref={paymentSectionRef} className="scroll-mt-24">
+                  <CustomerPaymentPanel order={order} onOrderUpdate={setOrder} compact />
+                </div>
 
                 {order.status === 'completed' && !order.reviewed_at && (
                   <div className="mt-5 rounded-3xl border border-[#C9A84C]/20 bg-[#0D0A06]/55 p-4">
@@ -1042,6 +1073,49 @@ export default function CustomerOrderPage() {
               transition={{ type: 'spring', stiffness: 420, damping: 38 }}
             >
               {renderCartPanel(true)}
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {paymentConfirmOrder && (
+          <>
+            <motion.div
+              className="fixed inset-0 z-[90] bg-black/75 backdrop-blur-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            />
+            <motion.div
+              className="fixed inset-x-3 bottom-4 z-[100] mx-auto max-w-md rounded-3xl border border-sky-300/25 bg-[#102026] p-5 text-sky-50 shadow-2xl shadow-black/60 sm:inset-x-0 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2"
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 24 }}
+            >
+              <p className="text-xs font-black uppercase tracking-[0.22em] text-sky-200">Konfirmasi Pembayaran</p>
+              <h2 className="mt-2 text-2xl font-black">Pesanan berhasil dibuat</h2>
+              <p className="mt-2 text-sm leading-6 text-sky-50/75">
+                Silakan lakukan pembayaran terlebih dahulu lewat {paymentConfirmOrder.payment_method?.name || 'metode pembayaran yang dipilih'}.
+                Pesanan akan terlihat di kasir, tetapi baru bisa diterima setelah bukti pembayaran dikirim.
+              </p>
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <div className="rounded-2xl bg-[#0D0A06]/55 p-3">
+                  <p className="text-xs text-sky-100/60">Total bayar</p>
+                  <strong className="mt-1 block text-xl text-emerald-300">{formatRp(paymentConfirmOrder.final_total || paymentConfirmOrder.subtotal)}</strong>
+                </div>
+                <div className="rounded-2xl bg-[#0D0A06]/55 p-3">
+                  <p className="text-xs text-sky-100/60">Sisa waktu</p>
+                  <strong className="mt-1 block text-xl text-sky-50">{formatPaymentTimeLeft(paymentConfirmOrder.payment_due_at)}</strong>
+                  <p className="mt-1 text-[11px] text-sky-100/55">Sampai {formatDateTime(paymentConfirmOrder.payment_due_at)}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={scrollToPayment}
+                className="mt-5 w-full rounded-2xl bg-sky-300 px-4 py-3 text-sm font-black uppercase tracking-[0.12em] text-[#0D0A06]"
+              >
+                Lanjut ke Pembayaran
+              </button>
             </motion.div>
           </>
         )}
