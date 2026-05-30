@@ -1,7 +1,7 @@
 {
   "name": "Sultan Kebab",
   "short_name": "Sultan Kebab",
-  "description": "Point of Sale System - Sultan Kebab",
+  "description": "Kebab premium, shawarma, menu Timur Tengah, dan pemesanan online Sultan Kebab.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

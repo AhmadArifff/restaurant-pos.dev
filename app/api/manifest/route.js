@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 const DEFAULT_MANIFEST = {
   name: 'Sultan Kebab',
   short_name: 'Sultan Kebab',
-  description: 'Point of Sale System - Sultan Kebab',
+  description: 'Kebab premium, shawarma, menu Timur Tengah, dan pemesanan online Sultan Kebab.',
   icon: '/images/assets/logo.png',
   theme_color: '#C9A84C',
   background_color: '#0D0A06',
