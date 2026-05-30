@@ -10,6 +10,7 @@ import {
   hardDeleteDiscountProgram,
   updateDiscountProgram,
 } from '@/lib/api';
+import { showConfirm } from '@/lib/modalDialog';
 
 const emptyForm = {
   name: '',
@@ -252,7 +253,12 @@ export default function DiscountsPage() {
 
   const toggleProgramStatus = async (program) => {
     const nextStatus = program.status === 'active' ? 'inactive' : 'active';
-    if (!window.confirm(`${nextStatus === 'active' ? 'Aktifkan' : 'Nonaktifkan'} ${program.name}?`)) return;
+    const confirmed = await showConfirm(`${nextStatus === 'active' ? 'Aktifkan' : 'Nonaktifkan'} ${program.name}?`, {
+      title: nextStatus === 'active' ? 'Aktifkan Program' : 'Nonaktifkan Program',
+      confirmText: nextStatus === 'active' ? 'Aktifkan' : 'Nonaktifkan',
+      tone: nextStatus === 'active' ? 'warning' : 'danger',
+    });
+    if (!confirmed) return;
     await updateDiscountProgram(program.id, {
       ...program,
       status: nextStatus,
@@ -265,7 +271,12 @@ export default function DiscountsPage() {
   };
 
   const removeProgram = async (program) => {
-    if (!window.confirm(`Hapus permanen ${program.name}? Histori klaim program ini juga akan ikut terhapus.`)) return;
+    const confirmed = await showConfirm(`Hapus permanen ${program.name}? Histori klaim program ini juga akan ikut terhapus.`, {
+      title: 'Hapus Program',
+      confirmText: 'Hapus Permanen',
+      tone: 'danger',
+    });
+    if (!confirmed) return;
     await hardDeleteDiscountProgram(program.id);
     await load();
   };

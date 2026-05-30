@@ -12,6 +12,7 @@ import {
   updatePaymentMethod,
 } from '@/lib/api';
 import { resolveAssetUrl } from '@/lib/assetUrl';
+import { showConfirm } from '@/lib/modalDialog';
 
 const emptyForm = {
   method_key: '',
@@ -107,7 +108,12 @@ export default function PaymentManagementPage() {
   };
 
   const disableMethod = async (method) => {
-    if (!confirm(`Nonaktifkan metode pembayaran ${method.name}?`)) return;
+    const confirmed = await showConfirm(`Nonaktifkan metode pembayaran ${method.name}?`, {
+      title: 'Nonaktifkan Payment',
+      confirmText: 'Nonaktifkan',
+      tone: 'warning',
+    });
+    if (!confirmed) return;
     try {
       await deletePaymentMethod(method.id);
       await load();
@@ -117,7 +123,12 @@ export default function PaymentManagementPage() {
   };
 
   const removeMethod = async (method) => {
-    if (!confirm(`Hapus permanen metode pembayaran ${method.name}? Data ini tidak bisa dikembalikan.`)) return;
+    const confirmed = await showConfirm(`Hapus permanen metode pembayaran ${method.name}? Data ini tidak bisa dikembalikan.`, {
+      title: 'Hapus Payment',
+      confirmText: 'Hapus Permanen',
+      tone: 'danger',
+    });
+    if (!confirmed) return;
     try {
       await hardDeletePaymentMethod(method.id);
       if (editing?.id === method.id) resetForm();

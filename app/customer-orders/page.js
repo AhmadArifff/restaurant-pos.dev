@@ -14,6 +14,7 @@ import {
   updateCustomerOrderStatus,
   updateDiningTable,
 } from '@/lib/api';
+import { showConfirm, showPrompt } from '@/lib/modalDialog';
 import { useAuthStore } from '@/store/authStore';
 import { resolveAssetUrl } from '@/lib/assetUrl';
 
@@ -207,7 +208,12 @@ export default function CustomerOrdersPage() {
   };
 
   const removeTable = async (table) => {
-    if (!confirm(`Nonaktifkan meja ${table.table_number}?`)) return;
+    const confirmed = await showConfirm(`Nonaktifkan meja ${table.table_number}?`, {
+      title: 'Nonaktifkan Meja',
+      confirmText: 'Nonaktifkan',
+      tone: 'warning',
+    });
+    if (!confirmed) return;
     await deleteDiningTable(table.id);
     await load();
   };
@@ -216,7 +222,11 @@ export default function CustomerOrdersPage() {
     try {
       const payload = { status: nextStatus };
       if (nextStatus === 'cancelled') {
-        const reason = window.prompt(`Alasan pembatalan pesanan ${order.order_code}:`);
+        const reason = await showPrompt(`Alasan pembatalan pesanan ${order.order_code}:`, {
+          title: 'Batalkan Pesanan',
+          placeholder: 'Tulis alasan pembatalan...',
+          confirmText: 'Batalkan Pesanan',
+        });
         if (!reason?.trim()) return;
         payload.cancel_reason = reason.trim();
       }

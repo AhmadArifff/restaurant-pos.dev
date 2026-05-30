@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import AdminLayout from '@/components/layout/AdminLayout';
+import { showConfirm } from '@/lib/modalDialog';
 import {
   getStockItems, createStockItem, updateStockItem,
   deleteStockItem, stockItemIn, getStockHistory, getStockUnits
@@ -75,7 +76,12 @@ export default function StockPage() {
   };
 
   const handleDelete = async (id, name) => {
-    if (!confirm(`Hapus bahan "${name}"?`)) return;
+    const confirmed = await showConfirm(`Hapus bahan "${name}"?`, {
+      title: 'Hapus Bahan Baku',
+      confirmText: 'Hapus',
+      tone: 'danger',
+    });
+    if (!confirmed) return;
     try { await deleteStockItem(id); load(); }
     catch (err) { alert(err.response?.data?.message || 'Gagal'); }
   };
@@ -332,7 +338,7 @@ export default function StockPage() {
                 <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-3">
                   <p className="text-yellow-400 text-xs">
                     ⚠ Stok 0 — harga per satuan tidak bisa dihitung.
-                    Tambah stok terlebih dahulu via tombol "Stok Masuk".
+                    Tambah stok terlebih dahulu via tombol &quot;Stok Masuk&quot;.
                   </p>
                 </div>
               )}

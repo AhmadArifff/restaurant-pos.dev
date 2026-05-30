@@ -4,6 +4,7 @@ import AdminLayout from '@/components/layout/AdminLayout';
 import { getProducts, getCategories, deleteProduct, getStockItems } from '@/lib/api';
 import api from '@/lib/axios';
 import { resolveAssetUrl } from '@/lib/assetUrl';
+import { showConfirm } from '@/lib/modalDialog';
 import { CardSkeleton } from '@/components/ui/SectionSkeleton';
 // Di app/pos/page.js atau wherever kasir lihat produk
 import { getMyStockProducts } from '@/lib/api';
@@ -114,7 +115,12 @@ export default function ProductsPage() {
   };
 
   const handleDelete = async (id, name) => {
-    if (!confirm(`Hapus produk "${name}"?`)) return;
+    const confirmed = await showConfirm(`Hapus produk "${name}"?`, {
+      title: 'Hapus Produk',
+      confirmText: 'Hapus',
+      tone: 'danger',
+    });
+    if (!confirmed) return;
     try { await deleteProduct(id); await load(); }
     catch (err) { alert(err.response?.data?.message || 'Gagal menghapus'); }
   };

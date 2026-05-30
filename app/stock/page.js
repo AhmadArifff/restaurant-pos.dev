@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from 'react';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { useAuthStore } from '@/store/authStore';
 import SuccessModal from '@/components/stock/SuccessModal';
+import { showConfirm } from '@/lib/modalDialog';
 import {
   StockMasterSkeleton,
   StockRequestSkeleton,
@@ -860,7 +861,12 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                                 Edit
                               </button>
                               <button onClick={async () => {
-                                if (!confirm(`Hapus "${item.name}"?`)) return;
+                                const confirmed = await showConfirm(`Hapus "${item.name}"?`, {
+                                  title: 'Hapus Bahan Baku',
+                                  confirmText: 'Hapus',
+                                  tone: 'danger',
+                                });
+                                if (!confirmed) return;
                                 await deleteStockItem(item.id);
                                 loadMaster(); loadSummary();
                               }} className="text-xs px-3 py-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all">
@@ -1075,7 +1081,12 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                                 </button>
                                 <button
                                   onClick={async () => {
-                                    if (!confirm(`Hapus data pembelian ${row.item_name}?`)) return;
+                                    const confirmed = await showConfirm(`Hapus data pembelian ${row.item_name}?`, {
+                                      title: 'Hapus Pembelian Stok',
+                                      confirmText: 'Hapus',
+                                      tone: 'danger',
+                                    });
+                                    if (!confirmed) return;
                                     try {
                                       await deleteStockPurchase(row.id);
                                       loadMonthly(); loadSummary(); loadMaster();
@@ -1343,7 +1354,12 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                     {req.status === 'rejected' && (
                       <button
                         onClick={async () => {
-                          if (!confirm(`Ajukan ulang pengajuan ${req.user_name}?`)) return;
+                          const confirmed = await showConfirm(`Ajukan ulang pengajuan ${req.user_name}?`, {
+                            title: 'Ajukan Ulang Stok',
+                            confirmText: 'Ajukan Ulang',
+                            tone: 'warning',
+                          });
+                          if (!confirmed) return;
                           try {
                             await resubmitStockRequest(req.id);
                             loadRequests();
@@ -2589,7 +2605,12 @@ function KasirStockPage({ successModal, setSuccessModal }) {
                   {req.status === 'rejected' && (
                     <button
                       onClick={async () => {
-                        if (!confirm('Ajukan ulang pengajuan ini?')) return;
+                        const confirmed = await showConfirm('Ajukan ulang pengajuan ini?', {
+                          title: 'Ajukan Ulang Stok',
+                          confirmText: 'Ajukan Ulang',
+                          tone: 'warning',
+                        });
+                        if (!confirmed) return;
                         try {
                           await resubmitStockRequest(req.id);
                           loadRequests();
