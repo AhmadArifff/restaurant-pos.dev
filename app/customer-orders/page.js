@@ -89,6 +89,17 @@ const getDiscountComponents = (order) => {
 
 const getDiscountTypeLabel = (type) => discountTypeMeta[type]?.label || 'Diskon';
 
+const getDiscountValueText = (component) => {
+  const value = Number(component?.discount_value || 0);
+  if (!value) return '';
+  return component.discount_type === 'fixed' ? formatRp(value) : `${value}%`;
+};
+
+const getDiscountBadgeText = (component) => [
+  getDiscountTypeLabel(component.type),
+  getDiscountValueText(component),
+].filter(Boolean).join(' ');
+
 function Stars({ value = 0, size = 'text-sm' }) {
   const rating = Math.max(0, Math.min(5, Number(value || 0)));
   return (
@@ -325,7 +336,7 @@ export default function CustomerOrdersPage() {
                             key={`${component.type}-${component.program_id || component.label}`}
                             className={`rounded-full px-3 py-1 text-xs font-black ${discountTypeMeta[component.type]?.badge || 'bg-violet-500/15 text-violet-300'}`}
                           >
-                            {getDiscountTypeLabel(component.type)}
+                            {getDiscountBadgeText(component)}
                           </span>
                         ))}
                         {order.reviewed_at && !discountComponents.some((component) => component.type === 'review_reward') && (
@@ -346,7 +357,7 @@ export default function CustomerOrdersPage() {
                         <div className="mt-2 space-y-1 text-xs">
                           {discountComponents.map((component) => (
                             <p key={`${component.type}-${component.program_id || component.label}-total`} className={discountTypeMeta[component.type]?.badge?.split(' ').at(-1) || 'text-violet-300'}>
-                              {getDiscountTypeLabel(component.type)}: {component.label || 'Diskon'} -{formatRp(component.discount_amount)}
+                              {getDiscountBadgeText(component)}: {component.label || 'Diskon'} -{formatRp(component.discount_amount)}
                             </p>
                           ))}
                         </div>
@@ -371,7 +382,7 @@ export default function CustomerOrdersPage() {
                               className={`rounded-xl border p-3 text-xs ${discountTypeMeta[component.type]?.panel || 'border-violet-500/20 bg-violet-500/10 text-violet-100'}`}
                             >
                               <div className="flex flex-wrap items-center justify-between gap-2">
-                                <span className="font-black">{getDiscountTypeLabel(component.type)}</span>
+                                <span className="font-black">{getDiscountBadgeText(component)}</span>
                                 <strong className="text-red-300">-{formatRp(component.discount_amount)}</strong>
                               </div>
                               <p className="mt-1 font-semibold">{component.label || 'Diskon'}</p>

@@ -8,6 +8,7 @@ import {
   createPaymentMethod,
   deletePaymentMethod,
   getPaymentMethods,
+  hardDeletePaymentMethod,
   updatePaymentMethod,
 } from '@/lib/api';
 import { resolveAssetUrl } from '@/lib/assetUrl';
@@ -115,6 +116,17 @@ export default function PaymentManagementPage() {
     }
   };
 
+  const removeMethod = async (method) => {
+    if (!confirm(`Hapus permanen metode pembayaran ${method.name}? Data ini tidak bisa dikembalikan.`)) return;
+    try {
+      await hardDeletePaymentMethod(method.id);
+      if (editing?.id === method.id) resetForm();
+      await load();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Gagal menghapus metode pembayaran');
+    }
+  };
+
   return (
     <AuthGuard>
       <AdminLayout>
@@ -174,13 +186,13 @@ export default function PaymentManagementPage() {
                           {formatTimeout(method.payment_timeout_minutes)}
                         </span>
                       </div>
-                      <h2 className="mt-3 text-xl font-black text-white">{method.name}</h2>
-                      <p className="mt-1 text-sm text-slate-400">
+                      <h2 className="mt-3 break-words text-xl font-black text-white">{method.name}</h2>
+                      <p className="mt-1 break-words text-sm text-slate-400">
                         {method.provider_name || '-'} {method.account_number ? `- ${method.account_number}` : ''}
                       </p>
                       {method.account_name && <p className="mt-1 text-xs text-slate-500">a/n {method.account_name}</p>}
                       {method.instructions && (
-                        <p className="mt-3 rounded-2xl bg-slate-900/60 p-3 text-sm leading-6 text-slate-300">
+                        <p className="mt-3 break-words rounded-2xl bg-slate-900/60 p-3 text-sm leading-6 text-slate-300">
                           {method.instructions}
                         </p>
                       )}
@@ -201,6 +213,9 @@ export default function PaymentManagementPage() {
                           Nonaktif
                         </button>
                       )}
+                      <button onClick={() => removeMethod(method)} className="rounded-xl border border-red-500/35 bg-red-500/10 px-3 py-2 text-sm font-black text-red-200">
+                        Hapus
+                      </button>
                     </div>
                   </div>
                 </motion.article>
