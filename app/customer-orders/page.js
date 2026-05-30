@@ -57,6 +57,38 @@ const formatDateTime = (value) => value
   ? new Date(value).toLocaleString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
   : '-';
 
+const discountTypeMeta = {
+  bundle: {
+    label: 'Paket Bundle',
+    badge: 'bg-emerald-500/15 text-emerald-300',
+    panel: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-100',
+  },
+  voucher: {
+    label: 'Kode Voucher',
+    badge: 'bg-sky-500/15 text-sky-300',
+    panel: 'border-sky-500/20 bg-sky-500/10 text-sky-100',
+  },
+  review_reward: {
+    label: 'Reward Review',
+    badge: 'bg-amber-500/15 text-amber-300',
+    panel: 'border-amber-500/20 bg-amber-500/10 text-amber-100',
+  },
+};
+
+const getDiscountComponents = (order) => {
+  if (Array.isArray(order?.discount_breakdown) && order.discount_breakdown.length) {
+    return order.discount_breakdown.filter((item) => Number(item.discount_amount || 0) > 0);
+  }
+  if (Number(order?.discount_amount || 0) <= 0) return [];
+  return [{
+    type: order.discount_program_type || 'discount',
+    label: order.discount_label || 'Diskon',
+    discount_amount: order.discount_amount,
+  }];
+};
+
+const getDiscountTypeLabel = (type) => discountTypeMeta[type]?.label || 'Diskon';
+
 function Stars({ value = 0, size = 'text-sm' }) {
   const rating = Math.max(0, Math.min(5, Number(value || 0)));
   return (
@@ -271,7 +303,9 @@ export default function CustomerOrdersPage() {
                   Belum ada pesanan meja untuk filter ini.
                 </div>
               )}
-              {visibleOrders.map((order) => (
+              {visibleOrders.map((order) => {
+                const discountComponents = getDiscountComponents(order);
+                return (
                 <motion.article
                   key={order.id}
                   layout
@@ -286,9 +320,17 @@ export default function CustomerOrdersPage() {
                         <span className="rounded-full bg-slate-700 px-3 py-1 text-xs font-black uppercase text-slate-300">
                           {statusLabels[order.status] || order.status}
                         </span>
-                        {order.reviewed_at && (
-                          <span className="rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-black text-emerald-300">
-                            Review + Diskon 5%
+                        {discountComponents.map((component) => (
+                          <span
+                            key={`${component.type}-${component.program_id || component.label}`}
+                            className={`rounded-full px-3 py-1 text-xs font-black ${discountTypeMeta[component.type]?.badge || 'bg-violet-500/15 text-violet-300'}`}
+                          >
+                            {getDiscountTypeLabel(component.type)}
+                          </span>
+                        ))}
+                        {order.reviewed_at && !discountComponents.some((component) => component.type === 'review_reward') && (
+                          <span className="rounded-full bg-slate-700 px-3 py-1 text-xs font-black text-slate-300">
+                            Review selesai
                           </span>
                         )}
                       </div>
@@ -300,10 +342,14 @@ export default function CustomerOrdersPage() {
                     <div className="text-left lg:text-right">
                       <p className="text-xs text-slate-500">Total pesanan</p>
                       <strong className="text-2xl text-orange-400">{formatRp(order.final_total || order.subtotal)}</strong>
-                      {Number(order.discount_amount || 0) > 0 && (
-                        <p className="text-xs text-emerald-300">
-                          {order.discount_label || 'Diskon'} {formatRp(order.discount_amount)}
-                        </p>
+                      {discountComponents.length > 0 && (
+                        <div className="mt-2 space-y-1 text-xs">
+                          {discountComponents.map((component) => (
+                            <p key={`${component.type}-${component.program_id || component.label}-total`} className={discountTypeMeta[component.type]?.badge?.split(' ').at(-1) || 'text-violet-300'}>
+                              {getDiscountTypeLabel(component.type)}: {component.label || 'Diskon'} -{formatRp(component.discount_amount)}
+                            </p>
+                          ))}
+                        </div>
                       )}
                     </div>
                   </div>
@@ -316,6 +362,27 @@ export default function CustomerOrdersPage() {
                           <span className="font-bold text-white">{formatRp(item.subtotal)}</span>
                         </div>
                       ))}
+                      {discountComponents.length > 0 && (
+                        <div className="mt-3 space-y-2 border-t border-slate-700/60 pt-3">
+                          <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Diskon terpakai</p>
+                          {discountComponents.map((component) => (
+                            <div
+                              key={`${component.type}-${component.program_id || component.label}-detail`}
+                              className={`rounded-xl border p-3 text-xs ${discountTypeMeta[component.type]?.panel || 'border-violet-500/20 bg-violet-500/10 text-violet-100'}`}
+                            >
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <span className="font-black">{getDiscountTypeLabel(component.type)}</span>
+                                <strong className="text-red-300">-{formatRp(component.discount_amount)}</strong>
+                              </div>
+                              <p className="mt-1 font-semibold">{component.label || 'Diskon'}</p>
+                              {component.voucher_code && <p className="mt-1 opacity-80">Kode: {component.voucher_code}</p>}
+                              {Number(component.discount_base || 0) > 0 && (
+                                <p className="mt-1 opacity-80">Dasar potongan: {formatRp(component.discount_base)}</p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                       {order.items?.some((item) => item.review) && (
                         <div className="mt-3 space-y-2 border-t border-slate-700/60 pt-3">
                           <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Rating menu</p>
@@ -399,7 +466,8 @@ export default function CustomerOrdersPage() {
                     </div>
                   </div>
                 </motion.article>
-              ))}
+              );
+              })}
             </section>
 
             {isAdmin && (
