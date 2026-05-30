@@ -15,6 +15,7 @@ import {
   submitCustomerOrderReview,
 } from '@/lib/api';
 import CustomerPaymentPanel from '@/components/customer/CustomerPaymentPanel';
+import PaymentMethodCard from '@/components/payment/PaymentMethodCard';
 import { resolveAssetUrl } from '@/lib/assetUrl';
 import { formatIndonesianPhone, normalizeIndonesianPhoneForSubmit } from '@/lib/phoneFormat';
 
@@ -311,6 +312,7 @@ export default function CustomerOrderPage() {
       excludedProductIds: component.type === 'bundle' ? new Set() : orderBundleExcludedIds,
     }),
   }));
+  const selectedPaymentMethod = paymentMethods.find((method) => String(method.id) === String(selectedPaymentMethodId));
   const tableBusy = !order && Number(table?.active_orders || 0) > 0;
   const branchLabel = table?.branch_name || 'Cabang Sultan Kebab';
   const branchArea = table?.branch_area || table?.branch_address || '';
@@ -612,41 +614,35 @@ export default function CustomerOrderPage() {
       </div>
 
       {cart.length > 0 && (
-        <div className="mt-5 rounded-3xl border border-sky-300/20 bg-sky-400/10 p-3">
-          <p className="text-xs font-black uppercase tracking-[0.18em] text-sky-200">Metode pembayaran</p>
+        <div className="mt-5 rounded-3xl border border-[#C9A84C]/18 bg-[#241C0E] p-3">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-[#C9A84C]">Metode pembayaran</p>
+              <p className="mt-1 text-xs text-[#EDE0C4]/55">Pilih QRIS atau transfer sebelum kirim pesanan.</p>
+            </div>
+            {selectedPaymentMethod && (
+              <span className="shrink-0 rounded-full bg-[#C9A84C]/12 px-3 py-1 text-[11px] font-black text-[#C9A84C]">
+                {selectedPaymentMethod.type === 'transfer' ? 'Transfer' : 'QRIS'}
+              </span>
+            )}
+          </div>
           {paymentMethods.length > 0 ? (
-            <div className="mt-3 grid gap-2">
+            <div className="mt-3 grid gap-3">
               {paymentMethods.map((method) => {
                 const active = String(selectedPaymentMethodId) === String(method.id);
                 return (
-                  <button
+                  <PaymentMethodCard
                     key={method.id}
-                    type="button"
+                    method={method}
+                    active={active}
+                    compact
                     onClick={() => setSelectedPaymentMethodId(String(method.id))}
-                    className={`rounded-2xl border p-3 text-left transition ${
-                      active
-                        ? 'border-sky-200 bg-sky-300/15 text-sky-50'
-                        : 'border-sky-100/15 bg-[#0D0A06]/45 text-sky-50/75'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="font-black">{method.name}</p>
-                        <p className="mt-1 text-xs text-sky-50/60">
-                          {method.provider_name || method.type?.toUpperCase()}
-                          {method.account_number ? ` - ${method.account_number}` : ''}
-                        </p>
-                      </div>
-                      <span className="shrink-0 rounded-full bg-[#0D0A06]/70 px-2.5 py-1 text-[11px] font-black text-sky-200">
-                        {Number(method.payment_timeout_minutes || 0)} menit
-                      </span>
-                    </div>
-                  </button>
+                  />
                 );
               })}
             </div>
           ) : (
-            <p className="mt-2 text-sm leading-6 text-sky-50/70">
+            <p className="mt-2 text-sm leading-6 text-[#EDE0C4]/70">
               Metode pembayaran online belum diatur admin. Pesanan tetap bisa dikirim dan pelanggan dapat konfirmasi ke kasir.
             </p>
           )}
@@ -1098,6 +1094,11 @@ export default function CustomerOrderPage() {
                 Silakan lakukan pembayaran terlebih dahulu lewat {paymentConfirmOrder.payment_method?.name || 'metode pembayaran yang dipilih'}.
                 Pesanan akan terlihat di kasir, tetapi baru bisa diterima setelah bukti pembayaran dikirim.
               </p>
+              {paymentConfirmOrder.payment_method && (
+                <div className="mt-4">
+                  <PaymentMethodCard method={paymentConfirmOrder.payment_method} compact />
+                </div>
+              )}
               <div className="mt-4 grid grid-cols-2 gap-3">
                 <div className="rounded-2xl bg-[#0D0A06]/55 p-3">
                   <p className="text-xs text-sky-100/60">Total bayar</p>

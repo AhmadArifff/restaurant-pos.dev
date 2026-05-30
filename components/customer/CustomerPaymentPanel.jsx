@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { submitCustomerPaymentProof } from '@/lib/api';
 import { resolveAssetUrl } from '@/lib/assetUrl';
+import PaymentMethodCard, { PaymentCopyButton } from '@/components/payment/PaymentMethodCard';
 
 const formatRp = (value) => `Rp ${Number(value || 0).toLocaleString('id-ID')}`;
 
@@ -110,73 +111,57 @@ export default function CustomerPaymentPanel({ order, onOrderUpdate, compact = f
   };
 
   return (
-    <div className={`mt-5 overflow-hidden rounded-3xl border border-sky-300/20 bg-sky-400/10 ${compact ? 'p-4' : 'p-5'} text-sky-50`}>
-      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-        <div className="min-w-0">
-          <p className="text-xs font-black uppercase tracking-[0.22em] text-sky-200">Pembayaran</p>
-          <h3 className="mt-1 text-xl font-black">{method.name || 'Metode Pembayaran'}</h3>
-          <p className="mt-1 break-words text-sm text-sky-100/70">
-            {method.provider_name || method.type?.toUpperCase() || 'Payment'}
-            {method.account_number ? ` - ${method.account_number}` : ''}
-          </p>
-          {method.account_name && <p className="mt-1 text-xs text-sky-100/60">a/n {method.account_name}</p>}
-        </div>
-        <div className="w-full rounded-2xl border border-sky-200/20 bg-[#0D0A06]/45 px-4 py-3 md:w-52">
-          <p className="text-xs text-sky-100/65">Batas pembayaran</p>
-          <strong className={`mt-1 block text-lg ${isExpired && !hasProof && !isPaid ? 'text-red-200' : 'text-sky-50'}`}>
+    <div className={`mt-5 overflow-hidden rounded-3xl border border-[#C9A84C]/20 bg-[#241C0E] ${compact ? 'p-4' : 'p-5'} text-[#F5EDD8]`}>
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_220px]">
+        <PaymentMethodCard method={method} compact />
+        <div className="rounded-2xl border border-[#C9A84C]/18 bg-[#0D0A06]/55 px-4 py-3">
+          <p className="text-xs text-[#EDE0C4]/65">Batas pembayaran</p>
+          <strong className={`mt-1 block text-2xl ${isExpired && !hasProof && !isPaid ? 'text-red-200' : 'text-[#F5EDD8]'}`}>
             {hasProof || isPaid ? 'Terkirim' : dueAt ? formatRemaining(remainingSeconds) : '-'}
           </strong>
-          {dueAt && <p className="mt-1 text-[11px] text-sky-100/55">Sampai {formatDateTime(order.payment_due_at)}</p>}
+          {dueAt && <p className="mt-1 text-[11px] text-[#EDE0C4]/55">Sampai {formatDateTime(order.payment_due_at)}</p>}
         </div>
       </div>
 
-      <div className="mt-4 grid min-w-0 gap-4 xl:grid-cols-[minmax(180px,240px)_1fr]">
-        {method.qr_image_url ? (
+      <div className={`mt-4 grid min-w-0 gap-4 ${method.type === 'qris' && method.qr_image_url ? 'xl:grid-cols-[minmax(180px,240px)_1fr]' : ''}`}>
+        {method.type === 'qris' && method.qr_image_url && (
           <div className="min-w-0">
             <img
               src={qrUrl}
               alt={method.name}
-              className="aspect-square w-full max-w-60 rounded-2xl border border-sky-100/20 bg-white object-contain p-2"
+              className="aspect-square w-full max-w-60 rounded-2xl border border-[#C9A84C]/20 bg-white object-contain p-2"
             />
             <a
               href={qrUrl}
               download
-              className="mt-2 inline-flex w-full max-w-60 justify-center rounded-xl border border-sky-100/25 px-3 py-2 text-xs font-black text-sky-50"
+              className="mt-2 inline-flex w-full max-w-60 justify-center rounded-xl border border-[#C9A84C]/25 px-3 py-2 text-xs font-black text-[#F5EDD8]"
             >
               Download QR
             </a>
           </div>
-        ) : (
-          <div className="grid aspect-square w-full max-w-60 place-items-center rounded-2xl border border-sky-100/20 bg-[#0D0A06]/45 text-center text-xs text-sky-100/55">
-            QR tidak tersedia
-          </div>
         )}
         <div className="min-w-0 space-y-3">
           {method.account_number && (
-            <div className="flex flex-col gap-2 rounded-2xl bg-[#0D0A06]/45 p-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-2 rounded-2xl bg-[#0D0A06]/55 p-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
-                <p className="text-xs text-sky-100/65">Nomor rekening / akun tujuan</p>
-                <strong className="break-all text-lg text-sky-50">{method.account_number}</strong>
+                <p className="text-xs text-[#EDE0C4]/65">Nomor rekening / akun tujuan</p>
+                <strong className="break-all text-lg text-[#F5EDD8]">{method.account_number}</strong>
               </div>
-              <button type="button" onClick={copyAccount} className="shrink-0 rounded-xl border border-sky-100/25 px-4 py-2 text-sm font-black text-sky-50">
-                {accountCopyMessage || 'Copy Rekening'}
-              </button>
+              <PaymentCopyButton onClick={copyAccount} copied={Boolean(accountCopyMessage)} copiedLabel={accountCopyMessage} label="Copy Rekening" />
             </div>
           )}
-          <div className="rounded-2xl bg-[#0D0A06]/45 p-3">
-            <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-200">Tata cara bayar</p>
-            <ol className="mt-2 list-decimal space-y-1 pl-4 text-sm leading-6 text-sky-50/85">
+          <div className="rounded-2xl bg-[#0D0A06]/55 p-3">
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-[#C9A84C]">Tata cara bayar</p>
+            <ol className="mt-2 list-decimal space-y-1 pl-4 text-sm leading-6 text-[#F5EDD8]/85">
               {instructionLines.map((line, index) => <li key={`${line}-${index}`}>{line}</li>)}
             </ol>
           </div>
-          <div className="flex flex-col gap-2 rounded-2xl bg-[#0D0A06]/45 p-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-2 rounded-2xl bg-[#0D0A06]/55 p-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-xs text-sky-100/65">Total yang harus dibayar</p>
+              <p className="text-xs text-[#EDE0C4]/65">Total yang harus dibayar</p>
               <strong className="text-2xl text-emerald-300">{formatRp(payableTotal)}</strong>
             </div>
-            <button type="button" onClick={copyAmount} className="rounded-xl border border-sky-100/25 px-4 py-2 text-sm font-black text-sky-50">
-              {copyMessage || 'Copy Nominal'}
-            </button>
+            <PaymentCopyButton onClick={copyAmount} copied={Boolean(copyMessage)} copiedLabel={copyMessage} label="Copy Nominal" />
           </div>
         </div>
       </div>

@@ -11,8 +11,8 @@ import {
   hardDeletePaymentMethod,
   updatePaymentMethod,
 } from '@/lib/api';
-import { resolveAssetUrl } from '@/lib/assetUrl';
 import { showConfirm } from '@/lib/modalDialog';
+import PaymentMethodCard from '@/components/payment/PaymentMethodCard';
 
 const emptyForm = {
   method_key: '',
@@ -33,7 +33,13 @@ const formatTimeout = (minutes) => `${Number(minutes || 0)} menit`;
 
 const toFormData = (form) => {
   const data = new FormData();
-  Object.entries(form).forEach(([key, value]) => {
+  const payload = {
+    ...form,
+    qr_image: form.type === 'qris' ? form.qr_image : null,
+    remove_qr: form.type === 'transfer' ? '1' : form.remove_qr,
+  };
+
+  Object.entries(payload).forEach(([key, value]) => {
     if (key === 'qr_image') {
       if (value) data.append('qr_image', value);
       return;
@@ -49,8 +55,20 @@ export default function PaymentManagementPage() {
   const [editing, setEditing] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [qrPreviewUrl, setQrPreviewUrl] = useState('');
 
   const activeCount = useMemo(() => methods.filter((item) => item.status === 'active').length, [methods]);
+  const previewMethod = useMemo(() => ({
+    ...form,
+    id: editing?.id || 'preview',
+    name: form.name || (form.type === 'transfer' ? 'Transfer Bank' : 'QRIS Sultan Kebab'),
+    provider_name: form.provider_name || (form.type === 'transfer' ? 'Bank' : 'QRIS'),
+    account_name: form.account_name || 'Sultan Kebab',
+    account_number: form.account_number || (form.type === 'transfer' ? '0000000000' : '0895353025503'),
+    qr_image_url: form.type === 'qris'
+      ? (qrPreviewUrl || (form.remove_qr === '1' ? '' : editing?.qr_image_url || ''))
+      : '',
+  }), [editing, form, qrPreviewUrl]);
 
   const load = async () => {
     setLoading(true);
@@ -66,9 +84,21 @@ export default function PaymentManagementPage() {
     load();
   }, []);
 
+  useEffect(() => {
+    if (!form.qr_image) {
+      setQrPreviewUrl('');
+      return undefined;
+    }
+
+    const url = URL.createObjectURL(form.qr_image);
+    setQrPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [form.qr_image]);
+
   const resetForm = () => {
     setEditing(null);
     setForm(emptyForm);
+    setQrPreviewUrl('');
   };
 
   const editMethod = (method) => {
@@ -87,6 +117,7 @@ export default function PaymentManagementPage() {
       qr_image: null,
       remove_qr: '0',
     });
+    setQrPreviewUrl('');
   };
 
   const save = async (event) => {
@@ -182,7 +213,7 @@ export default function PaymentManagementPage() {
                   transition={{ delay: index * 0.04 }}
                   className="rounded-3xl border border-slate-700 bg-slate-800 p-5"
                 >
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px_auto] lg:items-start">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="rounded-full bg-orange-500/15 px-3 py-1 text-xs font-black uppercase text-orange-300">
@@ -208,14 +239,8 @@ export default function PaymentManagementPage() {
                         </p>
                       )}
                     </div>
-                    <div className="flex shrink-0 flex-col gap-3 lg:w-36">
-                      {method.qr_image_url && (
-                        <img
-                          src={resolveAssetUrl(method.qr_image_url)}
-                          alt={method.name}
-                          className="aspect-square w-full rounded-2xl border border-slate-700 bg-white object-contain p-2"
-                        />
-                      )}
+                    <PaymentMethodCard method={method} compact preview />
+                    <div className="flex shrink-0 flex-col gap-3 lg:w-32">
                       <button onClick={() => editMethod(method)} className="rounded-xl bg-slate-700 px-3 py-2 text-sm font-black text-white">
                         Edit
                       </button>
@@ -236,11 +261,19 @@ export default function PaymentManagementPage() {
             <aside className="xl:sticky xl:top-6 xl:h-fit">
               <div className="rounded-3xl border border-slate-700 bg-slate-800 p-5">
                 <h2 className="text-xl font-black text-white">{editing ? 'Edit Payment' : 'Tambah Payment'}</h2>
+                <div className="mt-4">
+                  <PaymentMethodCard method={previewMethod} preview />
+                </div>
                 <form onSubmit={save} className="mt-4 space-y-3">
                   <div className="grid grid-cols-2 gap-3">
                     <select
                       value={form.type}
-                      onChange={(event) => setForm((prev) => ({ ...prev, type: event.target.value }))}
+                      onChange={(event) => setForm((prev) => ({
+                        ...prev,
+                        type: event.target.value,
+                        qr_image: event.target.value === 'transfer' ? null : prev.qr_image,
+                        remove_qr: event.target.value === 'transfer' ? '1' : '0',
+                      }))}
                       className="rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-white outline-none focus:border-orange-500"
                     >
                       <option value="qris">QRIS</option>
@@ -310,13 +343,23 @@ export default function PaymentManagementPage() {
                     placeholder="Tata cara pembayaran..."
                     className="min-h-28 w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-white outline-none focus:border-orange-500"
                   />
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(event) => setForm((prev) => ({ ...prev, qr_image: event.target.files?.[0] || null }))}
-                    className="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-300 outline-none focus:border-orange-500"
-                  />
-                  {editing?.qr_image_url && (
+                  {form.type === 'qris' ? (
+                    <div className="rounded-2xl border border-slate-700 bg-slate-900 p-3">
+                      <p className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Gambar QRIS</p>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(event) => setForm((prev) => ({ ...prev, qr_image: event.target.files?.[0] || null, remove_qr: '0' }))}
+                        className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-slate-300 outline-none focus:border-orange-500"
+                      />
+                      <p className="mt-2 text-xs leading-5 text-slate-500">Upload hanya untuk QRIS. Preview kartu di atas akan berubah otomatis.</p>
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-xs leading-5 text-emerald-100">
+                      Metode transfer tidak memakai upload gambar. Pelanggan akan melihat kartu rekening, tombol copy nomor rekening, dan instruksi transfer.
+                    </div>
+                  )}
+                  {form.type === 'qris' && editing?.qr_image_url && (
                     <label className="flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-300">
                       <input
                         type="checkbox"
