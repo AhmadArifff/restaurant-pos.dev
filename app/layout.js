@@ -6,6 +6,8 @@ import SettingsProvider from "@/components/providers/SettingsProvider";
 import GlobalFeedbackDialog from "@/components/ui/GlobalFeedbackDialog";
 import { buildRestaurantJsonLd, buildSeoProfile, getPublicSeoSettings } from "@/lib/seo";
 
+const GOOGLE_SITE_VERIFICATION = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || '46pbNawMjbZqE0MNfAcjr2feOQElFtjjka__TWgIe2w';
+
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 const playfairDisplay = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair" });
@@ -74,9 +76,9 @@ export async function generateMetadata() {
         'max-video-preview': -1,
       },
     },
-    verification: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
-      ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }
-      : undefined,
+    verification: {
+      google: GOOGLE_SITE_VERIFICATION,
+    },
   };
 }
 
