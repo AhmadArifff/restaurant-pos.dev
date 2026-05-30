@@ -41,6 +41,7 @@ export default function CustomerPaymentPanel({ order, onOrderUpdate, compact = f
   const isExpired = dueAt ? remainingSeconds <= 0 : false;
   const hasProof = Boolean(order?.payment_proof_url || order?.payment_submitted_at);
   const isPaid = order?.payment_status === 'paid';
+  const isCancelled = order?.status === 'cancelled';
 
   const instructionLines = useMemo(() => {
     const raw = String(method?.instructions || '').trim();
@@ -55,10 +56,10 @@ export default function CustomerPaymentPanel({ order, onOrderUpdate, compact = f
   }, [method?.instructions]);
 
   useEffect(() => {
-    if (!dueAt || hasProof || isPaid) return undefined;
+    if (!dueAt || hasProof || isPaid || isCancelled) return undefined;
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
-  }, [dueAt, hasProof, isPaid]);
+  }, [dueAt, hasProof, isPaid, isCancelled]);
 
   if (!method) return null;
 
@@ -117,7 +118,7 @@ export default function CustomerPaymentPanel({ order, onOrderUpdate, compact = f
         <div className="rounded-2xl border border-[#C9A84C]/18 bg-[#0D0A06]/55 px-4 py-3">
           <p className="text-xs text-[#EDE0C4]/65">Batas pembayaran</p>
           <strong className={`mt-1 block text-2xl ${isExpired && !hasProof && !isPaid ? 'text-red-200' : 'text-[#F5EDD8]'}`}>
-            {hasProof || isPaid ? 'Terkirim' : dueAt ? formatRemaining(remainingSeconds) : '-'}
+            {isCancelled ? 'Dibatalkan' : hasProof || isPaid ? 'Terkirim' : dueAt ? formatRemaining(remainingSeconds) : '-'}
           </strong>
           {dueAt && <p className="mt-1 text-[11px] text-[#EDE0C4]/55">Sampai {formatDateTime(order.payment_due_at)}</p>}
         </div>
@@ -166,7 +167,12 @@ export default function CustomerPaymentPanel({ order, onOrderUpdate, compact = f
         </div>
       </div>
 
-      {isPaid ? (
+      {isCancelled ? (
+        <div className="mt-4 rounded-2xl border border-red-300/25 bg-red-500/15 p-3 text-sm text-red-100">
+          Pesanan otomatis dibatalkan karena batas waktu pembayaran sudah habis.
+          {order.cancel_reason && <p className="mt-1 text-red-100/75">{order.cancel_reason}</p>}
+        </div>
+      ) : isPaid ? (
         <div className="mt-4 rounded-2xl border border-emerald-300/25 bg-emerald-500/15 p-3 text-sm text-emerald-100">
           Pembayaran sudah dikonfirmasi kasir.
         </div>

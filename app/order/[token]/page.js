@@ -313,6 +313,9 @@ export default function CustomerOrderPage() {
     }),
   }));
   const selectedPaymentMethod = paymentMethods.find((method) => String(method.id) === String(selectedPaymentMethodId));
+  const visibleStatusSteps = order?.status === 'cancelled'
+    ? [{ key: 'cancelled', label: 'Dibatalkan', desc: order.cancel_reason || 'Pesanan dibatalkan.' }]
+    : statusSteps;
   const tableBusy = !order && Number(table?.active_orders || 0) > 0;
   const branchLabel = table?.branch_name || 'Cabang Sultan Kebab';
   const branchArea = table?.branch_area || table?.branch_address || '';
@@ -901,8 +904,8 @@ export default function CustomerOrderPage() {
                 </div>
 
                 <div className="mt-5 space-y-3">
-                  {statusSteps.map((step, index) => {
-                    const currentIndex = statusSteps.findIndex((item) => item.key === order.status);
+                  {visibleStatusSteps.map((step, index) => {
+                    const currentIndex = visibleStatusSteps.findIndex((item) => item.key === order.status);
                     const active = index <= currentIndex;
                     return (
                       <div key={step.key} className="flex gap-3">
@@ -915,6 +918,13 @@ export default function CustomerOrderPage() {
                     );
                   })}
                 </div>
+
+                {order.status === 'cancelled' && (
+                  <div className="mt-5 rounded-3xl border border-red-400/25 bg-red-500/12 p-4 text-sm leading-6 text-red-100">
+                    Pesanan ini sudah dibatalkan.
+                    {order.cancel_reason && <p className="mt-1 text-red-100/75">{order.cancel_reason}</p>}
+                  </div>
+                )}
 
                 <div className="mt-5 rounded-3xl bg-[#241C0E] p-4">
                   {order.items?.map((item) => (
