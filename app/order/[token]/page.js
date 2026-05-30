@@ -316,6 +316,7 @@ export default function CustomerOrderPage() {
   const visibleStatusSteps = order?.status === 'cancelled'
     ? [{ key: 'cancelled', label: 'Dibatalkan', desc: order.cancel_reason || 'Pesanan dibatalkan.' }]
     : statusSteps;
+  const canOrderAgain = order?.status === 'cancelled' || (order?.status === 'completed' && order?.reviewed_at);
   const tableBusy = !order && Number(table?.active_orders || 0) > 0;
   const branchLabel = table?.branch_name || 'Cabang Sultan Kebab';
   const branchArea = table?.branch_area || table?.branch_address || '';
@@ -480,6 +481,33 @@ export default function CustomerOrderPage() {
     setCart((prev) => prev
       .map((item) => item.id === productId ? { ...item, qty: Math.max(0, item.qty + delta) } : item)
       .filter((item) => item.qty > 0));
+  };
+
+  const startNewOrder = async () => {
+    if (storageKey) localStorage.removeItem(storageKey);
+    setOrder(null);
+    setCart([]);
+    setVoucherCode('');
+    setNote('');
+    setDiscountAlert(null);
+    setDiscountPreview(null);
+    setBundlePrompt(null);
+    setPaymentConfirmOrder(null);
+    setReview({ service_rating: 5, service_comment: '', items: {} });
+    setShowMobileCart(false);
+
+    try {
+      if (token) {
+        const tableRes = await getDiningTableByToken(token);
+        setTable(tableRes.data);
+        const menuRes = await getCustomerMenu({ branch_id: tableRes.data?.branch_id });
+        setProducts(menuRes.data || []);
+      }
+    } catch (_) {}
+
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
   };
 
   const submitOrderWithCart = async (orderCart) => {
@@ -1041,6 +1069,16 @@ export default function CustomerOrderPage() {
                   <div className="mt-5 rounded-3xl border border-emerald-400/25 bg-emerald-500/12 p-4 text-sm text-emerald-100">
                     Diskon review berhasil diterapkan. Potongan: {formatRp(discountAlert.discount_amount)}.
                   </div>
+                )}
+
+                {canOrderAgain && (
+                  <button
+                    type="button"
+                    onClick={startNewOrder}
+                    className="mt-5 w-full rounded-2xl bg-[#C9A84C] px-4 py-3 text-sm font-black uppercase tracking-[0.12em] text-[#0D0A06] shadow-lg shadow-black/25 transition hover:brightness-110"
+                  >
+                    Pesan Menu Lagi
+                  </button>
                 )}
               </motion.div>
             ) : renderCartPanel(false)}
