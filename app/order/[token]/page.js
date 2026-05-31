@@ -183,6 +183,7 @@ export default function CustomerOrderPage() {
   const token = params?.token;
   const storageKey = token ? `customer-order-${token}` : '';
   const draftStorageKey = token ? `customer-order-draft-${token}` : '';
+  const phoneStorageKey = token ? `customer-order-phone-${token}` : '';
   const paymentSectionRef = useRef(null);
 
   const [table, setTable] = useState(null);
@@ -220,6 +221,7 @@ export default function CustomerOrderPage() {
 
     const load = async () => {
       const savedOrderCode = storageKey ? localStorage.getItem(storageKey) : null;
+      const savedOrderPhone = phoneStorageKey ? localStorage.getItem(phoneStorageKey) : '';
       const savedDraft = (() => {
         if (!draftStorageKey) return null;
         try {
@@ -246,6 +248,8 @@ export default function CustomerOrderPage() {
       setSelectedPaymentMethodId((prev) => prev || String(savedDraft?.selectedPaymentMethodId || activePayments[0]?.id || ''));
       if (orderRes?.data) {
         setOrder(orderRes.data);
+        const rememberedPhone = orderRes.data.customer_phone || savedOrderPhone;
+        if (rememberedPhone) setCustomerPhone(formatIndonesianPhone(rememberedPhone));
       } else if (savedDraft) {
         const menuIds = new Set((menuRes.data || []).map((product) => Number(product.id)));
         setCart(Array.isArray(savedDraft.cart) ? savedDraft.cart.filter((item) => menuIds.has(Number(item.id))) : []);
@@ -263,7 +267,7 @@ export default function CustomerOrderPage() {
     return () => {
       mounted = false;
     };
-  }, [token, storageKey, draftStorageKey]);
+  }, [token, storageKey, draftStorageKey, phoneStorageKey]);
 
   useEffect(() => {
     if (!draftLoaded || !draftStorageKey || order) return;
@@ -548,6 +552,7 @@ export default function CustomerOrderPage() {
   const startNewOrder = async () => {
     if (storageKey) localStorage.removeItem(storageKey);
     if (draftStorageKey) localStorage.removeItem(draftStorageKey);
+    if (phoneStorageKey) localStorage.removeItem(phoneStorageKey);
     setOrder(null);
     setCart([]);
     setVoucherCode('');
@@ -608,6 +613,7 @@ export default function CustomerOrderPage() {
       setShowMobileCart(false);
       if (nextOrder?.payment_method) setPaymentConfirmOrder(nextOrder);
       if (storageKey) localStorage.setItem(storageKey, nextOrder.order_code);
+      if (phoneStorageKey && customerPhoneForApi) localStorage.setItem(phoneStorageKey, customerPhoneForApi);
       if (draftStorageKey) localStorage.removeItem(draftStorageKey);
     } catch (err) {
       setOrderMessageModal({
@@ -650,15 +656,8 @@ export default function CustomerOrderPage() {
   };
 
   const submitReview = async () => {
-    const reviewPhone = order?.customer_phone || customerPhoneForApi;
-    if (reviewRewardProgram && !String(reviewPhone || '').trim()) {
-      setOrderMessageModal({
-        title: 'Nomor HP wajib diisi',
-        message: 'Nomor HP wajib diisi untuk klaim voucher review.',
-        tone: 'warning',
-      });
-      return;
-    }
+    const savedOrderPhone = phoneStorageKey ? localStorage.getItem(phoneStorageKey) : '';
+    const reviewPhone = order?.customer_phone || savedOrderPhone || customerPhoneForApi;
 
     const itemReviews = (order?.items || []).map((item) => ({
       order_item_id: item.id,
