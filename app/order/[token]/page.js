@@ -220,6 +220,12 @@ export default function CustomerOrderPage() {
   const [orderMessageModal, setOrderMessageModal] = useState(null);
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [tableSession, setTableSession] = useState(null);
+  const [leaveCartConfirmOpen, setLeaveCartConfirmOpen] = useState(false);
+  const cartRef = useRef([]);
+  const orderRef = useRef(null);
+
+  useEffect(() => { cartRef.current = cart; }, [cart]);
+  useEffect(() => { orderRef.current = order; }, [order]);
 
   useEffect(() => {
     if (!token) return;
@@ -236,6 +242,7 @@ export default function CustomerOrderPage() {
           return null;
         }
       })();
+      const savedDraftHasCart = Array.isArray(savedDraft?.cart) && savedDraft.cart.length > 0;
       const existingSessionToken = tableSessionStorageKey ? localStorage.getItem(tableSessionStorageKey) || '' : '';
       const tableRes = await getDiningTableByToken(token, { session_token: existingSessionToken });
       const [menuRes, rewardRes, bundleRes, paymentRes, orderRes] = await Promise.all([
@@ -265,7 +272,12 @@ export default function CustomerOrderPage() {
         setVoucherCode(savedDraft.voucherCode || '');
         setNote(savedDraft.note || '');
       }
-      if (!orderRes?.data && tableSessionStorageKey) {
+      if (!orderRes?.data && !savedDraftHasCart && existingSessionToken) {
+        await releaseTableSession(existingSessionToken).catch(() => {});
+        localStorage.removeItem(tableSessionStorageKey);
+        setTableSession(null);
+      }
+      if (!orderRes?.data && tableSessionStorageKey && savedDraftHasCart) {
         const sessionRes = await createTableSession(token, { session_token: existingSessionToken }).catch((err) => {
           localStorage.removeItem(tableSessionStorageKey);
           throw err;
@@ -289,11 +301,7 @@ export default function CustomerOrderPage() {
 
   useEffect(() => {
     if (!draftLoaded || !draftStorageKey || order) return;
-    const hasDraft = cart.length
-      || String(customerName || '').trim()
-      || String(voucherCode || '').trim()
-      || String(note || '').trim()
-      || String(customerPhone || '').replace(/\D/g, '') !== '62';
+    const hasDraft = cart.length > 0;
 
     if (!hasDraft) {
       localStorage.removeItem(draftStorageKey);
@@ -358,6 +366,25 @@ export default function CustomerOrderPage() {
     }, timeout);
     return () => window.clearTimeout(timer);
   }, [tableSession?.expires_at, tableSessionStorageKey, order, router]);
+
+  useEffect(() => {
+    if (!token || order) return undefined;
+    window.history.pushState({ customerOrderGuard: true }, '', window.location.href);
+    const onPopState = () => {
+      if (orderRef.current) {
+        router.push('/order');
+        return;
+      }
+      if (cartRef.current.length > 0) {
+        window.history.pushState({ customerOrderGuard: true }, '', window.location.href);
+        setLeaveCartConfirmOpen(true);
+        return;
+      }
+      leaveToTableList();
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [token, order]);
 
   const categories = useMemo(() => {
     const map = new Map();
@@ -493,9 +520,8 @@ export default function CustomerOrderPage() {
     .sort((a, b) => Number(b.discountAmountValue) - Number(a.discountAmountValue)), [bundleHints, cart]);
 
   const touchTableSession = async () => {
-    if (!token || order || !tableSessionStorageKey) return;
+    if (!token || order || !tableSessionStorageKey) return null;
     const sessionToken = localStorage.getItem(tableSessionStorageKey) || tableSession?.session_token || '';
-    if (!sessionToken) return;
     try {
       const res = await createTableSession(token, { session_token: sessionToken });
       const session = res.data?.data;
@@ -503,8 +529,42 @@ export default function CustomerOrderPage() {
         localStorage.setItem(tableSessionStorageKey, session.session_token);
         setTableSession(session);
       }
-    } catch (_) {}
+      return session;
+    } catch (_) {
+      return null;
+    }
   };
+
+  const releaseCurrentTableSession = async () => {
+    const sessionToken = tableSessionStorageKey ? localStorage.getItem(tableSessionStorageKey) || '' : '';
+    if (sessionToken) await releaseTableSession(sessionToken).catch(() => {});
+    if (tableSessionStorageKey) localStorage.removeItem(tableSessionStorageKey);
+    setTableSession(null);
+  };
+
+  const leaveToTableList = async ({ clearCart = false } = {}) => {
+    if (clearCart) {
+      setCart([]);
+      if (draftStorageKey) localStorage.removeItem(draftStorageKey);
+    }
+    if (!orderRef.current) await releaseCurrentTableSession();
+    router.push('/order');
+  };
+
+  const requestLeaveToTableList = () => {
+    if (!order && cart.length > 0) {
+      setLeaveCartConfirmOpen(true);
+      return;
+    }
+    leaveToTableList();
+  };
+
+  useEffect(() => {
+    if (!draftLoaded || order || cart.length > 0 || !tableSessionStorageKey) return;
+    const sessionToken = localStorage.getItem(tableSessionStorageKey) || '';
+    if (!sessionToken) return;
+    releaseCurrentTableSession();
+  }, [cart.length, draftLoaded, order, tableSessionStorageKey]);
 
   useEffect(() => {
     let cancelled = false;
@@ -951,14 +1011,7 @@ export default function CustomerOrderPage() {
           </div>
           <button
             type="button"
-            onClick={async () => {
-              const sessionToken = tableSessionStorageKey ? localStorage.getItem(tableSessionStorageKey) : '';
-              if (!order && sessionToken) {
-                await releaseTableSession(sessionToken).catch(() => {});
-                localStorage.removeItem(tableSessionStorageKey);
-              }
-              router.push('/order');
-            }}
+            onClick={requestLeaveToTableList}
             className="shrink-0 rounded-full border border-[#C9A84C]/35 px-3 py-2 text-sm font-bold text-[#C9A84C]"
           >
             Ganti Meja
@@ -1256,6 +1309,54 @@ export default function CustomerOrderPage() {
               transition={{ type: 'spring', stiffness: 420, damping: 38 }}
             >
               {renderCartPanel(true)}
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {leaveCartConfirmOpen && (
+          <>
+            <motion.button
+              type="button"
+              aria-label="Tutup konfirmasi pindah meja"
+              className="fixed inset-0 z-[90] bg-black/70 backdrop-blur-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setLeaveCartConfirmOpen(false)}
+            />
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              className="fixed inset-x-4 top-1/2 z-[100] mx-auto max-w-sm -translate-y-1/2 rounded-3xl border border-[#C9A84C]/25 bg-[#1A1409] p-5 text-[#F5EDD8] shadow-2xl shadow-black/50"
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 18 }}
+            >
+              <p className="text-xs font-black uppercase tracking-[0.22em] text-[#C9A84C]">Pindah meja?</p>
+              <h3 className="mt-2 text-xl font-black">Keranjang akan dikosongkan</h3>
+              <p className="mt-2 text-sm leading-6 text-[#EDE0C4]/75">
+                Menu yang sudah Anda pilih belum dikirim. Jika kembali ke pilihan meja, draft keranjang ini akan dihapus dan slot meja dilepas.
+              </p>
+              <div className="mt-5 grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setLeaveCartConfirmOpen(false)}
+                  className="rounded-2xl border border-[#C9A84C]/25 px-4 py-3 text-sm font-black text-[#C9A84C]"
+                >
+                  Tetap di sini
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLeaveCartConfirmOpen(false);
+                    leaveToTableList({ clearCart: true });
+                  }}
+                  className="rounded-2xl bg-[#C9A84C] px-4 py-3 text-sm font-black text-[#0D0A06]"
+                >
+                  Hapus & Pindah
+                </button>
+              </div>
             </motion.div>
           </>
         )}

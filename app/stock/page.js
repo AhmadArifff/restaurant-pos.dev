@@ -112,13 +112,20 @@ function getRecipeSelectionDetails(products = [], selections = []) {
     .map((selection) => {
       const product = products.find((item) => String(item.id) === String(selection.product_id));
       if (!product) return null;
+      const rawQty = selection.qty === '' || selection.qty === null || selection.qty === undefined
+        ? 0
+        : Number(selection.qty);
       return {
         product,
-        qty: Math.max(1, Number(selection.qty || 1)),
+        qty: Number.isFinite(rawQty) && rawQty > 0 ? rawQty : 0,
       };
     })
     .filter(Boolean)
     .filter((selection) => selection.qty > 0);
+}
+
+function hasRecipeProductSelection(selections = []) {
+  return (Array.isArray(selections) ? selections : []).some((selection) => String(selection.product_id || '').trim());
 }
 
 function getRecipeSelectionLabel(products = [], selections = []) {
@@ -172,6 +179,12 @@ function buildRecipeRowsForSelections(products = [], selections = [], stockRows 
   });
 
   return [...byStockItem.values()];
+}
+
+function hasRowsOverStock(rows = []) {
+  return (Array.isArray(rows) ? rows : []).some((row) => (
+    Number(row.qty || 0) > Number(row.current_stock || 0)
+  ));
 }
 
 function buildRecipeOutItemsForSelections(products = [], selections = []) {
@@ -311,7 +324,7 @@ function ReadOnlyRecipeSummary({ rows = [], title = 'Ringkasan bahan resep' }) {
   if (!rows.length) {
     return (
       <div className="rounded-xl border border-yellow-500/25 bg-yellow-500/10 p-4 text-xs text-yellow-200">
-        Resep menu belum memiliki bahan baku.
+        Menu belum bisa dihitung. Pastikan qty menu lebih dari 0 dan stok bahan resep masih tersedia.
       </div>
     );
   }
@@ -470,12 +483,14 @@ function AdminStockPage({ successModal, setSuccessModal }) {
   // Tambah state di AdminStockPage (setelah state daily)
   const [outTypeFilter, setOutTypeFilter] = useState('all');
 
+  const hasOutMenuSelection = hasRecipeProductSelection(outMenuSelections);
   const hasOutRecipeSelection = getRecipeSelectionDetails(productOptions, outMenuSelections).length > 0;
   const outRecipeRows = hasOutRecipeSelection ? buildRecipeRowsForSelections(productOptions, outMenuSelections, summary) : [];
+  const outRecipeOverStock = hasRowsOverStock(outRecipeRows);
   const outRecipeSelectionLabel = getRecipeSelectionLabel(productOptions, outMenuSelections);
   const syncOutRecipeSelections = (nextSelections) => {
     setOutMenuSelections(nextSelections);
-    if (!getRecipeSelectionDetails(productOptions, nextSelections).length) {
+    if (!hasRecipeProductSelection(nextSelections)) {
       setOutItems([{ stock_item_id:'', qty:'', note:'' }]);
       return;
     }
@@ -1754,7 +1769,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                 onSelectionsChange={syncOutRecipeSelections}
               />
 
-              {hasOutRecipeSelection ? (
+              {hasOutMenuSelection ? (
                 <ReadOnlyRecipeSummary rows={outRecipeRows} title={`Ringkasan bahan untuk ${outRecipeSelectionLabel || 'menu terpilih'}`} />
               ) : (
               <div className="space-y-3">
@@ -1889,7 +1904,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
               )}
 
               {/* Tambah bahan */}
-              {!hasOutRecipeSelection && (
+              {!hasOutMenuSelection && (
               <button
                 onClick={() => setOutItems(p => [...p, { stock_item_id:'', qty:'', note:'' }])}
                 className="w-full py-2.5 rounded-xl border border-dashed border-slate-600
@@ -1963,7 +1978,10 @@ function AdminStockPage({ successModal, setSuccessModal }) {
               <button
                 onClick={async () => {
                   if (!outUserId) return alert('Pilih kasir terlebih dahulu');
-                  const valid = outItems.every(i => i.stock_item_id && Number(i.qty) > 0);
+                  if (hasOutMenuSelection && (!hasOutRecipeSelection || outRecipeOverStock)) {
+                    return alert('Qty menu melebihi stok bahan yang tersedia');
+                  }
+                  const valid = outItems.length > 0 && outItems.every(i => i.stock_item_id && Number(i.qty) > 0);
                   if (!valid) return alert('Lengkapi semua item (pilih bahan dan isi jumlah)');
                   const overStock = outItems.some(item => {
                     const si = summary.find(s => s.id == item.stock_item_id);
@@ -2006,6 +2024,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                 disabled={
                   outLoading ||
                   !outUserId ||
+                  (hasOutMenuSelection && (!hasOutRecipeSelection || outRecipeOverStock)) ||
                   outItems.some(item => {
                     const si = summary.find(s => s.id == item.stock_item_id);
                     return si && Number(item.qty) > Number(si.current_stock);
@@ -2189,12 +2208,14 @@ function KasirStockPage({ successModal, setSuccessModal }) {
   const [productOptions, setProductOptions] = useState([]);
   const [outMenuSelections, setOutMenuSelections] = useState([createEmptyRecipeSelection()]);
 
+  const hasOutMenuSelection = hasRecipeProductSelection(outMenuSelections);
   const hasOutRecipeSelection = getRecipeSelectionDetails(productOptions, outMenuSelections).length > 0;
   const outRecipeRows = hasOutRecipeSelection ? buildRecipeRowsForSelections(productOptions, outMenuSelections, summary) : [];
+  const outRecipeOverStock = hasRowsOverStock(outRecipeRows);
   const outRecipeSelectionLabel = getRecipeSelectionLabel(productOptions, outMenuSelections);
   const syncOutRecipeSelections = (nextSelections) => {
     setOutMenuSelections(nextSelections);
-    if (!getRecipeSelectionDetails(productOptions, nextSelections).length) {
+    if (!hasRecipeProductSelection(nextSelections)) {
       setOutItems([{ stock_item_id:'', qty:'', note:'' }]);
       return;
     }
@@ -2764,7 +2785,7 @@ function KasirStockPage({ successModal, setSuccessModal }) {
                 onSelectionsChange={syncOutRecipeSelections}
               />
 
-              {hasOutRecipeSelection ? (
+              {hasOutMenuSelection ? (
                 <ReadOnlyRecipeSummary rows={outRecipeRows} title={`Ringkasan bahan untuk ${outRecipeSelectionLabel || 'menu terpilih'}`} />
               ) : (
               <div className="space-y-3">
@@ -2868,7 +2889,7 @@ function KasirStockPage({ successModal, setSuccessModal }) {
               </div>
               )}
 
-              {!hasOutRecipeSelection && (
+              {!hasOutMenuSelection && (
               <button onClick={() => setOutItems(p => [...p, { stock_item_id:'', qty:'', note:'' }])}
                 className="w-full py-2.5 rounded-xl border border-dashed border-slate-600
                   text-slate-500 hover:text-slate-300 hover:border-slate-500 text-sm transition-all">
@@ -2880,7 +2901,7 @@ function KasirStockPage({ successModal, setSuccessModal }) {
                 {outItems.filter(it => it.stock_item_id && Number(it.qty) > 0).map((it, i) => {
                   const s    = summary.find(st => st.id == it.stock_item_id);
                   const h    = Number(s?.price_per_unit || 0);
-                  const over = false;
+                  const over = s && Number(it.qty) > Number(s.current_stock);
                   if (!s) return null;
                   return (
                     <div key={i} className="flex justify-between text-xs">
@@ -2902,7 +2923,8 @@ function KasirStockPage({ successModal, setSuccessModal }) {
                     Rp {outItems.reduce((s, it) => {
                       const si   = summary.find(st => st.id == it.stock_item_id);
                       const h    = Number(si?.price_per_unit || 0);
-                      if (!si) return s;
+                      const over = si && Number(it.qty) > Number(si.current_stock);
+                      if (!si || over) return s;
                       return s + (Number(it.qty) * h);
                     }, 0).toLocaleString('id-ID')}
                   </p>
@@ -2921,8 +2943,16 @@ function KasirStockPage({ successModal, setSuccessModal }) {
               </button>
               <button
                 onClick={async () => {
-                  const valid = outItems.every(i => i.stock_item_id && Number(i.qty) > 0);
+                  if (hasOutMenuSelection && (!hasOutRecipeSelection || outRecipeOverStock)) {
+                    return alert('Qty menu melebihi stok bahan yang tersedia');
+                  }
+                  const valid = outItems.length > 0 && outItems.every(i => i.stock_item_id && Number(i.qty) > 0);
                   if (!valid) return alert('Lengkapi semua item');
+                  const overStock = outItems.some(item => {
+                    const si = summary.find(s => s.id == item.stock_item_id);
+                    return si && Number(item.qty) > Number(si.current_stock);
+                  });
+                  if (overStock) return alert('Ada item yang melebihi stok gudang');
                   setOutLoading(true);
                   try {
                     await submitStockRequest({
@@ -2952,7 +2982,14 @@ function KasirStockPage({ successModal, setSuccessModal }) {
                     });
                   } finally { setOutLoading(false); }
                 }}
-                disabled={outLoading}
+                disabled={
+                  outLoading ||
+                  (hasOutMenuSelection && (!hasOutRecipeSelection || outRecipeOverStock)) ||
+                  outItems.some(item => {
+                    const si = summary.find(s => s.id == item.stock_item_id);
+                    return si && Number(item.qty) > Number(si.current_stock);
+                  })
+                }
                 className="flex-1 py-3 rounded-xl bg-red-500 hover:bg-red-400 text-white
                   text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                 {outLoading ? 'Menyimpan...' : '📤 Kirim Pengajuan'}
