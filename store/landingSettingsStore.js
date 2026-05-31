@@ -225,6 +225,7 @@ export const useLandingSettingsStore = create((set, get) => ({
   saveError: null,
   loadError: null,
   lastSavedAt: null,
+  hasLoaded: false,
 
   loadSettings: async () => {
     set({ isLoading: true, loadError: null });
@@ -238,6 +239,7 @@ export const useLandingSettingsStore = create((set, get) => ({
         isLoading: false,
         isDirty: false,
         loadError: null,
+        hasLoaded: true,
       });
 
       return normalized;
@@ -246,6 +248,7 @@ export const useLandingSettingsStore = create((set, get) => ({
         settings: clone(defaultLandingSettings),
         isLoading: false,
         loadError: error?.response?.data?.error || 'Gagal memuat landing page settings',
+        hasLoaded: false,
       });
       throw error;
     }

@@ -53,6 +53,7 @@ const validators = {
 export default function SettingsPage() {
   const { settings, loadSettings, updateSettings } = useWebsiteSettings();
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
@@ -198,13 +199,15 @@ export default function SettingsPage() {
       });
 
       await bulkUpdateWebsiteSettings(payload);
-      await loadSettings();
+      setRefreshing(true);
+      await loadSettings({ force: true });
       setSuccess('Pengaturan berhasil disimpan. Tema warna diterapkan ke landing page, login, dan admin panel.');
       setTimeout(() => setSuccess(null), 5000);
     } catch (err) {
       setError(buildErrorMessage(err, 'Gagal menyimpan pengaturan'));
       setTimeout(() => setError(null), 5000);
     } finally {
+      setRefreshing(false);
       setSaving(false);
     }
   };
@@ -224,11 +227,18 @@ export default function SettingsPage() {
   return (
     <AdminLayout>
       <div className="max-w-4xl mx-auto pb-8">
-        <div className="mb-8">
-          <h1 className="text-white text-2xl font-bold">Pengaturan Website</h1>
-          <p className="text-slate-400 text-sm mt-2">
-            Tema default mengikuti tampilan aplikasi saat ini. Jika ada data warna di database, sistem otomatis menggunakan data tersebut.
-          </p>
+        <div className="mb-8 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h1 className="text-white text-2xl font-bold">Pengaturan Website</h1>
+            <p className="text-slate-400 text-sm mt-2">
+              Tema default mengikuti tampilan aplikasi saat ini. Jika ada data warna di database, sistem otomatis menggunakan data tersebut.
+            </p>
+          </div>
+          {refreshing && (
+            <span className="rounded-full border border-sky-500/25 bg-sky-500/10 px-3 py-1.5 text-xs font-bold text-sky-200">
+              Sinkronisasi pengaturan...
+            </span>
+          )}
         </div>
 
         {error && (

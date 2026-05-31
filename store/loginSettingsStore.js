@@ -107,6 +107,7 @@ export const useLoginPageSettingsStore = create((set, get) => ({
   saveError: null,
   loadError: null,
   lastSavedAt: null,
+  hasLoaded: false,
 
   loadSettings: async () => {
     set({ isLoading: true, loadError: null });
@@ -120,6 +121,7 @@ export const useLoginPageSettingsStore = create((set, get) => ({
         isLoading: false,
         isDirty: false,
         loadError: null,
+        hasLoaded: true,
       });
 
       return normalized;
@@ -128,6 +130,7 @@ export const useLoginPageSettingsStore = create((set, get) => ({
         settings: clone(defaultLoginPageSettings),
         isLoading: false,
         loadError: error?.response?.data?.error || 'Gagal memuat login page settings',
+        hasLoaded: false,
       });
       throw error;
     }

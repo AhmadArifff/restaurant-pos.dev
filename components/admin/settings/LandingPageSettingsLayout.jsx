@@ -46,6 +46,7 @@ export default function LandingPageSettingsLayout() {
     saveError,
     loadError,
     lastSavedAt,
+    hasLoaded,
     saveSettings,
     loadSettings,
     resetSettings,
@@ -65,7 +66,7 @@ export default function LandingPageSettingsLayout() {
     await saveSettings();
   };
 
-  const showInitialSkeleton = isLoading && !lastSavedAt;
+  const showInitialSkeleton = isLoading && !hasLoaded;
 
   return (
     <div className="h-full bg-slate-950 p-6 overflow-y-auto">
@@ -111,7 +112,11 @@ export default function LandingPageSettingsLayout() {
           >
             Full Screen Preview
           </button>
-          {isLoading && <div className="flex items-center text-slate-400 text-sm">Loading from database...</div>}
+          {isLoading && hasLoaded && (
+            <div className="flex items-center rounded-full border border-sky-500/25 bg-sky-500/10 px-3 py-1 text-sm font-semibold text-sky-200">
+              Sinkronisasi landing page...
+            </div>
+          )}
           {!isLoading && isDirty && <div className="flex items-center text-yellow-400 text-sm">Unsaved changes</div>}
           {!isDirty && lastSavedAt && (
             <div className="flex items-center text-emerald-400 text-sm">

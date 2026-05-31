@@ -29,75 +29,46 @@ export const DEFAULT_SETTINGS = {
 
 export const useWebsiteSettings = create((set, get) => ({
   settings: DEFAULT_SETTINGS,
-  
   loading: false,
   error: null,
+  loadedAt: null,
 
-  // Load settings from API
-  loadSettings: async () => {
+  loadSettings: async ({ force = false } = {}) => {
+    const current = get();
+    if (!force && current.loadedAt) return current.settings;
+    if (!force && current.loading) return current.settings;
+
     set({ loading: true, error: null });
     try {
-      console.log('📥 loadSettings: Fetching website settings from API...');
-      
       const response = await getWebsiteSettings();
-      console.log('📦 loadSettings: Raw API response:', response);
-      
       const data = response?.data ?? response ?? {};
-      console.log('📋 loadSettings: Extracted data:', data);
-
-      // Migration: Convert old color keys to new keys
       const migratedData = { ...data };
-      console.log('🔄 loadSettings: Checking for old color keys to migrate...');
-      
-      if (data.primary_color && !data.gold) {
-        console.log('🔄 loadSettings: Migrating primary_color → gold:', data.primary_color);
-        migratedData.gold = data.primary_color;
-      }
-      if (data.secondary_color && !data.dark) {
-        console.log('🔄 loadSettings: Migrating secondary_color → dark:', data.secondary_color);
-        migratedData.dark = data.secondary_color;
-      }
-      if (data.accent_color && !data.red) {
-        console.log('🔄 loadSettings: Migrating accent_color → red:', data.accent_color);
-        migratedData.red = data.accent_color;
-      }
-      
+
+      if (data.primary_color && !data.gold) migratedData.gold = data.primary_color;
+      if (data.secondary_color && !data.dark) migratedData.dark = data.secondary_color;
+      if (data.accent_color && !data.red) migratedData.red = data.accent_color;
+
       const normalizedSettings = {
         ...DEFAULT_SETTINGS,
         ...migratedData,
       };
 
-      console.log('✅ loadSettings: Normalized settings after migration:', {
-        store_name: normalizedSettings.store_name,
-        favicon_url: normalizedSettings.favicon_url,
-        gold: normalizedSettings.gold,
-        gold_light: normalizedSettings.gold_light,
-        dark: normalizedSettings.dark,
-        red: normalizedSettings.red,
-      });
-
-      set({ 
+      set({
         settings: normalizedSettings,
-        loading: false 
+        loading: false,
+        loadedAt: Date.now(),
       });
       return normalizedSettings;
     } catch (err) {
       const errorMsg = err.response?.data?.error || 'Gagal memuat pengaturan website';
-      console.error('❌ loadSettings: Error loading settings:', {
-        message: errorMsg,
-        status: err.response?.status,
-        error: err,
-      });
-      
-      set({ 
+      set({
         error: errorMsg,
-        loading: false 
+        loading: false,
       });
       throw err;
     }
   },
 
-  // Update single setting
   updateSetting: (key, value) => {
     const current = get().settings;
     set({
@@ -108,7 +79,6 @@ export const useWebsiteSettings = create((set, get) => ({
     });
   },
 
-  // Update multiple settings
   updateSettings: (newSettings) => {
     const current = get().settings;
     set({
@@ -119,17 +89,16 @@ export const useWebsiteSettings = create((set, get) => ({
     });
   },
 
-  // Get specific setting
   getSetting: (key) => {
     const settings = get().settings;
     return settings[key] || null;
   },
 
-  // Reset to defaults
   resetSettings: () => {
     set({
       settings: DEFAULT_SETTINGS,
       error: null,
+      loadedAt: null,
     });
   },
 }));
