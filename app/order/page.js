@@ -96,7 +96,7 @@ export default function SelectDiningTablePage() {
         setQueueInfo(queueRes.data || null);
         setSelected(
           rows.find((table) => savedState.orders[table.qr_token])
-          || rows.find((table) => savedState.drafts[table.qr_token] && Number(table.active_orders || 0) === 0)
+          || rows.find((table) => savedState.drafts[table.qr_token])
           || rows.find((table) => Number(table.active_orders || 0) === 0)
           || rows[0]
           || null
@@ -209,7 +209,7 @@ export default function SelectDiningTablePage() {
                   const busy = Number(table.active_orders || 0) > 0;
                   const hasSavedOrder = Boolean(savedOrdersByToken[table.qr_token]);
                   const hasSavedDraft = Boolean(savedDraftsByToken[table.qr_token]);
-                  const locked = (busy || hasWaitingQueue) && !hasSavedOrder;
+                  const locked = (busy || hasWaitingQueue) && !hasSavedOrder && !hasSavedDraft;
                   return (
                     <motion.button
                       key={table.id}
@@ -334,7 +334,7 @@ export default function SelectDiningTablePage() {
                   const selectedBusy = Number(selected.active_orders || 0) > 0;
                   const hasSavedOrder = Boolean(savedOrdersByToken[selected.qr_token]);
                   const hasSavedDraft = Boolean(savedDraftsByToken[selected.qr_token]);
-                  const locked = (selectedBusy || hasWaitingQueue) && !hasSavedOrder;
+                  const locked = (selectedBusy || hasWaitingQueue) && !hasSavedOrder && !hasSavedDraft;
                   return (
                     <>
                 <div className="mb-5 rounded-3xl bg-[#241C0E] p-5">
