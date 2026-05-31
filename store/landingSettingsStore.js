@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { getWebsiteSettings, bulkUpdateWebsiteSettings } from '@/lib/api';
+import { uploadInlineImagesInSettings } from '@/lib/settingsImageUpload';
 import { headerContent } from '@/data/landing/headerContent';
 import { heroContent } from '@/data/landing/heroContent';
 import { marqueeContent } from '@/data/landing/marqueeContent';
@@ -255,10 +256,17 @@ export const useLandingSettingsStore = create((set, get) => ({
   },
 
   saveSettings: async () => {
-    const currentSettings = get().settings;
+    let currentSettings = get().settings;
     set({ isSaving: true, saveError: null });
 
     try {
+      const uploadResult = await uploadInlineImagesInSettings(currentSettings, ['landing']);
+      currentSettings = uploadResult.value;
+
+      if (uploadResult.changed) {
+        set({ settings: currentSettings });
+      }
+
       const payload = Object.entries(LANDING_SECTION_DB_KEYS).map(([section, dbKey]) => ({
         setting_key: dbKey,
         setting_value: JSON.stringify(currentSettings[section] ?? {}),

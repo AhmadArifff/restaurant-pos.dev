@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { bulkUpdateWebsiteSettings, getWebsiteSettings } from '@/lib/api';
+import { uploadInlineImagesInSettings } from '@/lib/settingsImageUpload';
 
 const LOGIN_PAGE_DB_KEY = 'login_page_settings';
 
@@ -137,10 +138,17 @@ export const useLoginPageSettingsStore = create((set, get) => ({
   },
 
   saveSettings: async () => {
-    const currentSettings = get().settings;
+    let currentSettings = get().settings;
     set({ isSaving: true, saveError: null });
 
     try {
+      const uploadResult = await uploadInlineImagesInSettings(currentSettings, ['login']);
+      currentSettings = uploadResult.value;
+
+      if (uploadResult.changed) {
+        set({ settings: currentSettings });
+      }
+
       await bulkUpdateWebsiteSettings([
         {
           setting_key: LOGIN_PAGE_DB_KEY,
