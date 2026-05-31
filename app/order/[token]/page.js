@@ -182,6 +182,7 @@ export default function CustomerOrderPage() {
   const params = useParams();
   const token = params?.token;
   const storageKey = token ? `customer-order-${token}` : '';
+  const draftStorageKey = token ? `customer-order-draft-${token}` : '';
   const paymentSectionRef = useRef(null);
 
   const [table, setTable] = useState(null);
@@ -211,6 +212,7 @@ export default function CustomerOrderPage() {
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
   const [skipReviewLoading, setSkipReviewLoading] = useState(false);
   const [orderMessageModal, setOrderMessageModal] = useState(null);
+  const [draftLoaded, setDraftLoaded] = useState(false);
 
   useEffect(() => {
     if (!token) return;
@@ -218,6 +220,14 @@ export default function CustomerOrderPage() {
 
     const load = async () => {
       const savedOrderCode = storageKey ? localStorage.getItem(storageKey) : null;
+      const savedDraft = (() => {
+        if (!draftStorageKey) return null;
+        try {
+          return JSON.parse(localStorage.getItem(draftStorageKey) || 'null');
+        } catch (_) {
+          return null;
+        }
+      })();
       const tableRes = await getDiningTableByToken(token);
       const [menuRes, rewardRes, bundleRes, paymentRes, orderRes] = await Promise.all([
         getCustomerMenu({ branch_id: tableRes.data?.branch_id }),
@@ -233,8 +243,18 @@ export default function CustomerOrderPage() {
       setBundlePrograms(Array.isArray(bundleRes.data) ? bundleRes.data : []);
       const activePayments = Array.isArray(paymentRes.data) ? paymentRes.data : [];
       setPaymentMethods(activePayments);
-      setSelectedPaymentMethodId((prev) => prev || String(activePayments[0]?.id || ''));
-      if (orderRes?.data) setOrder(orderRes.data);
+      setSelectedPaymentMethodId((prev) => prev || String(savedDraft?.selectedPaymentMethodId || activePayments[0]?.id || ''));
+      if (orderRes?.data) {
+        setOrder(orderRes.data);
+      } else if (savedDraft) {
+        const menuIds = new Set((menuRes.data || []).map((product) => Number(product.id)));
+        setCart(Array.isArray(savedDraft.cart) ? savedDraft.cart.filter((item) => menuIds.has(Number(item.id))) : []);
+        setCustomerName(savedDraft.customerName || '');
+        setCustomerPhone(savedDraft.customerPhone || '+62');
+        setVoucherCode(savedDraft.voucherCode || '');
+        setNote(savedDraft.note || '');
+      }
+      setDraftLoaded(true);
       setLoading(false);
     };
 
@@ -243,7 +263,31 @@ export default function CustomerOrderPage() {
     return () => {
       mounted = false;
     };
-  }, [token, storageKey]);
+  }, [token, storageKey, draftStorageKey]);
+
+  useEffect(() => {
+    if (!draftLoaded || !draftStorageKey || order) return;
+    const hasDraft = cart.length
+      || String(customerName || '').trim()
+      || String(voucherCode || '').trim()
+      || String(note || '').trim()
+      || String(customerPhone || '').replace(/\D/g, '') !== '62';
+
+    if (!hasDraft) {
+      localStorage.removeItem(draftStorageKey);
+      return;
+    }
+
+    localStorage.setItem(draftStorageKey, JSON.stringify({
+      updated_at: new Date().toISOString(),
+      cart,
+      customerName,
+      customerPhone,
+      voucherCode,
+      note,
+      selectedPaymentMethodId,
+    }));
+  }, [cart, customerName, customerPhone, voucherCode, note, selectedPaymentMethodId, draftLoaded, draftStorageKey, order]);
 
   useEffect(() => {
     if (!order?.order_code || order.status === 'completed' || order.status === 'cancelled') return;
@@ -503,6 +547,7 @@ export default function CustomerOrderPage() {
 
   const startNewOrder = async () => {
     if (storageKey) localStorage.removeItem(storageKey);
+    if (draftStorageKey) localStorage.removeItem(draftStorageKey);
     setOrder(null);
     setCart([]);
     setVoucherCode('');
@@ -563,6 +608,7 @@ export default function CustomerOrderPage() {
       setShowMobileCart(false);
       if (nextOrder?.payment_method) setPaymentConfirmOrder(nextOrder);
       if (storageKey) localStorage.setItem(storageKey, nextOrder.order_code);
+      if (draftStorageKey) localStorage.removeItem(draftStorageKey);
     } catch (err) {
       setOrderMessageModal({
         title: 'Pesanan gagal dikirim',

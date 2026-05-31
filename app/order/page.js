@@ -18,14 +18,32 @@ export default function SelectDiningTablePage() {
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(true);
   const [savedOrdersByToken, setSavedOrdersByToken] = useState({});
+  const [savedDraftsByToken, setSavedDraftsByToken] = useState({});
 
-  const readSavedOrders = (rows) => {
+  const readSavedTableState = (rows) => {
     if (typeof window === 'undefined') return {};
     return rows.reduce((acc, table) => {
       const savedOrderCode = window.localStorage.getItem(`customer-order-${table.qr_token}`);
-      if (savedOrderCode) acc[table.qr_token] = savedOrderCode;
+      let savedDraft = null;
+      try {
+        savedDraft = JSON.parse(window.localStorage.getItem(`customer-order-draft-${table.qr_token}`) || 'null');
+      } catch (_) {
+        savedDraft = null;
+      }
+      const hasDraft = Boolean(
+        savedDraft
+        && (
+          Array.isArray(savedDraft.cart) && savedDraft.cart.length
+          || String(savedDraft.customerName || '').trim()
+          || String(savedDraft.voucherCode || '').trim()
+          || String(savedDraft.note || '').trim()
+          || String(savedDraft.customerPhone || '').replace(/\D/g, '') !== '62'
+        )
+      );
+      if (savedOrderCode) acc.orders[table.qr_token] = savedOrderCode;
+      if (hasDraft) acc.drafts[table.qr_token] = savedDraft;
       return acc;
-    }, {});
+    }, { orders: {}, drafts: {} });
   };
 
   useEffect(() => {
@@ -43,11 +61,13 @@ export default function SelectDiningTablePage() {
     const loadTables = () => getPublicDiningTables({ branch_id: selectedBranch.id })
       .then((res) => {
         const rows = res.data || [];
-        const savedOrders = readSavedOrders(rows);
+        const savedState = readSavedTableState(rows);
         setTables(rows);
-        setSavedOrdersByToken(savedOrders);
+        setSavedOrdersByToken(savedState.orders);
+        setSavedDraftsByToken(savedState.drafts);
         setSelected(
-          rows.find((table) => savedOrders[table.qr_token])
+          rows.find((table) => savedState.orders[table.qr_token])
+          || rows.find((table) => savedState.drafts[table.qr_token] && Number(table.active_orders || 0) === 0)
           || rows.find((table) => Number(table.active_orders || 0) === 0)
           || rows[0]
           || null
@@ -115,6 +135,7 @@ export default function SelectDiningTablePage() {
                   const active = selected?.id === table.id;
                   const busy = Number(table.active_orders || 0) > 0;
                   const hasSavedOrder = Boolean(savedOrdersByToken[table.qr_token]);
+                  const hasSavedDraft = Boolean(savedDraftsByToken[table.qr_token]);
                   const locked = busy && !hasSavedOrder;
                   return (
                     <motion.button
@@ -130,10 +151,13 @@ export default function SelectDiningTablePage() {
                           ? 'cursor-not-allowed border-red-400/20 bg-red-500/10 text-red-100/70 opacity-70'
                           : hasSavedOrder && busy
                             ? 'border-emerald-300/30 bg-emerald-500/12 text-emerald-50 hover:-translate-y-1 hover:border-emerald-200/60'
-                            :
+                            : hasSavedDraft
+                              ? 'border-sky-300/30 bg-sky-500/12 text-sky-50 hover:-translate-y-1 hover:border-sky-200/60'
+                              :
                         active
                           ? 'border-[#C9A84C] bg-[#C9A84C] text-[#0D0A06] shadow-xl shadow-[#C9A84C]/20'
-                          : 'border-[#C9A84C]/18 bg-[#1A1409]/88 text-[#F5EDD8] hover:-translate-y-1 hover:border-[#C9A84C]/60'
+                          :
+                            'border-[#C9A84C]/18 bg-[#1A1409]/88 text-[#F5EDD8] hover:-translate-y-1 hover:border-[#C9A84C]/60'
                       }`}
                     >
                       <span className="text-xs font-bold uppercase tracking-[0.24em] opacity-70">Meja</span>
@@ -141,6 +165,8 @@ export default function SelectDiningTablePage() {
                       <span className="mt-3 block text-sm opacity-75">
                         {hasSavedOrder && busy
                           ? 'Riwayat pesanan Anda aktif'
+                          : hasSavedDraft
+                            ? 'Draft pesanan Anda tersimpan'
                           : busy
                             ? 'Ada pesanan aktif'
                             : table.table_name || `${table.capacity} kursi tersedia`}
@@ -168,6 +194,7 @@ export default function SelectDiningTablePage() {
                 {(() => {
                   const selectedBusy = Number(selected.active_orders || 0) > 0;
                   const hasSavedOrder = Boolean(savedOrdersByToken[selected.qr_token]);
+                  const hasSavedDraft = Boolean(savedDraftsByToken[selected.qr_token]);
                   const locked = selectedBusy && !hasSavedOrder;
                   return (
                     <>
@@ -187,12 +214,21 @@ export default function SelectDiningTablePage() {
                         Pesanan dari perangkat ini masih aktif. Anda bisa masuk lagi untuk melihat status, pembayaran, atau review.
                       </div>
                     )}
+                    {hasSavedDraft && !selectedBusy && (
+                      <div className="mb-4 rounded-3xl border border-sky-300/25 bg-sky-500/12 p-4 text-sm leading-6 text-sky-50">
+                        Draft pesanan dari perangkat ini tersimpan. Anda bisa lanjut memilih menu sebelum mengirim pesanan.
+                      </div>
+                    )}
                     <QRCodeCard value={selectedUrl} />
                     <Link
                       href={`/order/${selected.qr_token}`}
                       className="mt-5 flex w-full items-center justify-center rounded-2xl bg-[#C9A84C] px-5 py-3 text-sm font-black uppercase tracking-[0.18em] text-[#0D0A06] transition hover:bg-[#E8C96A]"
                     >
-                      {hasSavedOrder && selectedBusy ? 'Buka Riwayat Pesanan Saya' : 'Lanjut Pesan'}
+                      {hasSavedOrder && selectedBusy
+                        ? 'Buka Riwayat Pesanan Saya'
+                        : hasSavedDraft
+                          ? 'Lanjutkan Pesanan Saya'
+                          : 'Lanjut Pesan'}
                     </Link>
                   </>
                 )}
