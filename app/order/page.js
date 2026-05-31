@@ -17,6 +17,16 @@ export default function SelectDiningTablePage() {
   const [selectedBranch, setSelectedBranch] = useState(null);
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [savedOrdersByToken, setSavedOrdersByToken] = useState({});
+
+  const readSavedOrders = (rows) => {
+    if (typeof window === 'undefined') return {};
+    return rows.reduce((acc, table) => {
+      const savedOrderCode = window.localStorage.getItem(`customer-order-${table.qr_token}`);
+      if (savedOrderCode) acc[table.qr_token] = savedOrderCode;
+      return acc;
+    }, {});
+  };
 
   useEffect(() => {
     getPublicBranches()
@@ -33,8 +43,15 @@ export default function SelectDiningTablePage() {
     const loadTables = () => getPublicDiningTables({ branch_id: selectedBranch.id })
       .then((res) => {
         const rows = res.data || [];
+        const savedOrders = readSavedOrders(rows);
         setTables(rows);
-        setSelected(rows.find((table) => Number(table.active_orders || 0) === 0) || rows[0] || null);
+        setSavedOrdersByToken(savedOrders);
+        setSelected(
+          rows.find((table) => savedOrders[table.qr_token])
+          || rows.find((table) => Number(table.active_orders || 0) === 0)
+          || rows[0]
+          || null
+        );
       })
       .finally(() => setLoading(false));
 
@@ -97,6 +114,8 @@ export default function SelectDiningTablePage() {
               : tables.map((table, index) => {
                   const active = selected?.id === table.id;
                   const busy = Number(table.active_orders || 0) > 0;
+                  const hasSavedOrder = Boolean(savedOrdersByToken[table.qr_token]);
+                  const locked = busy && !hasSavedOrder;
                   return (
                     <motion.button
                       key={table.id}
@@ -104,12 +123,14 @@ export default function SelectDiningTablePage() {
                       initial={{ opacity: 0, y: 16 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.035 }}
-                      onClick={() => !busy && setSelected(table)}
-                      disabled={busy}
+                      onClick={() => !locked && setSelected(table)}
+                      disabled={locked}
                       className={`group rounded-3xl border p-5 text-left transition ${
-                        busy
+                        locked
                           ? 'cursor-not-allowed border-red-400/20 bg-red-500/10 text-red-100/70 opacity-70'
-                          :
+                          : hasSavedOrder && busy
+                            ? 'border-emerald-300/30 bg-emerald-500/12 text-emerald-50 hover:-translate-y-1 hover:border-emerald-200/60'
+                            :
                         active
                           ? 'border-[#C9A84C] bg-[#C9A84C] text-[#0D0A06] shadow-xl shadow-[#C9A84C]/20'
                           : 'border-[#C9A84C]/18 bg-[#1A1409]/88 text-[#F5EDD8] hover:-translate-y-1 hover:border-[#C9A84C]/60'
@@ -118,7 +139,11 @@ export default function SelectDiningTablePage() {
                       <span className="text-xs font-bold uppercase tracking-[0.24em] opacity-70">Meja</span>
                       <strong className="mt-2 block text-4xl font-black">{table.table_number}</strong>
                       <span className="mt-3 block text-sm opacity-75">
-                        {busy ? 'Ada pesanan aktif' : table.table_name || `${table.capacity} kursi tersedia`}
+                        {hasSavedOrder && busy
+                          ? 'Riwayat pesanan Anda aktif'
+                          : busy
+                            ? 'Ada pesanan aktif'
+                            : table.table_name || `${table.capacity} kursi tersedia`}
                       </span>
                     </motion.button>
                   );
@@ -140,26 +165,40 @@ export default function SelectDiningTablePage() {
           >
             {selected ? (
               <>
+                {(() => {
+                  const selectedBusy = Number(selected.active_orders || 0) > 0;
+                  const hasSavedOrder = Boolean(savedOrdersByToken[selected.qr_token]);
+                  const locked = selectedBusy && !hasSavedOrder;
+                  return (
+                    <>
                 <div className="mb-5 rounded-3xl bg-[#241C0E] p-5">
                   <p className="text-xs font-black uppercase tracking-[0.28em] text-[#C9A84C]">QR Aktif</p>
                   <h2 className="mt-2 text-3xl font-black">Meja {selected.table_number}</h2>
                   <p className="mt-2 text-sm text-[#EDE0C4]/70">{selectedBranch?.name || selected.table_name || 'Siap menerima pesanan pelanggan.'}</p>
                 </div>
-                {Number(selected.active_orders || 0) > 0 ? (
+                {locked ? (
                   <div className="rounded-3xl border border-red-400/25 bg-red-500/10 p-5 text-center text-red-100">
                     Meja ini sedang memiliki pesanan aktif. Pilih meja lain atau tunggu sampai selesai.
                   </div>
                 ) : (
                   <>
+                    {hasSavedOrder && selectedBusy && (
+                      <div className="mb-4 rounded-3xl border border-emerald-300/25 bg-emerald-500/12 p-4 text-sm leading-6 text-emerald-50">
+                        Pesanan dari perangkat ini masih aktif. Anda bisa masuk lagi untuk melihat status, pembayaran, atau review.
+                      </div>
+                    )}
                     <QRCodeCard value={selectedUrl} />
                     <Link
                       href={`/order/${selected.qr_token}`}
                       className="mt-5 flex w-full items-center justify-center rounded-2xl bg-[#C9A84C] px-5 py-3 text-sm font-black uppercase tracking-[0.18em] text-[#0D0A06] transition hover:bg-[#E8C96A]"
                     >
-                      Lanjut Pesan
+                      {hasSavedOrder && selectedBusy ? 'Buka Riwayat Pesanan Saya' : 'Lanjut Pesan'}
                     </Link>
                   </>
                 )}
+                    </>
+                  );
+                })()}
               </>
             ) : (
               <div className="rounded-3xl border border-dashed border-[#C9A84C]/30 p-8 text-center text-[#EDE0C4]/65">
