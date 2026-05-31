@@ -129,10 +129,12 @@ export default function CustomerOrdersPage() {
   const [editingTable, setEditingTable] = useState(null);
   const [selectedTable, setSelectedTable] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [proofModal, setProofModal] = useState(null);
 
   const load = async ({ silent = false } = {}) => {
-    if (!silent) setLoading(true);
+    if (silent || orders.length > 0) setRefreshing(true);
+    else setLoading(true);
     try {
       const [ordersRes, tablesRes] = await Promise.all([
         getCustomerOrders({}),
@@ -140,15 +142,20 @@ export default function CustomerOrdersPage() {
       ]);
       setOrders(ordersRes.data || []);
       setTables(tablesRes.data || []);
-      setSelectedTable((prev) => prev || tablesRes.data?.[0] || null);
+      setSelectedTable((prev) => {
+        const rows = tablesRes.data || [];
+        if (prev && rows.some((table) => Number(table.id) === Number(prev.id))) return prev;
+        return rows[0] || null;
+      });
     } finally {
-      if (!silent) setLoading(false);
+      setLoading(false);
+      setRefreshing(false);
     }
   };
 
   useEffect(() => {
     load();
-    const timer = window.setInterval(() => load({ silent: true }), 5000);
+    const timer = window.setInterval(() => load({ silent: true }), 10000);
     return () => window.clearInterval(timer);
   }, [isAdmin]);
 
@@ -188,7 +195,7 @@ export default function CustomerOrdersPage() {
       }
       setTableForm(emptyTable);
       setEditingTable(null);
-      await load();
+      await load({ silent: true });
     } catch (err) {
       alert(err.response?.data?.message || 'Gagal menyimpan meja');
     }
@@ -215,7 +222,7 @@ export default function CustomerOrdersPage() {
     });
     if (!confirmed) return;
     await deleteDiningTable(table.id);
-    await load();
+    await load({ silent: true });
   };
 
   const changeStatus = async (order, nextStatus) => {
@@ -231,7 +238,7 @@ export default function CustomerOrdersPage() {
         payload.cancel_reason = reason.trim();
       }
       await updateCustomerOrderStatus(order.id, payload);
-      await load();
+      await load({ silent: true });
     } catch (err) {
       const validation = err.response?.data?.validation_errors;
       const detail = validation?.length
@@ -315,10 +322,15 @@ export default function CustomerOrdersPage() {
               </motion.div>
             ))}
           </div>
+          {refreshing && !loading && (
+            <div className="rounded-2xl border border-slate-700 bg-slate-800/60 px-4 py-2 text-xs font-semibold text-slate-400">
+              Menyinkronkan pesanan meja...
+            </div>
+          )}
 
           <div className="grid gap-6 xl:grid-cols-[1fr_390px]">
             <section className="space-y-4">
-              {loading && <SectionSkeleton type="orders" />}
+              {loading && orders.length === 0 && <SectionSkeleton type="orders" />}
               {!loading && visibleOrders.length === 0 && (
                 <div className="rounded-3xl border border-dashed border-slate-700 bg-slate-800/50 p-10 text-center text-slate-400">
                   Belum ada pesanan meja untuk filter ini.

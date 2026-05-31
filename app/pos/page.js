@@ -70,6 +70,7 @@ export default function PosPage() {
   const [showPayment,     setShowPayment]      = useState(false);
   const [lastTransaction, setLastTransaction] = useState(null);
   const [loading,         setLoading]         = useState(true);
+  const [refreshing,      setRefreshing]      = useState(false);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [showMobileCart,  setShowMobileCart]  = useState(false);
   const [todayStats,      setTodayStats]      = useState({
@@ -95,6 +96,15 @@ export default function PosPage() {
   const { user, selectedBranchId }     = useAuthStore();
   const router                        = useRouter();
   const receiptRef                    = useRef();
+  const productsRef                   = useRef([]);
+  const selectedSourceUserRef         = useRef(null);
+
+  useEffect(() => {
+    productsRef.current = products;
+  }, [products]);
+  useEffect(() => {
+    selectedSourceUserRef.current = selectedSourceUser;
+  }, [selectedSourceUser]);
 
   const total     = items.reduce((s, i) => s + Number(i.price) * i.qty, 0);
   const itemCount = items.reduce((s, i) => s + i.qty, 0);
@@ -105,8 +115,9 @@ export default function PosPage() {
   }, []);
 
   // ── Load data ──────────────────────────────────────────────
-  const loadData = useCallback(() => {
-    setLoading(true);
+  const loadData = useCallback(({ silent = false } = {}) => {
+    if (silent || productsRef.current.length > 0) setRefreshing(true);
+    else setLoading(true);
     // 🔄 Using getStockAllUsers for admin - awaiting /stock-requests/approved-for-pos backend implementation
     const fetchProducts = isAdmin ? getStockAllUsers : getMyStockProducts;
 
@@ -140,7 +151,7 @@ export default function PosPage() {
         }
 
         // Admin: pilih user pertama yang punya stok sebagai default
-        if (isAdmin && !selectedSourceUser && prods.length > 0) {
+        if (isAdmin && !selectedSourceUserRef.current && prods.length > 0) {
           const firstUser = prods
             .flatMap(product => product.stock_by_user || [])
             .find(stockUser => Number(stockUser.can_make || 0) > 0);
@@ -154,8 +165,11 @@ export default function PosPage() {
           }
         }
       })
-      .finally(() => setLoading(false));
-  }, [isAdmin, selectedBranchId]);
+      .finally(() => {
+        setLoading(false);
+        setRefreshing(false);
+      });
+  }, [isAdmin, selectedBranchId, user?.branch_id]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -318,7 +332,7 @@ export default function PosPage() {
         `Pendapatan cabang hari ini bertambah Rp ${Number(finalTotal || 0).toLocaleString('id-ID')}. Struk sedang disiapkan.`
       );
       setTimeout(() => handlePrint(), 400);
-      loadData();
+      loadData({ silent: true });
     } catch (err) {
       const validation = err.response?.data?.validation_errors;
       const detail = Array.isArray(validation) && validation.length
@@ -621,7 +635,8 @@ export default function PosPage() {
             {/* ── PRODUCT GRID ── */}
             <div className="flex-1 overflow-y-auto px-4 sm:px-5 py-4">
               {!loading && (
-                <p className="text-slate-600 text-xs mb-3">
+                <div className="mb-3 flex flex-wrap items-center gap-2 text-xs">
+                <p className="text-slate-600">
                   {filtered.length} menu tersedia
                   {search && ` · "${search}"`}
                   {/* ✅ CHANGED: Tampilkan pengajuan dari kasir bukan stok */}
@@ -631,6 +646,12 @@ export default function PosPage() {
                     </span>
                   )}
                 </p>
+                {refreshing && (
+                  <span className="rounded-full bg-slate-800 px-2 py-0.5 text-[11px] font-semibold text-slate-400">
+                    Sinkronisasi...
+                  </span>
+                )}
+                </div>
               )}
 
               {!loading && bundleHints.length > 0 && (

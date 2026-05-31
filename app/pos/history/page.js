@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import AuthGuard from '@/components/ui/AuthGuard';
 import { deleteTransaction, getTransactions } from '@/lib/api';
@@ -11,12 +11,18 @@ export default function TransactionHistoryPage() {
   const { user } = useAuthStore();
   const router = useRouter();
   const [transactions, setTransactions] = useState([]);
+  const transactionsRef = useRef([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [search, setSearch] = useState('');
   const [appliedFilters, setAppliedFilters] = useState({});
   const [deleteModal, setDeleteModal] = useState({ open: false, tx: null, reason: '', submitting: false });
+
+  useEffect(() => {
+    transactionsRef.current = transactions;
+  }, [transactions]);
 
   // Set default date range to today
   useEffect(() => {
@@ -32,16 +38,15 @@ export default function TransactionHistoryPage() {
   }, []);
 
   // Load transactions
-  const loadTransactions = useCallback(async (filters = {}) => {
+  const loadTransactions = useCallback(async (filters = {}, { silent = false } = {}) => {
     try {
-      setLoading(true);
+      if (silent || transactionsRef.current.length > 0) setRefreshing(true);
+      else setLoading(true);
       const params = {
         limit: 1000,
         ...filters,
       };
-      console.log('Loading transactions with params:', params);
       const res = await getTransactions(params);
-      console.log('Received transactions:', res.data);
       setTransactions(res.data || []);
       setAppliedFilters(filters);
     } catch (err) {
@@ -49,6 +54,7 @@ export default function TransactionHistoryPage() {
       alert('Gagal memuat data transaksi: ' + (err.response?.data?.message || err.message));
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, []);
 
@@ -58,7 +64,7 @@ export default function TransactionHistoryPage() {
     if (dateFrom) filters.dateFrom = dateFrom;
     if (dateTo) filters.dateTo = dateTo;
     if (search) filters.search = search;
-    loadTransactions(filters);
+    loadTransactions(filters, { silent: transactionsRef.current.length > 0 });
   };
 
   // Handle reset filter
@@ -75,7 +81,7 @@ export default function TransactionHistoryPage() {
     loadTransactions({
       dateFrom: dateStr,
       dateTo: dateStr,
-    });
+    }, { silent: transactionsRef.current.length > 0 });
   };
 
   const handleDeleteTransaction = async (tx) => {
@@ -95,7 +101,7 @@ export default function TransactionHistoryPage() {
     try {
       setDeleteModal((prev) => ({ ...prev, submitting: true }));
       await deleteTransaction(tx.id, { reason });
-      await loadTransactions(appliedFilters);
+      await loadTransactions(appliedFilters, { silent: true });
       setDeleteModal({ open: false, tx: null, reason: '', submitting: false });
     } catch (err) {
       alert(err.response?.data?.message || 'Gagal menghapus transaksi');
@@ -106,7 +112,7 @@ export default function TransactionHistoryPage() {
   // Initial load - fixed dependency array
   useEffect(() => {
     if (dateFrom && dateTo) {
-      loadTransactions({ dateFrom, dateTo });
+      loadTransactions({ dateFrom, dateTo }, { silent: transactionsRef.current.length > 0 });
     }
   }, [dateFrom, dateTo, loadTransactions]);
 
@@ -265,7 +271,7 @@ export default function TransactionHistoryPage() {
               <div className="flex gap-2 items-end">
                 <button
                   onClick={handleApplyFilter}
-                  disabled={loading}
+                  disabled={loading || refreshing}
                   className="flex-1 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold 
                     rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -273,7 +279,7 @@ export default function TransactionHistoryPage() {
                 </button>
                 <button
                   onClick={handleResetFilter}
-                  disabled={loading}
+                  disabled={loading || refreshing}
                   className="flex-1 px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white font-semibold 
                     rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -332,6 +338,13 @@ export default function TransactionHistoryPage() {
           )}
 
           {/* Summary Overall */}
+          {refreshing && !loading && (
+            <div className="mb-4 rounded-xl border border-slate-700 bg-slate-800/70 px-4 py-2 text-xs font-semibold text-slate-400">
+              Menyinkronkan riwayat transaksi...
+            </div>
+          )}
+
+          {/* Summary Overall */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
             <div className="bg-slate-800 border border-slate-700 rounded-xl p-4">
               <p className="text-slate-400 text-sm">Total Transaksi</p>
@@ -360,7 +373,7 @@ export default function TransactionHistoryPage() {
 
           {/* Table */}
           <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
-            {loading ? (
+            {loading && transactions.length === 0 ? (
               <TableSkeleton rows={7} cols={8} />
             ) : transactions.length === 0 ? (
               <div className="p-8 text-center text-slate-400">
