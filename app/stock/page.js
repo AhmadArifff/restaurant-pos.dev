@@ -71,7 +71,8 @@ const getIngredientStockItemId = (ingredient) => Number(ingredient?.stock_item_i
 
 function buildRecipeRows(product, menuQty = 1, stockRows = []) {
   if (!product?.ingredients?.length) return [];
-  const qtyMultiplier = Math.max(1, Number(menuQty || 1));
+  const qtyMultiplier = Math.max(0, Number(menuQty || 0));
+  if (qtyMultiplier <= 0) return [];
   const byStockItem = new Map();
 
   product.ingredients.forEach((ingredient) => {
@@ -114,9 +115,10 @@ function getRecipeSelectionDetails(products = [], selections = []) {
       if (!product) return null;
       return {
         product,
-        qty: Math.max(1, Number(selection.qty || 1)),
+        qty: Math.max(0, Number(selection.qty || 0)),
       };
     })
+    .filter((selection) => selection.qty > 0)
     .filter(Boolean);
 }
 
@@ -124,6 +126,28 @@ function getRecipeSelectionLabel(products = [], selections = []) {
   return getRecipeSelectionDetails(products, selections)
     .map(({ product, qty }) => `${product.name} x${qty}`)
     .join(', ');
+}
+
+function getMaxMenuQtyFromStock(products = [], product, selections = [], stockRows = [], currentIndex = 0) {
+  if (!product?.ingredients?.length) return 999;
+  const otherRows = buildRecipeRowsForSelections(
+    products,
+    selections.filter((_, index) => index !== currentIndex),
+    stockRows
+  );
+  const reservedByStockItem = new Map(otherRows.map((row) => [Number(row.stock_item_id), Number(row.qty || 0)]));
+
+  const maxByIngredient = product.ingredients
+    .map((ingredient) => {
+      const stockItemId = getIngredientStockItemId(ingredient);
+      const perPortion = Number(ingredient.qty || ingredient.qty_per_portion || 1);
+      const stock = stockRows.find((item) => Number(item.id) === stockItemId);
+      const available = Math.max(0, Number(stock?.current_stock || 0) - Number(reservedByStockItem.get(stockItemId) || 0));
+      return perPortion > 0 ? Math.floor(available / perPortion) : 999;
+    })
+    .filter((value) => Number.isFinite(value));
+
+  return Math.max(0, Math.min(...maxByIngredient, 999));
 }
 
 function buildRecipeRowsForSelections(products = [], selections = [], stockRows = []) {
@@ -163,6 +187,7 @@ function buildRecipeOutItemsForSelections(products = [], selections = []) {
 
 function RecipeMenuPicker({
   products = [],
+  stockRows = [],
   selections = [createEmptyRecipeSelection()],
   onSelectionsChange,
   title = 'Buat stok menu',
@@ -170,6 +195,17 @@ function RecipeMenuPicker({
   const recipeProducts = getRecipeProducts(products);
   const normalizedSelections = selections.length ? selections : [createEmptyRecipeSelection()];
   const selectedIds = normalizedSelections.map((selection) => String(selection.product_id)).filter(Boolean);
+
+  useEffect(() => {
+    const next = normalizedSelections.map((selection, index) => {
+      const product = recipeProducts.find((item) => String(item.id) === String(selection.product_id));
+      if (!product) return selection;
+      const maxQty = Math.max(0, getMaxMenuQtyFromStock(recipeProducts, product, normalizedSelections, stockRows, index) || 0);
+      const currentQty = Math.max(0, Number(selection.qty || 0));
+      return currentQty > maxQty ? { ...selection, qty: maxQty } : selection;
+    });
+    if (JSON.stringify(next) !== JSON.stringify(normalizedSelections)) onSelectionsChange(next);
+  }, [JSON.stringify(normalizedSelections), recipeProducts, stockRows, onSelectionsChange]);
 
   const updateSelection = (index, patch) => {
     const next = normalizedSelections.map((selection, selectionIndex) => (
@@ -201,7 +237,10 @@ function RecipeMenuPicker({
           const selectableProducts = recipeProducts.filter((product) => (
             currentId === String(product.id) || !selectedIds.includes(String(product.id))
           ));
-
+          const selectedProduct = recipeProducts.find((product) => String(product.id) === currentId);
+          const maxMenuQty = selectedProduct
+            ? getMaxMenuQtyFromStock(recipeProducts, selectedProduct, normalizedSelections, stockRows, index)
+            : 999;
           return (
             <div key={index} className="grid grid-cols-1 sm:grid-cols-[1fr_120px_auto] gap-3">
               <div>
@@ -223,11 +262,20 @@ function RecipeMenuPicker({
                 <label className="text-slate-500 text-xs mb-1 block">Qty menu</label>
                 <input
                   type="number"
-                  min="1"
+                  min="0"
+                  max={Math.max(0, maxMenuQty || 0)}
                   value={selection.qty}
-                  onChange={(event) => updateSelection(index, { qty: Math.max(1, Number(event.target.value || 1)) })}
+                  onChange={(event) => {
+                    const rawQty = Math.max(0, Number(event.target.value || 0));
+                    updateSelection(index, { qty: Math.min(rawQty, Math.max(0, maxMenuQty || 0)) });
+                  }}
                   className="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-orange-500/50"
                 />
+                {selectedProduct && (
+                  <p className={`mt-1 text-[11px] ${Number(selection.qty || 1) > maxMenuQty ? 'text-red-300' : 'text-slate-500'}`}>
+                    {maxMenuQty > 0 ? `Maks. bisa dibuat ${fmtQty(maxMenuQty)} porsi dari stok gudang` : 'Stok bahan belum cukup untuk menu ini'}
+                  </p>
+                )}
               </div>
               {normalizedSelections.length > 1 && (
                 <button
@@ -1701,6 +1749,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
               {/* ── Items ── */}
               <RecipeMenuPicker
                 products={productOptions}
+                stockRows={summary}
                 selections={outMenuSelections}
                 title="Buat stok dari menu"
                 onSelectionsChange={syncOutRecipeSelections}
@@ -2710,6 +2759,7 @@ function KasirStockPage({ successModal, setSuccessModal }) {
 
               <RecipeMenuPicker
                 products={productOptions}
+                stockRows={summary}
                 selections={outMenuSelections}
                 title="Ajukan stok dari menu"
                 onSelectionsChange={syncOutRecipeSelections}

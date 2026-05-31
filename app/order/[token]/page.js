@@ -220,6 +220,7 @@ export default function CustomerOrderPage() {
   const [orderMessageModal, setOrderMessageModal] = useState(null);
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [tableSession, setTableSession] = useState(null);
+  const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
 
   useEffect(() => {
     if (!token) return;
@@ -265,7 +266,7 @@ export default function CustomerOrderPage() {
         setVoucherCode(savedDraft.voucherCode || '');
         setNote(savedDraft.note || '');
       }
-      if (!orderRes?.data && tableSessionStorageKey) {
+      if (!orderRes?.data && savedDraft?.cart?.length && existingSessionToken && tableSessionStorageKey) {
         const sessionRes = await createTableSession(token, { session_token: existingSessionToken }).catch((err) => {
           localStorage.removeItem(tableSessionStorageKey);
           throw err;
@@ -289,11 +290,7 @@ export default function CustomerOrderPage() {
 
   useEffect(() => {
     if (!draftLoaded || !draftStorageKey || order) return;
-    const hasDraft = cart.length
-      || String(customerName || '').trim()
-      || String(voucherCode || '').trim()
-      || String(note || '').trim()
-      || String(customerPhone || '').replace(/\D/g, '') !== '62';
+    const hasDraft = cart.length > 0;
 
     if (!hasDraft) {
       localStorage.removeItem(draftStorageKey);
@@ -310,6 +307,15 @@ export default function CustomerOrderPage() {
       selectedPaymentMethodId,
     }));
   }, [cart, customerName, customerPhone, voucherCode, note, selectedPaymentMethodId, draftLoaded, draftStorageKey, order]);
+
+  useEffect(() => {
+    if (!draftLoaded || order || cart.length > 0 || !tableSessionStorageKey) return;
+    const sessionToken = localStorage.getItem(tableSessionStorageKey);
+    if (!sessionToken) return;
+    releaseTableSession(sessionToken).catch(() => {});
+    localStorage.removeItem(tableSessionStorageKey);
+    setTableSession(null);
+  }, [cart.length, draftLoaded, order, tableSessionStorageKey]);
 
   useEffect(() => {
     if (!order?.order_code || order.status === 'completed' || order.status === 'cancelled') return;
@@ -493,17 +499,24 @@ export default function CustomerOrderPage() {
     .sort((a, b) => Number(b.discountAmountValue) - Number(a.discountAmountValue)), [bundleHints, cart]);
 
   const touchTableSession = async () => {
-    if (!token || order || !tableSessionStorageKey) return;
+    if (!token || order || !tableSessionStorageKey) return false;
     const sessionToken = localStorage.getItem(tableSessionStorageKey) || tableSession?.session_token || '';
-    if (!sessionToken) return;
     try {
       const res = await createTableSession(token, { session_token: sessionToken });
       const session = res.data?.data;
       if (session?.session_token) {
         localStorage.setItem(tableSessionStorageKey, session.session_token);
         setTableSession(session);
+        return true;
       }
-    } catch (_) {}
+    } catch (err) {
+      setOrderMessageModal({
+        title: 'Meja belum bisa dipakai',
+        message: err.response?.data?.message || 'Slot meja belum tersedia. Silakan pilih meja lain atau ambil antrian.',
+        tone: 'warning',
+      });
+    }
+    return false;
   };
 
   useEffect(() => {
@@ -542,10 +555,11 @@ export default function CustomerOrderPage() {
     };
   }, [cart, customerPhoneForApi, total, voucherCode]);
 
-  const addToCart = (product) => {
+  const addToCart = async (product) => {
     if (tableBusy) return;
     if (Number(product.stock || 0) <= 0) return;
-    touchTableSession();
+    const sessionReady = await touchTableSession();
+    if (!sessionReady) return;
     setCart((prev) => {
       const existing = prev.find((item) => item.id === product.id);
       if (existing) {
@@ -556,9 +570,10 @@ export default function CustomerOrderPage() {
     });
   };
 
-  const addBundleToCart = (program) => {
+  const addBundleToCart = async (program) => {
     if (tableBusy) return;
-    touchTableSession();
+    const sessionReady = await touchTableSession();
+    if (!sessionReady) return;
     const targets = (program.missingProducts?.length ? program.missingProducts : program.bundleProducts)
       .filter((product) => Number(product.stock || 0) > 0);
     if (!targets.length) return;
@@ -595,10 +610,28 @@ export default function CustomerOrderPage() {
   };
 
   const changeQty = (productId, delta) => {
-    touchTableSession();
+    if (delta > 0) touchTableSession();
     setCart((prev) => prev
       .map((item) => item.id === productId ? { ...item, qty: Math.max(0, item.qty + delta) } : item)
       .filter((item) => item.qty > 0));
+  };
+
+  const leaveTable = async ({ clearDraft = false } = {}) => {
+    const sessionToken = tableSessionStorageKey ? localStorage.getItem(tableSessionStorageKey) : '';
+    if (sessionToken) {
+      await releaseTableSession(sessionToken).catch(() => {});
+      localStorage.removeItem(tableSessionStorageKey);
+    }
+    if (clearDraft) {
+      if (draftStorageKey) localStorage.removeItem(draftStorageKey);
+      setCart([]);
+      setVoucherCode('');
+      setNote('');
+      setDiscountPreview(null);
+      setBundlePrompt(null);
+      setShowMobileCart(false);
+    }
+    router.push('/order');
   };
 
   const startNewOrder = async () => {
@@ -952,12 +985,11 @@ export default function CustomerOrderPage() {
           <button
             type="button"
             onClick={async () => {
-              const sessionToken = tableSessionStorageKey ? localStorage.getItem(tableSessionStorageKey) : '';
-              if (!order && sessionToken) {
-                await releaseTableSession(sessionToken).catch(() => {});
-                localStorage.removeItem(tableSessionStorageKey);
+              if (!order && cart.length > 0) {
+                setLeaveConfirmOpen(true);
+                return;
               }
-              router.push('/order');
+              await leaveTable({ clearDraft: false });
             }}
             className="shrink-0 rounded-full border border-[#C9A84C]/35 px-3 py-2 text-sm font-bold text-[#C9A84C]"
           >
@@ -1256,6 +1288,50 @@ export default function CustomerOrderPage() {
               transition={{ type: 'spring', stiffness: 420, damping: 38 }}
             >
               {renderCartPanel(true)}
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {leaveConfirmOpen && (
+          <>
+            <motion.button
+              type="button"
+              aria-label="Batal pindah meja"
+              className="fixed inset-0 z-[90] bg-black/70 backdrop-blur-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setLeaveConfirmOpen(false)}
+            />
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              className="fixed inset-x-4 top-1/2 z-[100] mx-auto max-w-sm -translate-y-1/2 rounded-3xl border border-[#C9A84C]/25 bg-[#1A1409] p-5 text-[#F5EDD8] shadow-2xl shadow-black/50"
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 18 }}
+            >
+              <h3 className="text-xl font-black">Hapus draft pesanan?</h3>
+              <p className="mt-2 text-sm leading-6 text-[#EDE0C4]/75">
+                Jika kembali ke pilihan meja, menu yang ada di cart akan hilang dan slot meja ini dilepas untuk pelanggan lain.
+              </p>
+              <div className="mt-5 grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setLeaveConfirmOpen(false)}
+                  className="rounded-2xl border border-[#C9A84C]/25 px-4 py-3 text-sm font-black text-[#C9A84C]"
+                >
+                  Tetap di Meja
+                </button>
+                <button
+                  type="button"
+                  onClick={() => leaveTable({ clearDraft: true })}
+                  className="rounded-2xl bg-red-300 px-4 py-3 text-sm font-black text-[#0D0A06]"
+                >
+                  Hapus & Pindah
+                </button>
+              </div>
             </motion.div>
           </>
         )}

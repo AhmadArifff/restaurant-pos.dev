@@ -52,16 +52,7 @@ export default function SelectDiningTablePage() {
       } catch (_) {
         savedDraft = null;
       }
-      const hasDraft = Boolean(
-        savedDraft
-        && (
-          Array.isArray(savedDraft.cart) && savedDraft.cart.length
-          || String(savedDraft.customerName || '').trim()
-          || String(savedDraft.voucherCode || '').trim()
-          || String(savedDraft.note || '').trim()
-          || String(savedDraft.customerPhone || '').replace(/\D/g, '') !== '62'
-        )
-      );
+      const hasDraft = Boolean(savedDraft && Array.isArray(savedDraft.cart) && savedDraft.cart.length);
       if (savedOrderCode) acc.orders[table.qr_token] = savedOrderCode;
       if (hasDraft) acc.drafts[table.qr_token] = savedDraft;
       return acc;
