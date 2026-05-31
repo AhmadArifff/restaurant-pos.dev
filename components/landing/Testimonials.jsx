@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { testimonialsContent } from '@/data/landing/testimonialsContent';
 
@@ -9,7 +10,14 @@ const splitTitle = (title = '', highlight = '') => {
   return { before, highlighted: highlight, after: rest.join(highlight) };
 };
 
-function TestimonialsColumn({ items, duration = 18, reverse = false, className = '' }) {
+function TestimonialsColumn({
+  items,
+  duration = 18,
+  reverse = false,
+  className = '',
+  activeCard,
+  onToggleCard,
+}) {
   const reduceMotion = useReducedMotion();
   if (!items.length) return null;
 
@@ -28,7 +36,20 @@ function TestimonialsColumn({ items, duration = 18, reverse = false, className =
         {[0, 1].map((copyIndex) => (
           <div className="testi-column-set" key={copyIndex}>
             {items.map((item) => (
-              <article className="testi-card" key={`${item.id}-${copyIndex}`}>
+              <article
+                className={`testi-card ${activeCard === item.id ? 'tc-active' : ''}`}
+                key={`${item.id}-${copyIndex}`}
+                tabIndex={0}
+                role="button"
+                aria-label={item.ariaLabel}
+                onClick={() => onToggleCard(item.id)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    onToggleCard(item.id);
+                  }
+                }}
+              >
                 <div className="testi-media">
                   <img className="testi-bg-img" src={item.image} alt={item.imageAlt} />
                   {item.badge ? <span className="influencer-badge">{item.badge}</span> : null}
@@ -56,6 +77,7 @@ function TestimonialsColumn({ items, duration = 18, reverse = false, className =
 }
 
 export default function Testimonials({ content = testimonialsContent }) {
+  const [activeCard, setActiveCard] = useState(null);
   const data = content || testimonialsContent;
   const items = data.items || [];
   const columns = [
@@ -64,6 +86,9 @@ export default function Testimonials({ content = testimonialsContent }) {
     items.filter((_, index) => index % 3 === 2),
   ].filter((column) => column.length);
   const titleParts = splitTitle(data.title, data.highlight);
+  const toggleCard = (id) => {
+    setActiveCard((prev) => (prev === id ? null : id));
+  };
 
   return (
     <section id="testimonials">
@@ -85,12 +110,20 @@ export default function Testimonials({ content = testimonialsContent }) {
             duration={index === 1 ? 24 : index === 2 ? 20 : 18}
             reverse={index === 1}
             className={`testi-column-${index + 1}`}
+            activeCard={activeCard}
+            onToggleCard={toggleCard}
           />
         ))}
       </div>
 
       <div className="testi-mobile-marquee reveal">
-        <TestimonialsColumn items={items} duration={30} className="testi-column-mobile" />
+        <TestimonialsColumn
+          items={items}
+          duration={30}
+          className="testi-column-mobile"
+          activeCard={activeCard}
+          onToggleCard={toggleCard}
+        />
       </div>
     </section>
   );
