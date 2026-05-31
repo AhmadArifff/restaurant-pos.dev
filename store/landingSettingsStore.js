@@ -67,6 +67,33 @@ const deepMergeWithDefaults = (defaults, overrides) => {
   return overrides ?? defaults;
 };
 
+const normalizeExperienceFeatures = (settings) => {
+  const defaultImagesByTitle = new Map(
+    (experienceContent.features || []).map((feature) => [feature.title, feature.image || '']),
+  );
+  const defaultImagesByIcon = new Map([
+    ['🏺', defaultImagesByTitle.get('Atmosfer Otentik') || ''],
+    ['🌶️', defaultImagesByTitle.get('Rempah Premium Impor') || ''],
+    ['🎁', defaultImagesByTitle.get('Private Dining Room') || ''],
+    ['🚗', defaultImagesByTitle.get('Delivery & Dine-In') || ''],
+  ]);
+
+  const features = Array.isArray(settings?.experience?.features)
+    ? settings.experience.features
+    : [];
+
+  return {
+    ...settings,
+    experience: {
+      ...settings.experience,
+      features: features.map((feature) => ({
+        ...feature,
+        image: feature.image || defaultImagesByTitle.get(feature.title) || defaultImagesByIcon.get(feature.icon) || '',
+      })),
+    },
+  };
+};
+
 const defaultLandingSettings = {
   header: {
     logo: {
@@ -208,14 +235,14 @@ const normalizeFromApi = (apiSettings) => {
     hasPerSectionData = true;
   });
 
-  if (hasPerSectionData) return perSectionMerged;
+  if (hasPerSectionData) return normalizeExperienceFeatures(perSectionMerged);
 
   // Backward compatibility: single JSON blob key
   const legacyRaw = apiSettings[LEGACY_LANDING_SETTINGS_DB_KEY];
   const legacyParsed = typeof legacyRaw === 'object' ? legacyRaw : safeParse(legacyRaw);
   if (!legacyParsed || typeof legacyParsed !== 'object') return base;
 
-  return deepMergeWithDefaults(base, legacyParsed);
+  return normalizeExperienceFeatures(deepMergeWithDefaults(base, legacyParsed));
 };
 
 export const useLandingSettingsStore = create((set, get) => ({

@@ -1,5 +1,7 @@
 'use client';
 
+import { resolveAssetUrl } from '@/lib/assetUrl';
+
 export default function ExperiencePreview({ settings }) {
   if (!settings) {
     return (
@@ -24,8 +26,14 @@ export default function ExperiencePreview({ settings }) {
       <div className="grid grid-cols-1 gap-3">
         {features.map((feature, idx) => (
           <div key={`${feature.title}-${idx}`} className="p-3 rounded-lg border border-slate-700 bg-slate-900">
-            <p className="font-semibold">
-              <span className="mr-2">{feature.icon}</span>
+            <p className="flex items-center gap-3 font-semibold">
+              {feature.image ? (
+                <img
+                  src={resolveAssetUrl(feature.image, '')}
+                  alt={feature.title}
+                  className="h-12 w-12 rounded-xl object-contain"
+                />
+              ) : null}
               {feature.title}
             </p>
             <p className="text-xs text-slate-400 mt-1">{feature.description}</p>

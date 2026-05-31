@@ -3,6 +3,7 @@
 import AccordionSection from '../form/AccordionSection';
 import TextInput from '../form/TextInput';
 import TextArea from '../form/TextArea';
+import ImageUpload from '../form/ImageUpload';
 import DynamicArray from '../form/DynamicArray';
 import { useLandingSettingsStore } from '@/store/landingSettingsStore';
 
@@ -46,7 +47,7 @@ export default function ExperienceSettings() {
           label="Experience Features"
           onAdd={() =>
             addArrayItem('experience', 'features', {
-              icon: '*',
+              image: '',
               title: 'Fitur Baru',
               description: 'Deskripsi fitur',
             })
@@ -54,12 +55,12 @@ export default function ExperienceSettings() {
           onRemove={(idx) => removeArrayItem('experience', 'features', idx)}
           renderItem={(item, idx) => (
             <div className="space-y-2">
-              <TextInput
-                label="Icon"
-                value={item.icon}
-                onChange={(val) => updateNestedSetting('experience', `features.${idx}.icon`, val)}
-                maxLength={6}
-                placeholder="*"
+              <ImageUpload
+                label="3D Image / Asset"
+                value={item.image || ''}
+                onChange={(val) => updateNestedSetting('experience', `features.${idx}.image`, val)}
+                uploadKey={`experience-${idx + 1}`}
+                hint="Gunakan URL asset online 3D atau upload gambar dari perangkat."
               />
               <TextInput
                 label="Title"
