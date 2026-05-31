@@ -223,9 +223,12 @@ export default function CustomerOrderPage() {
   const [leaveCartConfirmOpen, setLeaveCartConfirmOpen] = useState(false);
   const cartRef = useRef([]);
   const orderRef = useRef(null);
+  const discountPreviewRef = useRef(null);
+  const sessionTouchRef = useRef({ inFlight: null, lastTouchedAt: 0 });
 
   useEffect(() => { cartRef.current = cart; }, [cart]);
   useEffect(() => { orderRef.current = order; }, [order]);
+  useEffect(() => { discountPreviewRef.current = discountPreview; }, [discountPreview]);
 
   useEffect(() => {
     if (!token) return;
@@ -348,7 +351,7 @@ export default function CustomerOrderPage() {
       })
         .then((res) => setTable(res.data))
         .catch(() => {});
-    }, 6000);
+    }, 20000);
     return () => window.clearInterval(interval);
   }, [token, order, tableSessionStorageKey]);
 
@@ -522,14 +525,31 @@ export default function CustomerOrderPage() {
   const touchTableSession = async () => {
     if (!token || order || !tableSessionStorageKey) return null;
     const sessionToken = localStorage.getItem(tableSessionStorageKey) || tableSession?.session_token || '';
-    try {
-      const res = await createTableSession(token, { session_token: sessionToken });
-      const session = res.data?.data;
-      if (session?.session_token) {
-        localStorage.setItem(tableSessionStorageKey, session.session_token);
-        setTableSession(session);
+    const expiresAt = tableSession?.expires_at ? new Date(tableSession.expires_at).getTime() : 0;
+    const hasFreshSession = sessionToken && expiresAt - Date.now() > 2 * 60 * 1000;
+    if (hasFreshSession) return tableSession;
+    if (sessionTouchRef.current.inFlight) return sessionTouchRef.current.inFlight;
+    if (Date.now() - sessionTouchRef.current.lastTouchedAt < 1200) return null;
+
+    sessionTouchRef.current.lastTouchedAt = Date.now();
+    sessionTouchRef.current.inFlight = (async () => {
+      try {
+        const res = await createTableSession(token, { session_token: sessionToken });
+        const session = res.data?.data;
+        if (session?.session_token) {
+          localStorage.setItem(tableSessionStorageKey, session.session_token);
+          setTableSession(session);
+        }
+        return session;
+      } catch (_) {
+        return null;
+      } finally {
+        sessionTouchRef.current.inFlight = null;
       }
-      return session;
+    })();
+
+    try {
+      return await sessionTouchRef.current.inFlight;
     } catch (_) {
       return null;
     }
@@ -539,6 +559,7 @@ export default function CustomerOrderPage() {
     const sessionToken = tableSessionStorageKey ? localStorage.getItem(tableSessionStorageKey) || '' : '';
     if (sessionToken) await releaseTableSession(sessionToken).catch(() => {});
     if (tableSessionStorageKey) localStorage.removeItem(tableSessionStorageKey);
+    sessionTouchRef.current = { inFlight: null, lastTouchedAt: 0 };
     setTableSession(null);
   };
 
@@ -575,7 +596,7 @@ export default function CustomerOrderPage() {
       }
 
       try {
-        setDiscountLoading(true);
+        if (!discountPreviewRef.current) setDiscountLoading(true);
         const res = await previewDiscount({
           subtotal: total,
           items: cart.map((item) => ({ product_id: item.id, qty: item.qty, price: item.price })),
@@ -594,7 +615,7 @@ export default function CustomerOrderPage() {
       } finally {
         if (!cancelled) setDiscountLoading(false);
       }
-    }, 350);
+    }, 650);
 
     return () => {
       cancelled = true;
@@ -605,7 +626,7 @@ export default function CustomerOrderPage() {
   const addToCart = (product) => {
     if (tableBusy) return;
     if (Number(product.stock || 0) <= 0) return;
-    touchTableSession();
+    if (!cartRef.current.length || !localStorage.getItem(tableSessionStorageKey)) touchTableSession();
     setCart((prev) => {
       const existing = prev.find((item) => item.id === product.id);
       if (existing) {
@@ -618,7 +639,7 @@ export default function CustomerOrderPage() {
 
   const addBundleToCart = (program) => {
     if (tableBusy) return;
-    touchTableSession();
+    if (!cartRef.current.length || !localStorage.getItem(tableSessionStorageKey)) touchTableSession();
     const targets = (program.missingProducts?.length ? program.missingProducts : program.bundleProducts)
       .filter((product) => Number(product.stock || 0) > 0);
     if (!targets.length) return;
@@ -655,7 +676,7 @@ export default function CustomerOrderPage() {
   };
 
   const changeQty = (productId, delta) => {
-    touchTableSession();
+    if (!cartRef.current.length || !localStorage.getItem(tableSessionStorageKey)) touchTableSession();
     setCart((prev) => prev
       .map((item) => item.id === productId ? { ...item, qty: Math.max(0, item.qty + delta) } : item)
       .filter((item) => item.qty > 0));

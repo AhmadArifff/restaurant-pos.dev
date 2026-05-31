@@ -52,16 +52,7 @@ export default function SelectDiningTablePage() {
       } catch (_) {
         savedDraft = null;
       }
-      const hasDraft = Boolean(
-        savedDraft
-        && (
-          Array.isArray(savedDraft.cart) && savedDraft.cart.length
-          || String(savedDraft.customerName || '').trim()
-          || String(savedDraft.voucherCode || '').trim()
-          || String(savedDraft.note || '').trim()
-          || String(savedDraft.customerPhone || '').replace(/\D/g, '') !== '62'
-        )
-      );
+      const hasDraft = Boolean(savedDraft && Array.isArray(savedDraft.cart) && savedDraft.cart.length);
       if (savedOrderCode) acc.orders[table.qr_token] = savedOrderCode;
       if (hasDraft) acc.drafts[table.qr_token] = savedDraft;
       return acc;
@@ -94,19 +85,26 @@ export default function SelectDiningTablePage() {
         setSavedOrdersByToken(savedState.orders);
         setSavedDraftsByToken(savedState.drafts);
         setQueueInfo(queueRes.data || null);
-        setSelected(
-          rows.find((table) => savedState.orders[table.qr_token])
-          || rows.find((table) => savedState.drafts[table.qr_token])
-          || rows.find((table) => Number(table.active_orders || 0) === 0)
-          || rows[0]
-          || null
-        );
+        setSelected((prev) => {
+          const previous = prev ? rows.find((table) => Number(table.id) === Number(prev.id)) : null;
+          const previousCanStay = previous && (
+            Number(previous.active_orders || 0) === 0
+            || savedState.orders[previous.qr_token]
+            || savedState.drafts[previous.qr_token]
+          );
+          if (previousCanStay) return previous;
+          return rows.find((table) => savedState.orders[table.qr_token])
+            || rows.find((table) => savedState.drafts[table.qr_token])
+            || rows.find((table) => Number(table.active_orders || 0) === 0)
+            || rows[0]
+            || null;
+        });
       })
       .finally(() => setLoading(false));
 
     setLoading(true);
     loadTables();
-    const timer = window.setInterval(loadTables, 6000);
+    const timer = window.setInterval(loadTables, 15000);
     return () => window.clearInterval(timer);
   }, [selectedBranch?.id, queueStorageKey]);
 
