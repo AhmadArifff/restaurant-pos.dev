@@ -266,7 +266,7 @@ export default function CustomerOrderPage() {
         setVoucherCode(savedDraft.voucherCode || '');
         setNote(savedDraft.note || '');
       }
-      if (!orderRes?.data && savedDraft?.cart?.length && existingSessionToken && tableSessionStorageKey) {
+      if (!orderRes?.data && tableSessionStorageKey) {
         const sessionRes = await createTableSession(token, { session_token: existingSessionToken }).catch((err) => {
           localStorage.removeItem(tableSessionStorageKey);
           throw err;
@@ -307,15 +307,6 @@ export default function CustomerOrderPage() {
       selectedPaymentMethodId,
     }));
   }, [cart, customerName, customerPhone, voucherCode, note, selectedPaymentMethodId, draftLoaded, draftStorageKey, order]);
-
-  useEffect(() => {
-    if (!draftLoaded || order || cart.length > 0 || !tableSessionStorageKey) return;
-    const sessionToken = localStorage.getItem(tableSessionStorageKey);
-    if (!sessionToken) return;
-    releaseTableSession(sessionToken).catch(() => {});
-    localStorage.removeItem(tableSessionStorageKey);
-    setTableSession(null);
-  }, [cart.length, draftLoaded, order, tableSessionStorageKey]);
 
   useEffect(() => {
     if (!order?.order_code || order.status === 'completed' || order.status === 'cancelled') return;

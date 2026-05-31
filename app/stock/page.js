@@ -118,8 +118,8 @@ function getRecipeSelectionDetails(products = [], selections = []) {
         qty: Math.max(0, Number(selection.qty || 0)),
       };
     })
-    .filter((selection) => selection.qty > 0)
-    .filter(Boolean);
+    .filter(Boolean)
+    .filter((selection) => selection.qty > 0);
 }
 
 function getRecipeSelectionLabel(products = [], selections = []) {

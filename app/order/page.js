@@ -85,13 +85,15 @@ export default function SelectDiningTablePage() {
         setSavedOrdersByToken(savedState.orders);
         setSavedDraftsByToken(savedState.drafts);
         setQueueInfo(queueRes.data || null);
-        setSelected(
-          rows.find((table) => savedState.orders[table.qr_token])
-          || rows.find((table) => savedState.drafts[table.qr_token])
-          || rows.find((table) => Number(table.active_orders || 0) === 0)
-          || rows[0]
-          || null
-        );
+        setSelected((current) => {
+          const currentTable = rows.find((table) => Number(table.id) === Number(current?.id));
+          return currentTable
+            || rows.find((table) => savedState.orders[table.qr_token])
+            || rows.find((table) => savedState.drafts[table.qr_token])
+            || rows.find((table) => Number(table.active_orders || 0) === 0)
+            || rows[0]
+            || null;
+        });
       })
       .finally(() => setLoading(false));
 
