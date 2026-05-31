@@ -12,6 +12,7 @@ import {
   getDiningTableByToken,
   getPublicPaymentMethods,
   previewDiscount,
+  skipCustomerOrderReview,
   submitCustomerOrderReview,
 } from '@/lib/api';
 import CustomerPaymentPanel from '@/components/customer/CustomerPaymentPanel';
@@ -205,6 +206,11 @@ export default function CustomerOrderPage() {
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [selectedPaymentMethodId, setSelectedPaymentMethodId] = useState('');
   const [paymentConfirmOrder, setPaymentConfirmOrder] = useState(null);
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [reviewPromptSeenForOrder, setReviewPromptSeenForOrder] = useState('');
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [skipReviewLoading, setSkipReviewLoading] = useState(false);
+  const [orderMessageModal, setOrderMessageModal] = useState(null);
 
   useEffect(() => {
     if (!token) return;
@@ -250,6 +256,15 @@ export default function CustomerOrderPage() {
 
     return () => window.clearInterval(interval);
   }, [order?.order_code, order?.status]);
+
+  useEffect(() => {
+    if (!order?.order_code || order.status !== 'completed' || order.reviewed_at || order.review_skipped_at) return;
+    const completedAt = order.completed_at ? new Date(order.completed_at).getTime() : Date.now();
+    const stillInReviewWindow = Date.now() - completedAt <= 60 * 60 * 1000;
+    if (!stillInReviewWindow || reviewPromptSeenForOrder === order.order_code) return;
+    setReviewPromptSeenForOrder(order.order_code);
+    setReviewModalOpen(true);
+  }, [order?.order_code, order?.status, order?.reviewed_at, order?.review_skipped_at, order?.completed_at, reviewPromptSeenForOrder]);
 
   useEffect(() => {
     if (!token || order) return;
@@ -316,7 +331,7 @@ export default function CustomerOrderPage() {
   const visibleStatusSteps = order?.status === 'cancelled'
     ? [{ key: 'cancelled', label: 'Dibatalkan', desc: order.cancel_reason || 'Pesanan dibatalkan.' }]
     : statusSteps;
-  const canOrderAgain = order?.status === 'cancelled' || (order?.status === 'completed' && order?.reviewed_at);
+  const canOrderAgain = order?.status === 'cancelled' || order?.status === 'completed';
   const tableBusy = !order && Number(table?.active_orders || 0) > 0;
   const branchLabel = table?.branch_name || 'Cabang Sultan Kebab';
   const branchArea = table?.branch_area || table?.branch_address || '';
@@ -328,6 +343,9 @@ export default function CustomerOrderPage() {
           : formatRp(reviewRewardProgram.discount_value)
       }`
     : 'Review semua menu';
+  const reviewVoucherInfo = reviewRewardProgram
+    ? `${reviewRewardText}. Voucher hanya diberikan jika rating memenuhi syarat dan kuota masih tersedia.`
+    : 'Program voucher review sedang tidak aktif. Review tetap membantu kami memperbaiki pelayanan.';
 
   const bundleHints = useMemo(() => {
     const productById = new Map(products.map((product) => [Number(product.id), product]));
@@ -493,6 +511,7 @@ export default function CustomerOrderPage() {
     setDiscountPreview(null);
     setBundlePrompt(null);
     setPaymentConfirmOrder(null);
+    setReviewModalOpen(false);
     setReview({ service_rating: 5, service_comment: '', items: {} });
     setShowMobileCart(false);
 
@@ -511,8 +530,22 @@ export default function CustomerOrderPage() {
   };
 
   const submitOrderWithCart = async (orderCart) => {
-    if (tableBusy) return alert('Meja ini masih memiliki pesanan aktif. Silakan hubungi kasir atau pilih meja lain.');
-    if (!orderCart.length) return alert('Pilih menu terlebih dahulu');
+    if (tableBusy) {
+      setOrderMessageModal({
+        title: 'Meja masih aktif',
+        message: 'Meja ini masih memiliki pesanan aktif. Silakan hubungi kasir atau pilih meja lain.',
+        tone: 'warning',
+      });
+      return;
+    }
+    if (!orderCart.length) {
+      setOrderMessageModal({
+        title: 'Keranjang kosong',
+        message: 'Pilih menu terlebih dahulu sebelum mengirim pesanan.',
+        tone: 'warning',
+      });
+      return;
+    }
     setSubmitting(true);
     try {
       const res = await createCustomerOrder({
@@ -531,7 +564,11 @@ export default function CustomerOrderPage() {
       if (nextOrder?.payment_method) setPaymentConfirmOrder(nextOrder);
       if (storageKey) localStorage.setItem(storageKey, nextOrder.order_code);
     } catch (err) {
-      alert(err.response?.data?.message || 'Gagal mengirim pesanan');
+      setOrderMessageModal({
+        title: 'Pesanan gagal dikirim',
+        message: err.response?.data?.message || 'Gagal mengirim pesanan. Silakan coba lagi.',
+        tone: 'danger',
+      });
     } finally {
       setSubmitting(false);
     }
@@ -568,8 +605,12 @@ export default function CustomerOrderPage() {
 
   const submitReview = async () => {
     const reviewPhone = order?.customer_phone || customerPhoneForApi;
-    if (!String(reviewPhone || '').trim()) {
-      alert('Nomor HP wajib diisi untuk klaim diskon review.');
+    if (reviewRewardProgram && !String(reviewPhone || '').trim()) {
+      setOrderMessageModal({
+        title: 'Nomor HP wajib diisi',
+        message: 'Nomor HP wajib diisi untuk klaim voucher review.',
+        tone: 'warning',
+      });
       return;
     }
 
@@ -580,6 +621,7 @@ export default function CustomerOrderPage() {
     }));
 
     try {
+      setReviewSubmitting(true);
       const res = await submitCustomerOrderReview(order.order_code, {
         service_rating: Number(review.service_rating || 5),
         service_comment: review.service_comment,
@@ -588,8 +630,33 @@ export default function CustomerOrderPage() {
       });
       setOrder(res.data.data);
       setDiscountAlert(res.data);
+      setReviewModalOpen(false);
     } catch (err) {
-      alert(err.response?.data?.message || 'Gagal mengirim review');
+      setOrderMessageModal({
+        title: 'Review gagal dikirim',
+        message: err.response?.data?.message || 'Gagal mengirim review. Silakan coba lagi.',
+        tone: 'danger',
+      });
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
+
+  const skipReview = async () => {
+    if (!order?.order_code) return;
+    try {
+      setSkipReviewLoading(true);
+      const res = await skipCustomerOrderReview(order.order_code);
+      setOrder(res.data.data);
+      setReviewModalOpen(false);
+    } catch (err) {
+      setOrderMessageModal({
+        title: 'Review belum bisa dilewati',
+        message: err.response?.data?.message || 'Gagal melewati review. Silakan coba lagi.',
+        tone: 'danger',
+      });
+    } finally {
+      setSkipReviewLoading(false);
     }
   };
 
@@ -997,71 +1064,29 @@ export default function CustomerOrderPage() {
                   <CustomerPaymentPanel order={order} onOrderUpdate={setOrder} compact />
                 </div>
 
-                {order.status === 'completed' && !order.reviewed_at && (
+                {order.status === 'completed' && !order.reviewed_at && !order.review_skipped_at && (
                   <div className="mt-5 rounded-3xl border border-[#C9A84C]/20 bg-[#0D0A06]/55 p-4">
-                    <p className="font-black text-[#C9A84C]">{reviewRewardText}</p>
-                    <label className="mt-4 block text-sm font-bold">Rating pelayanan</label>
-                    <div className="mt-2 rounded-2xl border border-[#C9A84C]/15 bg-[#1A1409] p-3">
-                      <StarPicker
-                        value={review.service_rating}
-                        onChange={(rating) => setReview((prev) => ({ ...prev, service_rating: rating }))}
-                      />
+                    <p className="text-xs font-black uppercase tracking-[0.18em] text-[#C9A84C]">Review Pesanan</p>
+                    <p className="mt-2 text-sm leading-6 text-[#EDE0C4]/75">
+                      Pesanan sudah selesai. Bantu review pelayanan dan menu yang Anda pesan.
+                    </p>
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                      <button
+                        type="button"
+                        onClick={() => setReviewModalOpen(true)}
+                        className="rounded-2xl bg-[#C9A84C] px-4 py-3 text-sm font-black text-[#0D0A06]"
+                      >
+                        Review Sekarang
+                      </button>
+                      <button
+                        type="button"
+                        onClick={skipReview}
+                        disabled={skipReviewLoading}
+                        className="rounded-2xl border border-[#C9A84C]/25 px-4 py-3 text-sm font-black text-[#C9A84C] disabled:opacity-50"
+                      >
+                        {skipReviewLoading ? 'Memproses...' : 'Lewati Review'}
+                      </button>
                     </div>
-                    <select
-                      value={review.service_rating}
-                      onChange={(e) => setReview((prev) => ({ ...prev, service_rating: e.target.value }))}
-                      className="sr-only"
-                      aria-hidden="true"
-                      tabIndex={-1}
-                    >
-                      {[5, 4, 3, 2, 1].map((rating) => <option key={rating} value={rating}>{rating} bintang</option>)}
-                    </select>
-                    <textarea
-                      value={review.service_comment}
-                      onChange={(e) => setReview((prev) => ({ ...prev, service_comment: e.target.value }))}
-                      placeholder="Masukan untuk pelayanan..."
-                      className="mt-3 w-full rounded-xl border border-[#C9A84C]/20 bg-[#1A1409] px-3 py-2 text-sm text-[#F5EDD8] outline-none"
-                    />
-                    <div className="mt-3 space-y-3">
-                      {order.items?.map((item) => (
-                        <div key={item.id} className="rounded-2xl bg-[#241C0E] p-3">
-                          <p className="text-sm font-bold">{item.product_name}</p>
-                          <div className="mt-2 rounded-2xl border border-[#C9A84C]/15 bg-[#1A1409] p-3">
-                            <StarPicker
-                              value={review.items[item.id]?.rating || 5}
-                              onChange={(rating) => setReview((prev) => ({
-                                ...prev,
-                                items: { ...prev.items, [item.id]: { ...prev.items[item.id], rating } },
-                              }))}
-                            />
-                          </div>
-                          <select
-                            value={review.items[item.id]?.rating || 5}
-                            onChange={(e) => setReview((prev) => ({
-                              ...prev,
-                              items: { ...prev.items, [item.id]: { ...prev.items[item.id], rating: e.target.value } },
-                            }))}
-                            className="sr-only"
-                            aria-hidden="true"
-                            tabIndex={-1}
-                          >
-                            {[5, 4, 3, 2, 1].map((rating) => <option key={rating} value={rating}>{rating} bintang</option>)}
-                          </select>
-                          <input
-                            value={review.items[item.id]?.comment || ''}
-                            onChange={(e) => setReview((prev) => ({
-                              ...prev,
-                              items: { ...prev.items, [item.id]: { ...prev.items[item.id], comment: e.target.value } },
-                            }))}
-                            placeholder="Komentar menu ini..."
-                            className="mt-2 w-full rounded-xl border border-[#C9A84C]/20 bg-[#1A1409] px-3 py-2 text-sm outline-none"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                    <button onClick={submitReview} className="mt-4 w-full rounded-2xl bg-[#C9A84C] py-3 font-black text-[#0D0A06]">
-                      Kirim Review dan Ambil Diskon
-                    </button>
                   </div>
                 )}
 
@@ -1117,6 +1142,146 @@ export default function CustomerOrderPage() {
               transition={{ type: 'spring', stiffness: 420, damping: 38 }}
             >
               {renderCartPanel(true)}
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {orderMessageModal && (
+          <>
+            <motion.button
+              type="button"
+              aria-label="Tutup pesan"
+              className="fixed inset-0 z-[90] bg-black/70 backdrop-blur-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setOrderMessageModal(null)}
+            />
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              className={`fixed inset-x-4 top-1/2 z-[100] mx-auto max-w-sm -translate-y-1/2 rounded-3xl border p-5 shadow-2xl shadow-black/50 ${
+                orderMessageModal.tone === 'danger'
+                  ? 'border-red-300/25 bg-[#251010] text-red-50'
+                  : 'border-[#C9A84C]/25 bg-[#1A1409] text-[#F5EDD8]'
+              }`}
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 18 }}
+            >
+              <h3 className="text-xl font-black">{orderMessageModal.title}</h3>
+              <p className="mt-2 text-sm leading-6 opacity-80">{orderMessageModal.message}</p>
+              <button
+                type="button"
+                onClick={() => setOrderMessageModal(null)}
+                className="mt-5 w-full rounded-2xl bg-[#C9A84C] px-4 py-3 text-sm font-black text-[#0D0A06]"
+              >
+                Mengerti
+              </button>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {reviewModalOpen && order?.status === 'completed' && !order.reviewed_at && (
+          <>
+            <motion.button
+              type="button"
+              aria-label="Tutup review"
+              className="fixed inset-0 z-[85] bg-black/75 backdrop-blur-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setReviewModalOpen(false)}
+            />
+            <motion.div
+              className="fixed inset-x-3 bottom-4 z-[95] mx-auto max-h-[92vh] max-w-2xl overflow-y-auto rounded-3xl border border-[#C9A84C]/25 bg-[#1A1409] p-5 text-[#F5EDD8] shadow-2xl shadow-black/60 sm:inset-x-0 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2"
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 24 }}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.22em] text-[#C9A84C]">Review Pelanggan</p>
+                  <h2 className="mt-2 text-2xl font-black">Bagaimana pengalaman makan Anda?</h2>
+                  <p className="mt-2 text-sm leading-6 text-[#EDE0C4]/75">{reviewVoucherInfo}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setReviewModalOpen(false)}
+                  className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-[#C9A84C]/20 text-lg font-black text-[#C9A84C]"
+                  aria-label="Tutup review"
+                >
+                  x
+                </button>
+              </div>
+
+              <div className="mt-5 rounded-3xl border border-[#C9A84C]/15 bg-[#0D0A06]/55 p-4">
+                <label className="block text-sm font-black text-[#C9A84C]">Rating pelayanan</label>
+                <div className="mt-3 rounded-2xl border border-[#C9A84C]/15 bg-[#1A1409] p-3">
+                  <StarPicker
+                    value={review.service_rating}
+                    onChange={(rating) => setReview((prev) => ({ ...prev, service_rating: rating }))}
+                  />
+                  <p className="mt-2 text-xs text-[#EDE0C4]/60">{review.service_rating} bintang</p>
+                </div>
+                <textarea
+                  value={review.service_comment}
+                  onChange={(e) => setReview((prev) => ({ ...prev, service_comment: e.target.value }))}
+                  placeholder="Masukan untuk pelayanan..."
+                  className="mt-3 w-full rounded-xl border border-[#C9A84C]/20 bg-[#1A1409] px-3 py-2 text-sm text-[#F5EDD8] outline-none"
+                />
+              </div>
+
+              <div className="mt-4 space-y-3">
+                {order.items?.map((item) => (
+                  <div key={item.id} className="rounded-3xl border border-[#C9A84C]/12 bg-[#241C0E] p-4">
+                    <p className="text-sm font-black">{item.product_name}</p>
+                    <div className="mt-2 rounded-2xl border border-[#C9A84C]/15 bg-[#1A1409] p-3">
+                      <StarPicker
+                        value={review.items[item.id]?.rating || 5}
+                        onChange={(rating) => setReview((prev) => ({
+                          ...prev,
+                          items: { ...prev.items, [item.id]: { ...prev.items[item.id], rating } },
+                        }))}
+                      />
+                      <p className="mt-2 text-xs text-[#EDE0C4]/60">{review.items[item.id]?.rating || 5} bintang</p>
+                    </div>
+                    <input
+                      value={review.items[item.id]?.comment || ''}
+                      onChange={(e) => setReview((prev) => ({
+                        ...prev,
+                        items: { ...prev.items, [item.id]: { ...prev.items[item.id], comment: e.target.value } },
+                      }))}
+                      placeholder="Komentar menu ini..."
+                      className="mt-2 w-full rounded-xl border border-[#C9A84C]/20 bg-[#1A1409] px-3 py-2 text-sm outline-none"
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-5 grid gap-3 sm:grid-cols-[1fr_1.2fr]">
+                <button
+                  type="button"
+                  onClick={skipReview}
+                  disabled={skipReviewLoading || reviewSubmitting}
+                  className="rounded-2xl border border-[#C9A84C]/25 px-4 py-3 text-sm font-black text-[#C9A84C] disabled:opacity-50"
+                >
+                  {skipReviewLoading ? 'Memproses...' : 'Tidak Review'}
+                </button>
+                <button
+                  type="button"
+                  onClick={submitReview}
+                  disabled={reviewSubmitting || skipReviewLoading}
+                  className="rounded-2xl bg-[#C9A84C] px-4 py-3 text-sm font-black text-[#0D0A06] disabled:opacity-50"
+                >
+                  {reviewSubmitting ? 'Mengirim review...' : reviewRewardProgram ? 'Kirim Review dan Klaim Voucher' : 'Kirim Review'}
+                </button>
+              </div>
+              <p className="mt-3 rounded-2xl bg-[#0D0A06]/55 p-3 text-xs leading-5 text-[#EDE0C4]/65">
+                Setelah review dikirim atau dilewati, meja masuk cooldown 20 menit sebelum bisa dipakai untuk pesanan baru.
+              </p>
             </motion.div>
           </>
         )}

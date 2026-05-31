@@ -195,6 +195,27 @@ export default function PaymentManagementPage() {
 
           <div className="grid gap-6 xl:grid-cols-[1fr_420px]">
             <section className="space-y-4">
+              <div className="rounded-3xl border border-sky-500/20 bg-sky-500/10 p-5">
+                <p className="text-xs font-black uppercase tracking-[0.22em] text-sky-300">Alur tampilan pelanggan</p>
+                <div className="mt-4 grid gap-3 md:grid-cols-2">
+                  <div className="rounded-2xl border border-sky-200/15 bg-slate-900/60 p-4">
+                    <h3 className="font-black text-white">QRIS Manual</h3>
+                    <ol className="mt-3 list-decimal space-y-2 pl-4 text-sm leading-6 text-slate-300">
+                      <li>Pelanggan memilih QRIS dan melihat QR statis toko, nominal, serta countdown.</li>
+                      <li>Pelanggan scan, bayar sesuai nominal, lalu klik Saya Sudah Bayar.</li>
+                      <li>Pelanggan upload bukti, lalu masuk status Menunggu Verifikasi Admin.</li>
+                    </ol>
+                  </div>
+                  <div className="rounded-2xl border border-emerald-200/15 bg-slate-900/60 p-4">
+                    <h3 className="font-black text-white">Transfer Bank Manual</h3>
+                    <ol className="mt-3 list-decimal space-y-2 pl-4 text-sm leading-6 text-slate-300">
+                      <li>Pelanggan melihat kartu rekening: bank, nomor rekening, dan a/n pemilik.</li>
+                      <li>Tombol copy rekening dan copy nominal membantu mengurangi salah input.</li>
+                      <li>Pelanggan mengisi nama pengirim, tanggal transfer, upload bukti, lalu menunggu verifikasi.</li>
+                    </ol>
+                  </div>
+                </div>
+              </div>
               {loading && (
                 <div className="rounded-3xl border border-slate-700 bg-slate-800 p-6 text-slate-400">
                   Memuat metode pembayaran...

@@ -28,11 +28,14 @@ const formatRemaining = (seconds) => {
 export default function CustomerPaymentPanel({ order, onOrderUpdate, compact = false }) {
   const [now, setNow] = useState(Date.now());
   const [proof, setProof] = useState(null);
+  const [payerName, setPayerName] = useState('');
+  const [transferDate, setTransferDate] = useState('');
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [copyMessage, setCopyMessage] = useState('');
   const [accountCopyMessage, setAccountCopyMessage] = useState('');
   const [proofModalOpen, setProofModalOpen] = useState(false);
+  const [messageModal, setMessageModal] = useState(null);
 
   const method = order?.payment_method || null;
   const payableTotal = Number(order?.final_total || order?.subtotal || 0);
@@ -46,10 +49,17 @@ export default function CustomerPaymentPanel({ order, onOrderUpdate, compact = f
   const instructionLines = useMemo(() => {
     const raw = String(method?.instructions || '').trim();
     if (!raw) {
+      if (method?.type === 'transfer') {
+        return [
+          'Salin nomor rekening dan nominal agar tidak salah transfer.',
+          'Transfer sesuai total bayar. Gunakan nama pelanggan sebagai berita transfer.',
+          'Upload bukti transfer, isi nama pengirim dan tanggal transfer, lalu kirim konfirmasi.',
+        ];
+      }
       return [
-        'Pastikan nominal pembayaran sama dengan total bayar.',
-        'Setelah transfer/scan QRIS berhasil, unggah bukti pembayaran dari halaman ini.',
-        'Kasir akan memeriksa bukti pembayaran sebelum pesanan diproses selesai.',
+        'Scan QRIS statis toko dari aplikasi pembayaran Anda.',
+        'Bayar sesuai nominal yang tampil, lalu simpan bukti pembayaran.',
+        'Klik tombol Saya Sudah Bayar, upload bukti, dan tunggu verifikasi admin/kasir.',
       ];
     }
     return raw.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
@@ -88,24 +98,43 @@ export default function CustomerPaymentPanel({ order, onOrderUpdate, compact = f
 
   const qrUrl = method.qr_image_url ? resolveAssetUrl(method.qr_image_url) : '';
   const proofUrl = order?.payment_proof_url ? resolveAssetUrl(order.payment_proof_url) : '';
+  const isTransfer = method.type === 'transfer';
 
   const submitProof = async () => {
     if (!proof) {
-      alert('Pilih foto atau file bukti pembayaran terlebih dahulu.');
+      setMessageModal({
+        title: 'Bukti belum dipilih',
+        message: 'Upload foto atau PDF bukti pembayaran terlebih dahulu.',
+        tone: 'warning',
+      });
       return;
     }
     setSubmitting(true);
     try {
       const data = new FormData();
       data.append('proof', proof);
-      data.append('note', note);
+      data.append('note', [
+        payerName ? `Nama pengirim: ${payerName}` : '',
+        transferDate ? `Tanggal transfer: ${transferDate}` : '',
+        note ? `Catatan: ${note}` : '',
+      ].filter(Boolean).join('\n'));
       const res = await submitCustomerPaymentProof(order.order_code, data);
       onOrderUpdate?.(res.data?.data || res.data);
       setProof(null);
+      setPayerName('');
+      setTransferDate('');
       setNote('');
-      alert('Bukti pembayaran berhasil dikirim. Kasir akan melakukan konfirmasi.');
+      setMessageModal({
+        title: 'Menunggu Verifikasi Admin',
+        message: 'Bukti pembayaran berhasil dikirim. Kasir/admin akan memeriksa pembayaran sebelum pesanan diproses.',
+        tone: 'success',
+      });
     } catch (err) {
-      alert(err.response?.data?.message || 'Gagal mengirim bukti pembayaran.');
+      setMessageModal({
+        title: 'Bukti gagal dikirim',
+        message: err.response?.data?.message || 'Gagal mengirim bukti pembayaran. Silakan coba lagi.',
+        tone: 'danger',
+      });
     } finally {
       setSubmitting(false);
     }
@@ -122,6 +151,18 @@ export default function CustomerPaymentPanel({ order, onOrderUpdate, compact = f
           </strong>
           {dueAt && <p className="mt-1 text-[11px] text-[#EDE0C4]/55">Sampai {formatDateTime(order.payment_due_at)}</p>}
         </div>
+      </div>
+
+      <div className="mt-4 grid gap-2 rounded-2xl border border-[#C9A84C]/15 bg-[#0D0A06]/45 p-3 sm:grid-cols-3">
+        {[
+          method.type === 'qris' ? '1. Scan QRIS toko' : '1. Salin rekening',
+          method.type === 'qris' ? '2. Bayar sesuai nominal' : '2. Transfer sesuai nominal',
+          '3. Upload bukti & tunggu verifikasi',
+        ].map((step) => (
+          <div key={step} className="rounded-xl bg-[#241C0E] px-3 py-2 text-xs font-bold text-[#F5EDD8]/80">
+            {step}
+          </div>
+        ))}
       </div>
 
       <div className={`mt-4 grid min-w-0 gap-4 ${method.type === 'qris' && method.qr_image_url ? 'xl:grid-cols-[minmax(180px,240px)_1fr]' : ''}`}>
@@ -191,6 +232,25 @@ export default function CustomerPaymentPanel({ order, onOrderUpdate, compact = f
         </div>
       ) : (
         <div className="mt-4 space-y-3 rounded-2xl bg-[#0D0A06]/45 p-3">
+          <div className="rounded-2xl border border-sky-200/15 bg-sky-300/10 p-3 text-sm leading-6 text-sky-50/85">
+            {isTransfer
+              ? 'Form upload bukti transfer: isi nama pengirim, tanggal transfer, lalu kirim bukti agar admin bisa memverifikasi pembayaran.'
+              : 'Jika pembayaran QRIS sudah berhasil, klik tombol konfirmasi dengan melampirkan bukti pembayaran.'}
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <input
+              value={payerName}
+              onChange={(event) => setPayerName(event.target.value)}
+              placeholder={isTransfer ? 'Nama pengirim rekening' : 'Nama pembayar (opsional)'}
+              className="w-full rounded-xl border border-sky-100/20 bg-[#0D0A06] px-4 py-3 text-sm text-sky-50 outline-none"
+            />
+            <input
+              type="datetime-local"
+              value={transferDate}
+              onChange={(event) => setTransferDate(event.target.value)}
+              className="w-full rounded-xl border border-sky-100/20 bg-[#0D0A06] px-4 py-3 text-sm text-sky-50 outline-none"
+            />
+          </div>
           <input
             type="file"
             accept="image/*,.pdf"
@@ -209,8 +269,29 @@ export default function CustomerPaymentPanel({ order, onOrderUpdate, compact = f
             disabled={submitting}
             className="w-full rounded-xl bg-sky-300 px-4 py-3 text-sm font-black text-[#0D0A06] disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {submitting ? 'Mengirim bukti...' : 'Konfirmasi & Kirim Bukti Pembayaran'}
+            {submitting ? 'Mengirim bukti...' : method.type === 'qris' ? 'Saya Sudah Bayar & Kirim Bukti' : 'Konfirmasi & Kirim Bukti Transfer'}
           </button>
+        </div>
+      )}
+      {messageModal && (
+        <div className="fixed inset-0 z-[95] grid place-items-center bg-black/70 p-4 backdrop-blur-sm" role="dialog" aria-modal="true">
+          <div className={`w-full max-w-sm rounded-3xl border p-5 shadow-2xl shadow-black/50 ${
+            messageModal.tone === 'success'
+              ? 'border-emerald-300/25 bg-[#10251E] text-emerald-50'
+              : messageModal.tone === 'danger'
+                ? 'border-red-300/25 bg-[#251010] text-red-50'
+                : 'border-[#C9A84C]/25 bg-[#1A1409] text-[#F5EDD8]'
+          }`}>
+            <h3 className="text-xl font-black">{messageModal.title}</h3>
+            <p className="mt-2 text-sm leading-6 opacity-80">{messageModal.message}</p>
+            <button
+              type="button"
+              onClick={() => setMessageModal(null)}
+              className="mt-5 w-full rounded-2xl bg-[#C9A84C] px-4 py-3 text-sm font-black text-[#0D0A06]"
+            >
+              Mengerti
+            </button>
+          </div>
         </div>
       )}
       {proofModalOpen && (
