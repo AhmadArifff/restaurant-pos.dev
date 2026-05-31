@@ -37,7 +37,6 @@ export default function SelectDiningTablePage() {
   const [loading, setLoading] = useState(true);
   const [savedOrdersByToken, setSavedOrdersByToken] = useState({});
   const [savedDraftsByToken, setSavedDraftsByToken] = useState({});
-  const [savedSessionsByToken, setSavedSessionsByToken] = useState({});
   const [queueInfo, setQueueInfo] = useState(null);
   const [queueLoading, setQueueLoading] = useState(false);
   const [queueName, setQueueName] = useState('');
@@ -47,19 +46,26 @@ export default function SelectDiningTablePage() {
     if (typeof window === 'undefined') return {};
     return rows.reduce((acc, table) => {
       const savedOrderCode = window.localStorage.getItem(`customer-order-${table.qr_token}`);
-      const savedSessionToken = window.localStorage.getItem(`customer-table-session-${table.qr_token}`);
       let savedDraft = null;
       try {
         savedDraft = JSON.parse(window.localStorage.getItem(`customer-order-draft-${table.qr_token}`) || 'null');
       } catch (_) {
         savedDraft = null;
       }
-      const hasDraft = Boolean(savedDraft && Array.isArray(savedDraft.cart) && savedDraft.cart.length);
+      const hasDraft = Boolean(
+        savedDraft
+        && (
+          Array.isArray(savedDraft.cart) && savedDraft.cart.length
+          || String(savedDraft.customerName || '').trim()
+          || String(savedDraft.voucherCode || '').trim()
+          || String(savedDraft.note || '').trim()
+          || String(savedDraft.customerPhone || '').replace(/\D/g, '') !== '62'
+        )
+      );
       if (savedOrderCode) acc.orders[table.qr_token] = savedOrderCode;
-      if (savedSessionToken) acc.sessions[table.qr_token] = savedSessionToken;
       if (hasDraft) acc.drafts[table.qr_token] = savedDraft;
       return acc;
-    }, { orders: {}, drafts: {}, sessions: {} });
+    }, { orders: {}, drafts: {} });
   };
 
   useEffect(() => {
@@ -87,18 +93,14 @@ export default function SelectDiningTablePage() {
         setTables(rows);
         setSavedOrdersByToken(savedState.orders);
         setSavedDraftsByToken(savedState.drafts);
-        setSavedSessionsByToken(savedState.sessions);
         setQueueInfo(queueRes.data || null);
-        setSelected((current) => {
-          const currentTable = rows.find((table) => Number(table.id) === Number(current?.id));
-          return currentTable
-            || rows.find((table) => savedState.orders[table.qr_token])
-            || rows.find((table) => savedState.drafts[table.qr_token])
-            || rows.find((table) => savedState.sessions[table.qr_token])
-            || rows.find((table) => Number(table.active_orders || 0) === 0)
-            || rows[0]
-            || null;
-        });
+        setSelected(
+          rows.find((table) => savedState.orders[table.qr_token])
+          || rows.find((table) => savedState.drafts[table.qr_token])
+          || rows.find((table) => Number(table.active_orders || 0) === 0)
+          || rows[0]
+          || null
+        );
       })
       .finally(() => setLoading(false));
 
@@ -207,8 +209,7 @@ export default function SelectDiningTablePage() {
                   const busy = Number(table.active_orders || 0) > 0;
                   const hasSavedOrder = Boolean(savedOrdersByToken[table.qr_token]);
                   const hasSavedDraft = Boolean(savedDraftsByToken[table.qr_token]);
-                  const hasSavedSession = Boolean(savedSessionsByToken[table.qr_token]);
-                  const locked = (busy || hasWaitingQueue) && !hasSavedOrder && !hasSavedDraft && !hasSavedSession;
+                  const locked = (busy || hasWaitingQueue) && !hasSavedOrder && !hasSavedDraft;
                   return (
                     <motion.button
                       key={table.id}
@@ -239,8 +240,6 @@ export default function SelectDiningTablePage() {
                           ? 'Riwayat pesanan Anda aktif'
                           : hasSavedDraft
                             ? 'Draft pesanan Anda tersimpan'
-                          : hasSavedSession
-                            ? 'Sedang memilih menu'
                           : hasWaitingQueue
                             ? 'Ada antrian menunggu'
                           : busy
@@ -335,8 +334,7 @@ export default function SelectDiningTablePage() {
                   const selectedBusy = Number(selected.active_orders || 0) > 0;
                   const hasSavedOrder = Boolean(savedOrdersByToken[selected.qr_token]);
                   const hasSavedDraft = Boolean(savedDraftsByToken[selected.qr_token]);
-                  const hasSavedSession = Boolean(savedSessionsByToken[selected.qr_token]);
-                  const locked = (selectedBusy || hasWaitingQueue) && !hasSavedOrder && !hasSavedDraft && !hasSavedSession;
+                  const locked = (selectedBusy || hasWaitingQueue) && !hasSavedOrder && !hasSavedDraft;
                   return (
                     <>
                 <div className="mb-5 rounded-3xl bg-[#241C0E] p-5">
@@ -365,22 +363,15 @@ export default function SelectDiningTablePage() {
                         Draft pesanan dari perangkat ini tersimpan. Anda bisa lanjut memilih menu sebelum mengirim pesanan.
                       </div>
                     )}
-                    {hasSavedSession && !hasSavedOrder && !hasSavedDraft && (
-                      <div className="mb-4 rounded-3xl border border-sky-300/25 bg-sky-500/12 p-4 text-sm leading-6 text-sky-50">
-                        Slot meja dari perangkat ini masih aktif. Anda bisa lanjut memilih menu.
-                      </div>
-                    )}
                     <QRCodeCard value={selectedUrl} />
                     <Link
                       href={`/order/${selected.qr_token}`}
                       className="mt-5 flex w-full items-center justify-center rounded-2xl bg-[#C9A84C] px-5 py-3 text-sm font-black uppercase tracking-[0.18em] text-[#0D0A06] transition hover:bg-[#E8C96A]"
                     >
                       {hasSavedOrder && selectedBusy
-                          ? 'Buka Riwayat Pesanan Saya'
+                        ? 'Buka Riwayat Pesanan Saya'
                         : hasSavedDraft
                           ? 'Lanjutkan Pesanan Saya'
-                          : hasSavedSession
-                            ? 'Lanjut Pilih Menu'
                           : 'Lanjut Pesan'}
                     </Link>
                   </>
