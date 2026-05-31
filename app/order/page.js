@@ -2,8 +2,15 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { getPublicBranches, getPublicDiningTables } from '@/lib/api';
+import {
+  claimPublicTableQueue,
+  getPublicBranches,
+  getPublicDiningTables,
+  getPublicTableQueue,
+  joinPublicTableQueue,
+} from '@/lib/api';
 import QRCodeCard from '@/components/customer/QRCodeCard';
 
 const getOrderUrl = (token) => {
@@ -11,7 +18,18 @@ const getOrderUrl = (token) => {
   return `${window.location.origin}/order/${token}`;
 };
 
+const formatQueueEta = (value) => {
+  if (!value) return 'Estimasi sedang dihitung';
+  return new Intl.DateTimeFormat('id-ID', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(value));
+};
+
 export default function SelectDiningTablePage() {
+  const router = useRouter();
   const [tables, setTables] = useState([]);
   const [branches, setBranches] = useState([]);
   const [selectedBranch, setSelectedBranch] = useState(null);
@@ -19,6 +37,10 @@ export default function SelectDiningTablePage() {
   const [loading, setLoading] = useState(true);
   const [savedOrdersByToken, setSavedOrdersByToken] = useState({});
   const [savedDraftsByToken, setSavedDraftsByToken] = useState({});
+  const [queueInfo, setQueueInfo] = useState(null);
+  const [queueLoading, setQueueLoading] = useState(false);
+  const [queueName, setQueueName] = useState('');
+  const queueStorageKey = selectedBranch?.id ? `customer-table-queue-${selectedBranch.id}` : '';
 
   const readSavedTableState = (rows) => {
     if (typeof window === 'undefined') return {};
@@ -58,13 +80,20 @@ export default function SelectDiningTablePage() {
 
   useEffect(() => {
     if (!selectedBranch?.id) return;
-    const loadTables = () => getPublicDiningTables({ branch_id: selectedBranch.id })
-      .then((res) => {
+    const loadTables = () => Promise.all([
+      getPublicDiningTables({ branch_id: selectedBranch.id }),
+      getPublicTableQueue({
+        branch_id: selectedBranch.id,
+        queue_token: queueStorageKey ? window.localStorage.getItem(queueStorageKey) || '' : '',
+      }).catch(() => ({ data: null })),
+    ])
+      .then(([res, queueRes]) => {
         const rows = res.data || [];
         const savedState = readSavedTableState(rows);
         setTables(rows);
         setSavedOrdersByToken(savedState.orders);
         setSavedDraftsByToken(savedState.drafts);
+        setQueueInfo(queueRes.data || null);
         setSelected(
           rows.find((table) => savedState.orders[table.qr_token])
           || rows.find((table) => savedState.drafts[table.qr_token] && Number(table.active_orders || 0) === 0)
@@ -79,9 +108,53 @@ export default function SelectDiningTablePage() {
     loadTables();
     const timer = window.setInterval(loadTables, 6000);
     return () => window.clearInterval(timer);
-  }, [selectedBranch?.id]);
+  }, [selectedBranch?.id, queueStorageKey]);
 
   const selectedUrl = useMemo(() => selected ? getOrderUrl(selected.qr_token) : '', [selected]);
+  const hasWaitingQueue = Number(queueInfo?.waiting_count || 0) > 0;
+  const allTablesBusy = tables.length > 0 && tables.every((table) => Number(table.active_orders || 0) > 0);
+  const showQueuePanel = hasWaitingQueue || allTablesBusy;
+
+  const refreshQueue = async () => {
+    if (!selectedBranch?.id) return;
+    const queueToken = queueStorageKey ? window.localStorage.getItem(queueStorageKey) || '' : '';
+    const res = await getPublicTableQueue({ branch_id: selectedBranch.id, queue_token: queueToken });
+    setQueueInfo(res.data);
+  };
+
+  const joinQueue = async (mode) => {
+    if (!selectedBranch?.id || queueLoading) return;
+    setQueueLoading(true);
+    try {
+      const res = await joinPublicTableQueue({
+        branch_id: selectedBranch.id,
+        table_id: mode === 'selected' ? selected?.id || null : null,
+        customer_name: queueName,
+      });
+      if (queueStorageKey) window.localStorage.setItem(queueStorageKey, res.data?.data?.queue_token || '');
+      await refreshQueue();
+    } finally {
+      setQueueLoading(false);
+    }
+  };
+
+  const claimQueue = async () => {
+    const queueToken = queueStorageKey ? window.localStorage.getItem(queueStorageKey) : '';
+    if (!queueToken || queueLoading) return;
+    setQueueLoading(true);
+    try {
+      const res = await claimPublicTableQueue(queueToken);
+      const table = res.data?.data?.table;
+      const session = res.data?.data?.session;
+      if (table?.qr_token && session?.session_token) {
+        window.localStorage.setItem(`customer-table-session-${table.qr_token}`, session.session_token);
+        if (queueStorageKey) window.localStorage.removeItem(queueStorageKey);
+        router.push(`/order/${table.qr_token}`);
+      }
+    } finally {
+      setQueueLoading(false);
+    }
+  };
 
   return (
     <main className="min-h-screen overflow-hidden bg-[#0D0A06] text-[#F5EDD8]">
@@ -136,7 +209,7 @@ export default function SelectDiningTablePage() {
                   const busy = Number(table.active_orders || 0) > 0;
                   const hasSavedOrder = Boolean(savedOrdersByToken[table.qr_token]);
                   const hasSavedDraft = Boolean(savedDraftsByToken[table.qr_token]);
-                  const locked = busy && !hasSavedOrder;
+                  const locked = (busy || hasWaitingQueue) && !hasSavedOrder;
                   return (
                     <motion.button
                       key={table.id}
@@ -167,6 +240,8 @@ export default function SelectDiningTablePage() {
                           ? 'Riwayat pesanan Anda aktif'
                           : hasSavedDraft
                             ? 'Draft pesanan Anda tersimpan'
+                          : hasWaitingQueue
+                            ? 'Ada antrian menunggu'
                           : busy
                             ? 'Ada pesanan aktif'
                             : table.table_name || `${table.capacity} kursi tersedia`}
@@ -175,6 +250,70 @@ export default function SelectDiningTablePage() {
                   );
                 })}
           </div>
+
+          {showQueuePanel && (
+            <div className="mt-8 rounded-[2rem] border border-sky-300/25 bg-sky-500/10 p-5 text-sky-50">
+              <p className="text-xs font-black uppercase tracking-[0.24em] text-sky-200">Antrian Meja</p>
+              <h2 className="mt-2 text-2xl font-black">
+                {hasWaitingQueue ? `${queueInfo.waiting_count} pelanggan menunggu` : 'Semua meja sedang penuh'}
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-sky-50/75">
+                Saat antrian aktif, pelanggan baru harus mengambil nomor antrian agar tidak menyela pelanggan yang sudah menunggu.
+              </p>
+              <div className="mt-4 space-y-2">
+                {(queueInfo?.queue || []).slice(0, 5).map((entry) => (
+                  <div key={entry.queue_token} className="flex items-center justify-between rounded-2xl bg-[#0D0A06]/55 px-4 py-3 text-sm">
+                    <span>#{entry.position} {entry.table_number ? `Meja ${entry.table_number}` : 'Meja acak'}</span>
+                    <span className="text-sky-100/65">{entry.preference === 'selected' ? 'Pilih meja' : 'Random kosong'}</span>
+                  </div>
+                ))}
+              </div>
+              {queueInfo?.current_position > 0 ? (
+                <div className="mt-4 rounded-2xl border border-emerald-300/25 bg-emerald-500/12 p-4">
+                  <p className="font-black text-emerald-100">Posisi antrian Anda #{queueInfo.current_position}</p>
+                  {queueInfo.can_claim ? (
+                    <button
+                      type="button"
+                      onClick={claimQueue}
+                      disabled={queueLoading}
+                      className="mt-3 w-full rounded-2xl bg-emerald-300 px-4 py-3 text-sm font-black text-[#0D0A06] disabled:opacity-50"
+                    >
+                      Ambil Slot Meja Sekarang
+                    </button>
+                  ) : (
+                    <p className="mt-2 text-sm text-emerald-50/75">Kami akan membuka tombol ambil slot saat giliran Anda dan meja sudah tersedia.</p>
+                  )}
+                </div>
+              ) : (
+                <div className="mt-4 grid gap-3">
+                  <input
+                    value={queueName}
+                    onChange={(event) => setQueueName(event.target.value)}
+                    placeholder="Nama pelanggan (opsional)"
+                    className="w-full rounded-2xl border border-sky-100/20 bg-[#0D0A06] px-4 py-3 text-sm outline-none"
+                  />
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <button
+                      type="button"
+                      onClick={() => joinQueue('random')}
+                      disabled={queueLoading}
+                      className="rounded-2xl bg-sky-300 px-4 py-3 text-sm font-black text-[#0D0A06] disabled:opacity-50"
+                    >
+                      Antri Meja Kosong Random
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => joinQueue('selected')}
+                      disabled={queueLoading || !selected}
+                      className="rounded-2xl border border-sky-200/25 px-4 py-3 text-sm font-black text-sky-100 disabled:opacity-50"
+                    >
+                      Antri Meja Dipilih
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {!loading && tables.length === 0 && (
             <div className="mt-8 rounded-3xl border border-red-400/25 bg-red-500/10 p-5 text-red-100">
@@ -195,7 +334,7 @@ export default function SelectDiningTablePage() {
                   const selectedBusy = Number(selected.active_orders || 0) > 0;
                   const hasSavedOrder = Boolean(savedOrdersByToken[selected.qr_token]);
                   const hasSavedDraft = Boolean(savedDraftsByToken[selected.qr_token]);
-                  const locked = selectedBusy && !hasSavedOrder;
+                  const locked = (selectedBusy || hasWaitingQueue) && !hasSavedOrder;
                   return (
                     <>
                 <div className="mb-5 rounded-3xl bg-[#241C0E] p-5">
@@ -205,7 +344,12 @@ export default function SelectDiningTablePage() {
                 </div>
                 {locked ? (
                   <div className="rounded-3xl border border-red-400/25 bg-red-500/10 p-5 text-center text-red-100">
-                    Meja ini sedang memiliki pesanan aktif. Pilih meja lain atau tunggu sampai selesai.
+                    {hasWaitingQueue
+                      ? 'Masih ada antrian pelanggan. Ambil nomor antrian terlebih dahulu.'
+                      : 'Meja ini sedang memiliki pesanan aktif. Pilih meja lain atau tunggu sampai selesai.'}
+                    {selected.estimated_release_at && (
+                      <p className="mt-2 text-xs text-red-100/70">Estimasi tersedia: {formatQueueEta(selected.estimated_release_at)}</p>
+                    )}
                   </div>
                 ) : (
                   <>

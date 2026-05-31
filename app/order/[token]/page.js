@@ -2,16 +2,19 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   createCustomerOrder,
+  createTableSession,
   getActiveDiscountPrograms,
   getCustomerMenu,
   getCustomerOrder,
   getDiningTableByToken,
   getPublicPaymentMethods,
   previewDiscount,
+  releaseTableSession,
   skipCustomerOrderReview,
   submitCustomerOrderReview,
 } from '@/lib/api';
@@ -180,10 +183,12 @@ function StarPicker({ value = 5, onChange }) {
 
 export default function CustomerOrderPage() {
   const params = useParams();
+  const router = useRouter();
   const token = params?.token;
   const storageKey = token ? `customer-order-${token}` : '';
   const draftStorageKey = token ? `customer-order-draft-${token}` : '';
   const phoneStorageKey = token ? `customer-order-phone-${token}` : '';
+  const tableSessionStorageKey = token ? `customer-table-session-${token}` : '';
   const paymentSectionRef = useRef(null);
 
   const [table, setTable] = useState(null);
@@ -214,6 +219,7 @@ export default function CustomerOrderPage() {
   const [skipReviewLoading, setSkipReviewLoading] = useState(false);
   const [orderMessageModal, setOrderMessageModal] = useState(null);
   const [draftLoaded, setDraftLoaded] = useState(false);
+  const [tableSession, setTableSession] = useState(null);
 
   useEffect(() => {
     if (!token) return;
@@ -230,7 +236,8 @@ export default function CustomerOrderPage() {
           return null;
         }
       })();
-      const tableRes = await getDiningTableByToken(token);
+      const existingSessionToken = tableSessionStorageKey ? localStorage.getItem(tableSessionStorageKey) || '' : '';
+      const tableRes = await getDiningTableByToken(token, { session_token: existingSessionToken });
       const [menuRes, rewardRes, bundleRes, paymentRes, orderRes] = await Promise.all([
         getCustomerMenu({ branch_id: tableRes.data?.branch_id }),
         getActiveDiscountPrograms({ type: 'review_reward' }).catch(() => ({ data: [] })),
@@ -258,6 +265,17 @@ export default function CustomerOrderPage() {
         setVoucherCode(savedDraft.voucherCode || '');
         setNote(savedDraft.note || '');
       }
+      if (!orderRes?.data && tableSessionStorageKey) {
+        const sessionRes = await createTableSession(token, { session_token: existingSessionToken }).catch((err) => {
+          localStorage.removeItem(tableSessionStorageKey);
+          throw err;
+        });
+        const session = sessionRes.data?.data;
+        if (session?.session_token) {
+          localStorage.setItem(tableSessionStorageKey, session.session_token);
+          setTableSession(session);
+        }
+      }
       setDraftLoaded(true);
       setLoading(false);
     };
@@ -267,7 +285,7 @@ export default function CustomerOrderPage() {
     return () => {
       mounted = false;
     };
-  }, [token, storageKey, draftStorageKey, phoneStorageKey]);
+  }, [token, storageKey, draftStorageKey, phoneStorageKey, tableSessionStorageKey]);
 
   useEffect(() => {
     if (!draftLoaded || !draftStorageKey || order) return;
@@ -317,12 +335,29 @@ export default function CustomerOrderPage() {
   useEffect(() => {
     if (!token || order) return;
     const interval = window.setInterval(() => {
-      getDiningTableByToken(token)
+      getDiningTableByToken(token, {
+        session_token: tableSessionStorageKey ? localStorage.getItem(tableSessionStorageKey) || '' : '',
+      })
         .then((res) => setTable(res.data))
         .catch(() => {});
     }, 6000);
     return () => window.clearInterval(interval);
-  }, [token, order]);
+  }, [token, order, tableSessionStorageKey]);
+
+  useEffect(() => {
+    if (!tableSession?.expires_at || order) return;
+    const timeout = new Date(tableSession.expires_at).getTime() - Date.now();
+    if (timeout <= 0) {
+      if (tableSessionStorageKey) localStorage.removeItem(tableSessionStorageKey);
+      router.push('/order');
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      if (tableSessionStorageKey) localStorage.removeItem(tableSessionStorageKey);
+      router.push('/order');
+    }, timeout);
+    return () => window.clearTimeout(timer);
+  }, [tableSession?.expires_at, tableSessionStorageKey, order, router]);
 
   const categories = useMemo(() => {
     const map = new Map();
@@ -457,6 +492,20 @@ export default function CustomerOrderPage() {
     .filter((program) => program.discountAmountValue > 0)
     .sort((a, b) => Number(b.discountAmountValue) - Number(a.discountAmountValue)), [bundleHints, cart]);
 
+  const touchTableSession = async () => {
+    if (!token || order || !tableSessionStorageKey) return;
+    const sessionToken = localStorage.getItem(tableSessionStorageKey) || tableSession?.session_token || '';
+    if (!sessionToken) return;
+    try {
+      const res = await createTableSession(token, { session_token: sessionToken });
+      const session = res.data?.data;
+      if (session?.session_token) {
+        localStorage.setItem(tableSessionStorageKey, session.session_token);
+        setTableSession(session);
+      }
+    } catch (_) {}
+  };
+
   useEffect(() => {
     let cancelled = false;
     const timer = window.setTimeout(async () => {
@@ -496,6 +545,7 @@ export default function CustomerOrderPage() {
   const addToCart = (product) => {
     if (tableBusy) return;
     if (Number(product.stock || 0) <= 0) return;
+    touchTableSession();
     setCart((prev) => {
       const existing = prev.find((item) => item.id === product.id);
       if (existing) {
@@ -508,6 +558,7 @@ export default function CustomerOrderPage() {
 
   const addBundleToCart = (program) => {
     if (tableBusy) return;
+    touchTableSession();
     const targets = (program.missingProducts?.length ? program.missingProducts : program.bundleProducts)
       .filter((product) => Number(product.stock || 0) > 0);
     if (!targets.length) return;
@@ -544,6 +595,7 @@ export default function CustomerOrderPage() {
   };
 
   const changeQty = (productId, delta) => {
+    touchTableSession();
     setCart((prev) => prev
       .map((item) => item.id === productId ? { ...item, qty: Math.max(0, item.qty + delta) } : item)
       .filter((item) => item.qty > 0));
@@ -567,7 +619,9 @@ export default function CustomerOrderPage() {
 
     try {
       if (token) {
-        const tableRes = await getDiningTableByToken(token);
+        const tableRes = await getDiningTableByToken(token, {
+          session_token: tableSessionStorageKey ? localStorage.getItem(tableSessionStorageKey) || '' : '',
+        });
         setTable(tableRes.data);
         const menuRes = await getCustomerMenu({ branch_id: tableRes.data?.branch_id });
         setProducts(menuRes.data || []);
@@ -600,6 +654,7 @@ export default function CustomerOrderPage() {
     try {
       const res = await createCustomerOrder({
         table_token: token,
+        table_session_token: tableSessionStorageKey ? localStorage.getItem(tableSessionStorageKey) || tableSession?.session_token || '' : '',
         customer_name: customerName,
         customer_phone: customerPhoneForApi,
         voucher_code: voucherCode,
@@ -614,6 +669,7 @@ export default function CustomerOrderPage() {
       if (nextOrder?.payment_method) setPaymentConfirmOrder(nextOrder);
       if (storageKey) localStorage.setItem(storageKey, nextOrder.order_code);
       if (phoneStorageKey && customerPhoneForApi) localStorage.setItem(phoneStorageKey, customerPhoneForApi);
+      if (tableSessionStorageKey) localStorage.removeItem(tableSessionStorageKey);
       if (draftStorageKey) localStorage.removeItem(draftStorageKey);
     } catch (err) {
       setOrderMessageModal({
@@ -893,7 +949,20 @@ export default function CustomerOrderPage() {
             <h1 className="text-xl font-black">Meja {table.table_number}</h1>
             <p className="mt-1 max-w-[calc(100vw-150px)] truncate text-xs text-[#EDE0C4]/60 sm:max-w-none">{branchLabel}{branchArea ? ` - ${branchArea}` : ''}</p>
           </div>
-          <Link href="/order" className="shrink-0 rounded-full border border-[#C9A84C]/35 px-3 py-2 text-sm font-bold text-[#C9A84C]">Ganti Meja</Link>
+          <button
+            type="button"
+            onClick={async () => {
+              const sessionToken = tableSessionStorageKey ? localStorage.getItem(tableSessionStorageKey) : '';
+              if (!order && sessionToken) {
+                await releaseTableSession(sessionToken).catch(() => {});
+                localStorage.removeItem(tableSessionStorageKey);
+              }
+              router.push('/order');
+            }}
+            className="shrink-0 rounded-full border border-[#C9A84C]/35 px-3 py-2 text-sm font-bold text-[#C9A84C]"
+          >
+            Ganti Meja
+          </button>
         </div>
       </header>
 
