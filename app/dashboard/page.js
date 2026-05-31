@@ -540,6 +540,8 @@ export default function DashboardPage() {
   const [currentMonth, setCurrentMonth]= useState(new Date().getMonth() + 1); // 1-12
   const [availYears,  setAvailYears]  = useState([]);
   const [loading,     setLoading]     = useState(true);
+  const [refreshing,  setRefreshing]  = useState(false);
+  const [hasLoaded,   setHasLoaded]   = useState(false);
   const [bestTab,     setBestTab]     = useState('qty');
   const [bestFilter,  setBestFilter]  = useState('month'); // 'all', 'month', 'year'
   const [activeUsers, setActiveUsers] = useState([]);
@@ -553,6 +555,8 @@ export default function DashboardPage() {
   const [attendFilter,setAttendFilter]= useState(new Set());
   const [perfFilter,  setPerfFilter]  = useState(new Set());
   const [perfTab,     setPerfTab]     = useState('omzet');
+  const dashboardLoadedRef = useRef(false);
+  const loadSeqRef = useRef(0);
 
   // ── Load tahun tersedia ───────────────────────────────────────
   useEffect(() => {
@@ -567,7 +571,11 @@ export default function DashboardPage() {
 
   // ── Load semua data dashboard ─────────────────────────────────
   useEffect(() => {
-    setLoading(true);
+    const seq = loadSeqRef.current + 1;
+    loadSeqRef.current = seq;
+    const silent = dashboardLoadedRef.current;
+    if (silent) setRefreshing(true);
+    else setLoading(true);
     Promise.all([
       getTodayStats(),
       getSalesReport({ period:'daily', month: currentMonth, year }),
@@ -581,6 +589,7 @@ export default function DashboardPage() {
       getStaffPerformance({ month: currentMonth, year }),
       getDiscountSummary({ month: currentMonth, year }),
     ]).then(([today, salesM, salesY, best, low, byPM, byPY, active, attend, perf, discounts]) => {
+      if (loadSeqRef.current !== seq) return;
       setToday(today.data);
       setSalesMonth(salesM.data);
       setSalesYear(salesY.data);
@@ -602,8 +611,14 @@ export default function DashboardPage() {
         month: { total_discount: 0, total_orders: 0 },
         year: { total_discount: 0, total_orders: 0 },
       });
+      dashboardLoadedRef.current = true;
+      setHasLoaded(true);
     }).catch(console.error)
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (loadSeqRef.current !== seq) return;
+        setLoading(false);
+        setRefreshing(false);
+      });
   }, [year, currentMonth]);
 
   // ── Transform data untuk chart ────────────────────────────────
@@ -740,6 +755,11 @@ const filteredBestSelling = bestSelling.filter(p => {
             <p className="text-slate-500 text-xs sm:text-sm mt-0.5 capitalize">{dateStr}</p>
           </div>
           <div className="flex items-center gap-3 flex-wrap">
+            {refreshing && (
+              <span className="rounded-full border border-sky-500/25 bg-sky-500/10 px-3 py-1.5 text-xs font-bold text-sky-200">
+                Sinkronisasi dashboard...
+              </span>
+            )}
             <select
               value={currentMonth}
               onChange={(e) => setCurrentMonth(Number(e.target.value))}
@@ -764,9 +784,9 @@ const filteredBestSelling = bestSelling.filter(p => {
         </div>
 
         {/* Loading */}
-        {loading && <DashboardSkeleton />}
+        {loading && !hasLoaded && <DashboardSkeleton />}
 
-        {!loading && (
+        {hasLoaded && (
           <>
             {/* Stat Cards - Today */}
             <div className="space-y-5">

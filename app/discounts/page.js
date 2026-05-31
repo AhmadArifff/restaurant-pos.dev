@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import AdminLayout from '@/components/layout/AdminLayout';
 import AuthGuard from '@/components/ui/AuthGuard';
 import {
@@ -112,20 +112,32 @@ export default function DiscountsPage() {
   const [form, setForm] = useState(emptyForm);
   const [editing, setEditing] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [typeFilter, setTypeFilter] = useState('all');
+  const loadSeqRef = useRef(0);
+  const hasLoadedRef = useRef(false);
 
-  const load = async () => {
-    setLoading(true);
+  const load = async ({ silent = false } = {}) => {
+    const seq = loadSeqRef.current + 1;
+    loadSeqRef.current = seq;
+    const shouldRefreshSilently = silent || hasLoadedRef.current || programs.length > 0 || products.length > 0;
+    if (shouldRefreshSilently) setRefreshing(true);
+    else setLoading(true);
     try {
       const [programRes, productRes] = await Promise.all([
         getDiscountPrograms(),
         getProducts(),
       ]);
+      if (loadSeqRef.current !== seq) return;
       setPrograms(programRes.data || []);
       setProducts(productRes.data || []);
+      hasLoadedRef.current = true;
     } finally {
-      setLoading(false);
+      if (loadSeqRef.current === seq) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
   };
 
@@ -243,7 +255,7 @@ export default function DiscountsPage() {
       if (editing) await updateDiscountProgram(editing.id, payload);
       else await createDiscountProgram(payload);
       resetForm();
-      await load();
+      await load({ silent: true });
     } catch (err) {
       alert(err.response?.data?.message || 'Program voucher dan diskon gagal disimpan.');
     } finally {
@@ -267,7 +279,7 @@ export default function DiscountsPage() {
       start_at: program.start_at || null,
       end_at: program.end_at || null,
     });
-    await load();
+    await load({ silent: true });
   };
 
   const removeProgram = async (program) => {
@@ -278,7 +290,7 @@ export default function DiscountsPage() {
     });
     if (!confirmed) return;
     await hardDeleteDiscountProgram(program.id);
-    await load();
+    await load({ silent: true });
   };
 
   return (
@@ -504,7 +516,14 @@ export default function DiscountsPage() {
             </form>
 
             <section className="rounded-2xl border border-slate-700 bg-slate-800 p-5">
-              <h2 className="text-xl font-black text-white">Daftar Program</h2>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 className="text-xl font-black text-white">Daftar Program</h2>
+                {refreshing && (
+                  <span className="rounded-full border border-sky-500/25 bg-sky-500/10 px-3 py-1.5 text-xs font-bold text-sky-200">
+                    Sinkronisasi diskon...
+                  </span>
+                )}
+              </div>
               <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
                 {typeFilters.map((filter) => (
                   <button
@@ -527,7 +546,7 @@ export default function DiscountsPage() {
                 ))}
               </div>
               <div className="mt-4 space-y-3">
-                {loading && <p className="rounded-xl bg-slate-900 p-5 text-slate-400">Memuat data...</p>}
+                {loading && programs.length === 0 && <p className="rounded-xl bg-slate-900 p-5 text-slate-400">Memuat data...</p>}
                 {!loading && programs.length === 0 && <p className="rounded-xl bg-slate-900 p-5 text-slate-400">Belum ada program diskon.</p>}
                 {!loading && programs.length > 0 && filteredPrograms.length === 0 && (
                   <p className="rounded-xl bg-slate-900 p-5 text-slate-400">Belum ada program untuk filter ini.</p>

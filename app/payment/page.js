@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import AdminLayout from '@/components/layout/AdminLayout';
 import AuthGuard from '@/components/ui/AuthGuard';
@@ -54,8 +54,11 @@ export default function PaymentManagementPage() {
   const [form, setForm] = useState(emptyForm);
   const [editing, setEditing] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [qrPreviewUrl, setQrPreviewUrl] = useState('');
+  const loadSeqRef = useRef(0);
+  const hasLoadedRef = useRef(false);
 
   const activeCount = useMemo(() => methods.filter((item) => item.status === 'active').length, [methods]);
   const previewMethod = useMemo(() => ({
@@ -70,13 +73,22 @@ export default function PaymentManagementPage() {
       : '',
   }), [editing, form, qrPreviewUrl]);
 
-  const load = async () => {
-    setLoading(true);
+  const load = async ({ silent = false } = {}) => {
+    const seq = loadSeqRef.current + 1;
+    loadSeqRef.current = seq;
+    const shouldRefreshSilently = silent || hasLoadedRef.current || methods.length > 0;
+    if (shouldRefreshSilently) setRefreshing(true);
+    else setLoading(true);
     try {
       const res = await getPaymentMethods();
+      if (loadSeqRef.current !== seq) return;
       setMethods(res.data || []);
+      hasLoadedRef.current = true;
     } finally {
-      setLoading(false);
+      if (loadSeqRef.current === seq) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
   };
 
@@ -130,7 +142,7 @@ export default function PaymentManagementPage() {
         await createPaymentMethod(toFormData(form));
       }
       resetForm();
-      await load();
+      await load({ silent: true });
     } catch (err) {
       alert(err.response?.data?.message || 'Gagal menyimpan metode pembayaran');
     } finally {
@@ -147,7 +159,7 @@ export default function PaymentManagementPage() {
     if (!confirmed) return;
     try {
       await deletePaymentMethod(method.id);
-      await load();
+      await load({ silent: true });
     } catch (err) {
       alert(err.response?.data?.message || 'Gagal menonaktifkan metode pembayaran');
     }
@@ -163,7 +175,7 @@ export default function PaymentManagementPage() {
     try {
       await hardDeletePaymentMethod(method.id);
       if (editing?.id === method.id) resetForm();
-      await load();
+      await load({ silent: true });
     } catch (err) {
       alert(err.response?.data?.message || 'Gagal menghapus metode pembayaran');
     }
@@ -182,6 +194,11 @@ export default function PaymentManagementPage() {
               </p>
             </div>
             <div className="grid grid-cols-2 gap-3 sm:w-72">
+              {refreshing && (
+                <div className="col-span-2 rounded-full border border-sky-500/25 bg-sky-500/10 px-3 py-1.5 text-center text-xs font-bold text-sky-200">
+                  Sinkronisasi payment...
+                </div>
+              )}
               <div className="rounded-2xl border border-slate-700 bg-slate-800 p-4">
                 <p className="text-xs text-slate-500">Aktif</p>
                 <strong className="mt-1 block text-2xl text-emerald-300">{activeCount}</strong>
@@ -216,7 +233,7 @@ export default function PaymentManagementPage() {
                   </div>
                 </div>
               </div>
-              {loading && (
+              {loading && methods.length === 0 && (
                 <div className="rounded-3xl border border-slate-700 bg-slate-800 p-6 text-slate-400">
                   Memuat metode pembayaran...
                 </div>
