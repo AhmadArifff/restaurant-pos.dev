@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { downloadBusinessAnalysisPdf, getBusinessAnalysis, getTransactionYears } from '@/lib/api';
@@ -208,8 +208,11 @@ export default function ReportsPage() {
   const [year, setYear] = useState(new Date().getFullYear());
   const [years, setYears] = useState([new Date().getFullYear()]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [error, setError] = useState('');
+  const analysisRef = useRef(null);
+  const loadSeqRef = useRef(0);
 
   const params = useMemo(() => ({ period, month, year }), [period, month, year]);
 
@@ -220,15 +223,28 @@ export default function ReportsPage() {
   }, []);
 
   useEffect(() => {
-    setLoading(true);
+    const seq = loadSeqRef.current + 1;
+    loadSeqRef.current = seq;
+    const silent = Boolean(analysisRef.current);
+    if (silent) setRefreshing(true);
+    else setLoading(true);
     setError('');
     getBusinessAnalysis(params)
-      .then((res) => setAnalysis(res.data))
-      .catch((err) => {
-        setError(err?.response?.data?.message || 'Gagal memuat analisis laporan');
-        setAnalysis(null);
+      .then((res) => {
+        if (loadSeqRef.current !== seq) return;
+        analysisRef.current = res.data;
+        setAnalysis(res.data);
       })
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        if (loadSeqRef.current !== seq) return;
+        setError(err?.response?.data?.message || 'Gagal memuat analisis laporan');
+        if (!analysisRef.current) setAnalysis(null);
+      })
+      .finally(() => {
+        if (loadSeqRef.current !== seq) return;
+        setLoading(false);
+        setRefreshing(false);
+      });
   }, [params]);
 
   const maxProductSold = Math.max(...(analysis?.best_products || []).map((row) => Number(row.total_sold)), 1);
@@ -265,6 +281,11 @@ export default function ReportsPage() {
           </div>
 
           <div className="flex flex-wrap gap-2">
+            {refreshing && (
+              <span className="rounded-full border border-sky-500/25 bg-sky-500/10 px-3 py-2 text-xs font-bold text-sky-200">
+                Sinkronisasi laporan...
+              </span>
+            )}
             <div className="flex rounded-lg overflow-hidden border border-slate-700 bg-slate-900">
               {['daily', 'monthly'].map((item) => (
                 <button
@@ -302,7 +323,7 @@ export default function ReportsPage() {
 
         {error && <div className="p-4 bg-red-500/15 border border-red-500/30 text-red-200 rounded-lg text-sm">{error}</div>}
 
-        {loading ? (
+        {loading && !analysis ? (
           <SectionSkeleton />
         ) : analysis ? (
           <>

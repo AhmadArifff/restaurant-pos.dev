@@ -518,11 +518,6 @@ function AdminStockPage({ successModal, setSuccessModal }) {
       .finally(() => setDailyLoading(false));
   }, [selDate, selDateTo, outTypeFilter, selectedBranchId]);
 
-  // Tambah useEffect reload saat filter berubah
-  useEffect(() => {
-    if (tab === 'main' && mainTab === 'out') loadDaily();
-  }, [outTypeFilter, selectedBranchId]);
-
   // Definisi filter — sama untuk admin & kasir
   const OUT_FILTERS = [
     { val: 'all',         label: 'Semua'          },
@@ -766,18 +761,40 @@ function AdminStockPage({ successModal, setSuccessModal }) {
   // const outData  = daily.length > 0 ? daily : monthly.filter(r => r.type==='out');
   const outData = daily;
   const selectedBranchName = user?.branch_name || (selectedBranchId ? `Cabang #${selectedBranchId}` : 'Cabang aktif');
+  const masterInitialLoading = (masterLoading && stockItems.length === 0)
+    || (summaryLoading && summary.length === 0)
+    || (trendLoading && priceTrends.length === 0);
+  const warehouseInitialLoading = (mainTab === 'summary' && summaryLoading && summary.length === 0)
+    || (mainTab === 'in' && monthlyLoading && monthly.length === 0)
+    || (mainTab === 'out' && dailyLoading && daily.length === 0);
+  const requestsInitialLoading = requestsLoading && requests.length === 0;
+  const stockRefreshing = Boolean(
+    (masterLoading && stockItems.length > 0)
+    || (summaryLoading && summary.length > 0)
+    || (trendLoading && priceTrends.length > 0)
+    || (monthlyLoading && monthly.length > 0)
+    || (dailyLoading && daily.length > 0)
+    || (requestsLoading && requests.length > 0)
+  );
 
   return (
     <>
-      <div className="flex flex-wrap gap-2 bg-slate-800/50 rounded-2xl p-1.5 w-fit mb-5">
+      <div className="mb-5 flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap gap-2 bg-slate-800/50 rounded-2xl p-1.5 w-fit">
         <TabBtn active={tab==='master'}   onClick={() => setTab('master')}>   📦 Bahan Baku</TabBtn>
         <TabBtn active={tab==='main'}     onClick={() => setTab('main')}>     🏪 Stok Gudang</TabBtn>
         <TabBtn active={tab==='requests'} onClick={() => setTab('requests')}> 📋 Pengajuan Kasir</TabBtn>
+        </div>
+        {stockRefreshing && (
+          <span className="rounded-full border border-sky-500/25 bg-sky-500/10 px-3 py-1.5 text-xs font-bold text-sky-200">
+            Sinkronisasi stok...
+          </span>
+        )}
       </div>
 
       {/* ── BAHAN BAKU ── */}
       {tab==='master' && (
-        masterLoading || summaryLoading || trendLoading ? (
+        masterInitialLoading ? (
           <StockMasterSkeleton />
         ) : (
         <div className="space-y-4">
@@ -949,9 +966,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
 
       {/* ── STOK GUDANG ── */}
       {tab==='main' && (
-        ((mainTab === 'summary' && summaryLoading) ||
-          (mainTab === 'in' && monthlyLoading) ||
-          (mainTab === 'out' && dailyLoading)) ? (
+        warehouseInitialLoading ? (
           <StockWarehouseSkeleton mode={mainTab} />
         ) : (
         <div className="space-y-4">
@@ -1336,7 +1351,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
 
       {/* ── PENGAJUAN KASIR ── */}
       {tab==='requests' && (
-        requestsLoading ? (
+        requestsInitialLoading ? (
           <StockRequestSkeleton />
         ) : (
         <div className="space-y-4">
@@ -2348,13 +2363,6 @@ function KasirStockPage({ successModal, setSuccessModal }) {
       .finally(() => setRequestsLoading(false));
   }, [reqStatus, reqDateFrom, reqDateTo]);
 
-  // Ganti useEffect ini
-  useEffect(() => { loadSummary(); }, []);
-  // Di KasirStockPage useEffect pertama
-  useEffect(() => {
-    console.log('Loading summary for user:', user?.id, user?.role);
-    loadSummary();
-  }, []);
   // useEffect(() => {
   //   if (tab === 'gudang') {
   //     loadSummary(); // ← tambah ini agar summary fresh setiap masuk tab gudang
@@ -2382,17 +2390,31 @@ function KasirStockPage({ successModal, setSuccessModal }) {
 
   // Tampilkan hanya pengeluaran yang diapprove dan milik user ini
   const outData = daily;
+  const warehouseInitialLoading = (mainTab === 'summary' && summaryLoading && summary.length === 0)
+    || (mainTab === 'out' && dailyLoading && daily.length === 0);
+  const requestsInitialLoading = requestsLoading && requests.length === 0;
+  const stockRefreshing = Boolean(
+    (summaryLoading && summary.length > 0)
+    || (dailyLoading && daily.length > 0)
+    || (requestsLoading && requests.length > 0)
+  );
 
   return (
     <>
-      <div className="flex flex-wrap gap-2 bg-slate-800/50 rounded-2xl p-1.5 w-fit mb-5">
+      <div className="mb-5 flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap gap-2 bg-slate-800/50 rounded-2xl p-1.5 w-fit">
         <TabBtn active={tab==='gudang'}   onClick={() => setTab('gudang')}>   🏪 Stok Gudang</TabBtn>
         <TabBtn active={tab==='requests'} onClick={() => setTab('requests')}> 📋 Pengajuan Saya</TabBtn>
+        </div>
+        {stockRefreshing && (
+          <span className="rounded-full border border-sky-500/25 bg-sky-500/10 px-3 py-1.5 text-xs font-bold text-sky-200">
+            Sinkronisasi stok...
+          </span>
+        )}
       </div>
 
       {tab === 'gudang' && (
-        ((mainTab === 'summary' && summaryLoading) ||
-          (mainTab === 'out' && dailyLoading)) ? (
+        warehouseInitialLoading ? (
           <StockWarehouseSkeleton mode={mainTab} />
         ) : (
         <div className="space-y-4">
@@ -2616,7 +2638,7 @@ function KasirStockPage({ successModal, setSuccessModal }) {
 
       {/* ── PENGAJUAN SAYA ── */}
       {tab === 'requests' && (
-        requestsLoading ? (
+        requestsInitialLoading ? (
           <StockRequestSkeleton />
         ) : (
         <div className="space-y-4">

@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { getProducts, getCategories, deleteProduct, getStockItems } from '@/lib/api';
 import api from '@/lib/axios';
@@ -25,15 +25,10 @@ export default function ProductsPage() {
   const [search, setSearch]         = useState('');
   const [loading, setLoading]       = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const fileRef = useRef();
+  const productsRef = useRef([]);
   const { user } = useAuthStore();
-
-  useEffect(() => {
-    // Kasir pakai my-stock, admin pakai semua
-    const fetchFn = user?.role === 'kasir' ? getMyStockProducts : getProducts;
-    setPageLoading(true);
-    fetchFn().then(r => setProducts(r.data)).finally(() => setPageLoading(false));
-  }, [user]);
 
   // Tambah state baru
   const [stockByKasir, setStockByKasir]   = useState({});
@@ -41,17 +36,38 @@ export default function ProductsPage() {
   const toggleKasir = (id) =>
   setExpandedCards(prev => ({ ...prev, [id]: !prev[id] }));
 
-  const load = () => getProducts().then(r => setProducts(r.data));
+  const load = useCallback(async ({ silent = false } = {}) => {
+    const fetchFn = user?.role === 'kasir' ? getMyStockProducts : getProducts;
+    const shouldRefreshSilently = silent || productsRef.current.length > 0;
+    if (shouldRefreshSilently) setRefreshing(true);
+    else setPageLoading(true);
+
+    try {
+      const [productRes, kasirStockRes] = await Promise.all([
+        fetchFn(),
+        user?.role !== 'kasir'
+          ? getStockByKasir().catch(() => ({ data: {} }))
+          : Promise.resolve({ data: {} }),
+      ]);
+      const nextProducts = Array.isArray(productRes.data) ? productRes.data : [];
+      productsRef.current = nextProducts;
+      setProducts(nextProducts);
+      setStockByKasir(kasirStockRes.data || {});
+    } finally {
+      setPageLoading(false);
+      setRefreshing(false);
+    }
+  }, [user?.role]);
 
   useEffect(() => {
-    load();
     getCategories().then(r => setCategories(r.data));
     getStockItems().then(r => setStockItems(r.data));
     // Tambahkan ini — hanya untuk admin
-    if (user?.role !== 'kasir') {
-      getStockByKasir().then(r => setStockByKasir(r.data));
-    }
   }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const openAdd = () => {
     setForm(emptyForm); setEditing(null);
@@ -107,7 +123,7 @@ export default function ProductsPage() {
       if (editing) await api.put(`/products/${editing}`, fd);
       else         await api.post('/products', fd);
 
-      await load();
+      await load({ silent: true });
       setModal(false);
     } catch (err) {
       alert(err.response?.data?.message || 'Gagal menyimpan');
@@ -121,7 +137,7 @@ export default function ProductsPage() {
       tone: 'danger',
     });
     if (!confirmed) return;
-    try { await deleteProduct(id); await load(); }
+    try { await deleteProduct(id); await load({ silent: true }); }
     catch (err) { alert(err.response?.data?.message || 'Gagal menghapus'); }
   };
 
@@ -167,15 +183,22 @@ export default function ProductsPage() {
   return (
     <AdminLayout>
       <div className="max-w-5xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-white text-2xl font-bold">Produk</h1>
             <p className="text-slate-400 text-sm mt-1">{products.length} produk terdaftar</p>
           </div>
-          <button onClick={openAdd}
-            className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-5 py-2.5 rounded-xl transition-colors">
-            + Tambah Produk
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            {refreshing && (
+              <span className="rounded-full border border-sky-500/25 bg-sky-500/10 px-3 py-1.5 text-xs font-bold text-sky-200">
+                Sinkronisasi produk...
+              </span>
+            )}
+            <button onClick={openAdd}
+              className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-5 py-2.5 rounded-xl transition-colors">
+              + Tambah Produk
+            </button>
+          </div>
         </div>
 
         <input value={search} onChange={e => setSearch(e.target.value)}
@@ -183,7 +206,7 @@ export default function ProductsPage() {
           className="w-full bg-slate-800 text-white rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-orange-500 border border-slate-700"/>
 
         {/* Grid Produk */}
-        {pageLoading ? (
+        {pageLoading && products.length === 0 ? (
           <CardSkeleton count={8} />
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
