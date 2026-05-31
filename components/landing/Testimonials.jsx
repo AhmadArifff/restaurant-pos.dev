@@ -1,91 +1,96 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { testimonialsContent } from '@/data/landing/testimonialsContent';
 
+const splitTitle = (title = '', highlight = '') => {
+  if (!highlight || !title.includes(highlight)) return { before: title, highlighted: '', after: '' };
+  const [before, ...rest] = title.split(highlight);
+  return { before, highlighted: highlight, after: rest.join(highlight) };
+};
+
+function TestimonialsColumn({ items, duration = 18, reverse = false, className = '' }) {
+  const reduceMotion = useReducedMotion();
+  if (!items.length) return null;
+
+  return (
+    <div className={`testi-column ${className}`}>
+      <motion.div
+        className="testi-column-track"
+        animate={reduceMotion ? undefined : { y: reverse ? ['-50%', '0%'] : ['0%', '-50%'] }}
+        transition={reduceMotion ? undefined : {
+          duration,
+          repeat: Infinity,
+          ease: 'linear',
+          repeatType: 'loop',
+        }}
+      >
+        {[0, 1].map((copyIndex) => (
+          <div className="testi-column-set" key={copyIndex}>
+            {items.map((item) => (
+              <article className="testi-card" key={`${item.id}-${copyIndex}`}>
+                <div className="testi-media">
+                  <img className="testi-bg-img" src={item.image} alt={item.imageAlt} />
+                  {item.badge ? <span className="influencer-badge">{item.badge}</span> : null}
+                </div>
+
+                <div className="testi-review-body">
+                  <span className="testi-stars">★★★★★</span>
+                  <p className="testi-text">{item.review}</p>
+                </div>
+
+                <div className="testi-author-strip">
+                  <img className="testi-avatar" src={item.authorAvatar} alt={item.authorAvatarAlt} />
+                  <div>
+                    <div className="testi-name">{item.author}</div>
+                    <div className="testi-role">{item.role}</div>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        ))}
+      </motion.div>
+    </div>
+  );
+}
+
 export default function Testimonials({ content = testimonialsContent }) {
-  const [activeCard, setActiveCard] = useState(null);
   const data = content || testimonialsContent;
-
-  useEffect(() => {
-    const closeOnOutsideTouch = (event) => {
-      if (activeCard === null) return;
-      const activeNode = document.querySelector(`[data-testi-card="${activeCard}"]`);
-      if (activeNode && !activeNode.contains(event.target)) {
-        setActiveCard(null);
-      }
-    };
-
-    document.addEventListener('touchend', closeOnOutsideTouch);
-    return () => document.removeEventListener('touchend', closeOnOutsideTouch);
-  }, [activeCard]);
-
-  const toggleCard = (id) => {
-    setActiveCard((prev) => (prev === id ? null : id));
-  };
+  const items = data.items || [];
+  const columns = [
+    items.filter((_, index) => index % 3 === 0),
+    items.filter((_, index) => index % 3 === 1),
+    items.filter((_, index) => index % 3 === 2),
+  ].filter((column) => column.length);
+  const titleParts = splitTitle(data.title, data.highlight);
 
   return (
     <section id="testimonials">
       <div className="testi-header reveal">
         <div className="section-label">{data.sectionLabel}</div>
         <h2 className="section-title">
-          Ribuan Pelanggan <span className="italic gold">{data.highlight}</span>
+          {titleParts.before}
+          {titleParts.highlighted ? <span className="italic gold">{titleParts.highlighted}</span> : null}
+          {titleParts.after}
         </h2>
         <p className="section-desc">{data.description}</p>
       </div>
 
-      <div className="testi-grid">
-        {(data.items || []).map((item) => (
-          <div
-            key={item.id}
-            data-testid-card={item.id}
-            data-testi-card={item.id}
-            className={`testi-card reveal ${item.revealClass || ''} ${activeCard === item.id ? 'tc-active' : ''}`}
-            tabIndex={0}
-            role="button"
-            aria-label={item.ariaLabel}
-            onClick={() => toggleCard(item.id)}
-            onTouchStart={(e) => {
-              e.currentTarget.dataset.touchMoved = '0';
-            }}
-            onTouchMove={(e) => {
-              e.currentTarget.dataset.touchMoved = '1';
-            }}
-            onTouchEnd={(e) => {
-              if (e.currentTarget.dataset.touchMoved === '1') return;
-              e.preventDefault();
-              toggleCard(item.id);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                toggleCard(item.id);
-              }
-            }}
-          >
-            <img className="testi-bg-img" src={item.image} alt={item.imageAlt} />
-            {item.badge ? <span className="influencer-badge">{item.badge}</span> : null}
-
-            <div className="testi-tap-hint">
-              <div className="hint-ring">👆</div>
-              <span className="hint-label">Tap untuk baca</span>
-            </div>
-
-            <div className="testi-review-overlay">
-              <span className="testi-big-quote">&quot;</span>
-              <span className="testi-stars">★★★★★</span>
-              <p className="testi-text">{item.review}</p>
-            </div>
-
-            <div className="testi-author-strip">
-              <img className="testi-avatar" src={item.authorAvatar} alt={item.authorAvatarAlt} />
-              <div>
-                <div className="testi-name">{item.author}</div>
-                <div className="testi-role">{item.role}</div>
-              </div>
-            </div>
-          </div>
+      <div className="testi-marquee reveal">
+        {columns.map((columnItems, index) => (
+          <TestimonialsColumn
+            key={index}
+            items={columnItems}
+            duration={index === 1 ? 24 : index === 2 ? 20 : 18}
+            reverse={index === 1}
+            className={`testi-column-${index + 1}`}
+          />
         ))}
+      </div>
+
+      <div className="testi-mobile-marquee reveal">
+        <TestimonialsColumn items={items} duration={30} className="testi-column-mobile" />
       </div>
     </section>
   );
