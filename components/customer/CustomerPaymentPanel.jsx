@@ -28,8 +28,6 @@ const formatRemaining = (seconds) => {
 export default function CustomerPaymentPanel({ order, onOrderUpdate, compact = false }) {
   const [now, setNow] = useState(Date.now());
   const [proof, setProof] = useState(null);
-  const [payerName, setPayerName] = useState('');
-  const [transferDate, setTransferDate] = useState('');
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [copyMessage, setCopyMessage] = useState('');
@@ -52,8 +50,8 @@ export default function CustomerPaymentPanel({ order, onOrderUpdate, compact = f
       if (method?.type === 'transfer') {
         return [
           'Salin nomor rekening dan nominal agar tidak salah transfer.',
-          'Transfer sesuai total bayar. Gunakan nama pelanggan sebagai berita transfer.',
-          'Upload bukti transfer, isi nama pengirim dan tanggal transfer, lalu kirim konfirmasi.',
+          'Transfer sesuai total bayar.',
+          'Upload bukti transfer, lalu kirim konfirmasi agar admin bisa memverifikasi pembayaran.',
         ];
       }
       return [
@@ -114,15 +112,11 @@ export default function CustomerPaymentPanel({ order, onOrderUpdate, compact = f
       const data = new FormData();
       data.append('proof', proof);
       data.append('note', [
-        payerName ? `Nama pengirim: ${payerName}` : '',
-        transferDate ? `Tanggal transfer: ${transferDate}` : '',
         note ? `Catatan: ${note}` : '',
       ].filter(Boolean).join('\n'));
       const res = await submitCustomerPaymentProof(order.order_code, data);
       onOrderUpdate?.(res.data?.data || res.data);
       setProof(null);
-      setPayerName('');
-      setTransferDate('');
       setNote('');
       setMessageModal({
         title: 'Menunggu Verifikasi Admin',
@@ -234,22 +228,8 @@ export default function CustomerPaymentPanel({ order, onOrderUpdate, compact = f
         <div className="mt-4 space-y-3 rounded-2xl bg-[#0D0A06]/45 p-3">
           <div className="rounded-2xl border border-sky-200/15 bg-sky-300/10 p-3 text-sm leading-6 text-sky-50/85">
             {isTransfer
-              ? 'Form upload bukti transfer: isi nama pengirim, tanggal transfer, lalu kirim bukti agar admin bisa memverifikasi pembayaran.'
+              ? 'Transfer cukup salin rekening dan nominal, lalu upload struk pembayaran agar admin bisa memverifikasi.'
               : 'Jika pembayaran QRIS sudah berhasil, klik tombol konfirmasi dengan melampirkan bukti pembayaran.'}
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <input
-              value={payerName}
-              onChange={(event) => setPayerName(event.target.value)}
-              placeholder={isTransfer ? 'Nama pengirim rekening' : 'Nama pembayar (opsional)'}
-              className="w-full rounded-xl border border-sky-100/20 bg-[#0D0A06] px-4 py-3 text-sm text-sky-50 outline-none"
-            />
-            <input
-              type="datetime-local"
-              value={transferDate}
-              onChange={(event) => setTransferDate(event.target.value)}
-              className="w-full rounded-xl border border-sky-100/20 bg-[#0D0A06] px-4 py-3 text-sm text-sky-50 outline-none"
-            />
           </div>
           <input
             type="file"

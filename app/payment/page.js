@@ -211,7 +211,7 @@ export default function PaymentManagementPage() {
                     <ol className="mt-3 list-decimal space-y-2 pl-4 text-sm leading-6 text-slate-300">
                       <li>Pelanggan melihat kartu rekening: bank, nomor rekening, dan a/n pemilik.</li>
                       <li>Tombol copy rekening dan copy nominal membantu mengurangi salah input.</li>
-                      <li>Pelanggan mengisi nama pengirim, tanggal transfer, upload bukti, lalu menunggu verifikasi.</li>
+                      <li>Pelanggan upload struk pembayaran transfer, lalu menunggu verifikasi.</li>
                     </ol>
                   </div>
                 </div>
