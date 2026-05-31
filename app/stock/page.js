@@ -71,8 +71,7 @@ const getIngredientStockItemId = (ingredient) => Number(ingredient?.stock_item_i
 
 function buildRecipeRows(product, menuQty = 1, stockRows = []) {
   if (!product?.ingredients?.length) return [];
-  const qtyMultiplier = Math.max(0, Number(menuQty || 0));
-  if (qtyMultiplier <= 0) return [];
+  const qtyMultiplier = Math.max(1, Number(menuQty || 1));
   const byStockItem = new Map();
 
   product.ingredients.forEach((ingredient) => {
@@ -115,7 +114,7 @@ function getRecipeSelectionDetails(products = [], selections = []) {
       if (!product) return null;
       return {
         product,
-        qty: Math.max(0, Number(selection.qty || 0)),
+        qty: Math.max(1, Number(selection.qty || 1)),
       };
     })
     .filter(Boolean)
@@ -201,7 +200,7 @@ function RecipeMenuPicker({
       const product = recipeProducts.find((item) => String(item.id) === String(selection.product_id));
       if (!product) return selection;
       const maxQty = Math.max(0, getMaxMenuQtyFromStock(recipeProducts, product, normalizedSelections, stockRows, index) || 0);
-      const currentQty = Math.max(0, Number(selection.qty || 0));
+      const currentQty = Math.max(1, Number(selection.qty || 1));
       return currentQty > maxQty ? { ...selection, qty: maxQty } : selection;
     });
     if (JSON.stringify(next) !== JSON.stringify(normalizedSelections)) onSelectionsChange(next);
@@ -262,11 +261,11 @@ function RecipeMenuPicker({
                 <label className="text-slate-500 text-xs mb-1 block">Qty menu</label>
                 <input
                   type="number"
-                  min="0"
+                  min="1"
                   max={Math.max(0, maxMenuQty || 0)}
                   value={selection.qty}
                   onChange={(event) => {
-                    const rawQty = Math.max(0, Number(event.target.value || 0));
+                    const rawQty = Math.max(1, Number(event.target.value || 1));
                     updateSelection(index, { qty: Math.min(rawQty, Math.max(0, maxMenuQty || 0)) });
                   }}
                   className="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-orange-500/50"
