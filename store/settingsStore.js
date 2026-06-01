@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { getWebsiteSettings } from '@/lib/api';
 
+const WEBSITE_SETTINGS_CACHE_KEY = 'website-settings-cache-v1';
+
 export const DEFAULT_THEME_COLORS = {
   gold: '#C9A84C',
   gold_light: '#E8C96A',
@@ -27,8 +29,44 @@ export const DEFAULT_SETTINGS = {
   business_address: '',
 };
 
+const readSettingsCache = () => {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    const cached = window.localStorage.getItem(WEBSITE_SETTINGS_CACHE_KEY);
+    return cached ? JSON.parse(cached) : null;
+  } catch {
+    return null;
+  }
+};
+
+const writeSettingsCache = (settings) => {
+  if (typeof window === 'undefined') return;
+
+  try {
+    window.localStorage.setItem(WEBSITE_SETTINGS_CACHE_KEY, JSON.stringify(settings));
+  } catch {
+    // Ignore storage quota/private mode failures.
+  }
+};
+
+const removeSettingsCache = () => {
+  if (typeof window === 'undefined') return;
+
+  try {
+    window.localStorage.removeItem(WEBSITE_SETTINGS_CACHE_KEY);
+  } catch {
+    // Ignore storage failures.
+  }
+};
+
+const getInitialSettings = () => ({
+  ...DEFAULT_SETTINGS,
+  ...(readSettingsCache() || {}),
+});
+
 export const useWebsiteSettings = create((set, get) => ({
-  settings: DEFAULT_SETTINGS,
+  settings: getInitialSettings(),
   loading: false,
   error: null,
   loadedAt: null,
@@ -58,6 +96,7 @@ export const useWebsiteSettings = create((set, get) => ({
         loading: false,
         loadedAt: Date.now(),
       });
+      writeSettingsCache(normalizedSettings);
       return normalizedSettings;
     } catch (err) {
       const errorMsg = err.response?.data?.error || 'Gagal memuat pengaturan website';
@@ -71,22 +110,22 @@ export const useWebsiteSettings = create((set, get) => ({
 
   updateSetting: (key, value) => {
     const current = get().settings;
-    set({
-      settings: {
-        ...current,
-        [key]: value,
-      },
-    });
+    const next = {
+      ...current,
+      [key]: value,
+    };
+    set({ settings: next });
+    writeSettingsCache(next);
   },
 
   updateSettings: (newSettings) => {
     const current = get().settings;
-    set({
-      settings: {
-        ...current,
-        ...newSettings,
-      },
-    });
+    const next = {
+      ...current,
+      ...newSettings,
+    };
+    set({ settings: next });
+    writeSettingsCache(next);
   },
 
   getSetting: (key) => {
@@ -95,6 +134,7 @@ export const useWebsiteSettings = create((set, get) => ({
   },
 
   resetSettings: () => {
+    removeSettingsCache();
     set({
       settings: DEFAULT_SETTINGS,
       error: null,

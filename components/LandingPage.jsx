@@ -17,8 +17,45 @@ import FloatButton from '@/components/landing/FloatButton';
 import { getWebsiteSettings } from '@/lib/api';
 import { getDefaultLandingContent, resolveLandingContentFromSettings } from '@/lib/landingContent';
 
+const LANDING_CONTENT_CACHE_KEY = 'landing-content-cache-v1';
+
+const readLandingContentCache = () => {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    const cached = window.localStorage.getItem(LANDING_CONTENT_CACHE_KEY);
+    return cached ? JSON.parse(cached) : null;
+  } catch {
+    return null;
+  }
+};
+
+const writeLandingContentCache = (content) => {
+  if (typeof window === 'undefined') return;
+
+  try {
+    window.localStorage.setItem(LANDING_CONTENT_CACHE_KEY, JSON.stringify(content));
+  } catch {
+    // Ignore storage quota/private mode failures.
+  }
+};
+
+function LandingContentShell() {
+  return (
+    <div className="landing-page min-h-screen bg-[var(--dark)]">
+      <div className="landing-loading-shell" aria-label="Memuat Sultan Kebab">
+        <div className="landing-loading-card">
+          <p>Sultan Kebab</p>
+          <div />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function LandingPage() {
-  const [landingContent, setLandingContent] = useState(getDefaultLandingContent());
+  const [landingContent, setLandingContent] = useState(() => readLandingContentCache());
+  const [hasAttemptedLoad, setHasAttemptedLoad] = useState(() => Boolean(readLandingContentCache()));
 
   useEffect(() => {
     let isMounted = true;
@@ -28,9 +65,15 @@ export default function LandingPage() {
         const response = await getWebsiteSettings();
         const data = response?.data ?? response ?? {};
         if (!isMounted) return;
-        setLandingContent(resolveLandingContentFromSettings(data));
+        const resolvedContent = resolveLandingContentFromSettings(data);
+        setLandingContent(resolvedContent);
+        writeLandingContentCache(resolvedContent);
       } catch {
-        // Silent fallback: keep default data from /data/landing
+        if (isMounted && !landingContent) {
+          setLandingContent(getDefaultLandingContent());
+        }
+      } finally {
+        if (isMounted) setHasAttemptedLoad(true);
       }
     };
 
@@ -42,6 +85,8 @@ export default function LandingPage() {
   }, []);
 
   useEffect(() => {
+    if (!landingContent) return undefined;
+
     const revealEls = document.querySelectorAll('.reveal');
     const observer = new IntersectionObserver(
       (entries) => {
@@ -59,6 +104,10 @@ export default function LandingPage() {
 
     return () => observer.disconnect();
   }, []);
+
+  if (!landingContent || !hasAttemptedLoad) {
+    return <LandingContentShell />;
+  }
 
   return (
     <div className="landing-page min-h-screen bg-[var(--dark)]">

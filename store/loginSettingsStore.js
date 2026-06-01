@@ -3,6 +3,7 @@ import { bulkUpdateWebsiteSettings, getWebsiteSettings } from '@/lib/api';
 import { uploadInlineImagesInSettings } from '@/lib/settingsImageUpload';
 
 const LOGIN_PAGE_DB_KEY = 'login_page_settings';
+const LOGIN_SETTINGS_CACHE_KEY = 'login-page-settings-cache-v1';
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
 
@@ -36,6 +37,37 @@ const deepMergeWithDefaults = (defaults, overrides) => {
   }
 
   return overrides ?? defaults;
+};
+
+const readLoginSettingsCache = () => {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    const cached = window.localStorage.getItem(LOGIN_SETTINGS_CACHE_KEY);
+    return cached ? deepMergeWithDefaults(clone(defaultLoginPageSettings), JSON.parse(cached)) : null;
+  } catch {
+    return null;
+  }
+};
+
+const writeLoginSettingsCache = (settings) => {
+  if (typeof window === 'undefined') return;
+
+  try {
+    window.localStorage.setItem(LOGIN_SETTINGS_CACHE_KEY, JSON.stringify(settings));
+  } catch {
+    // Ignore storage quota/private mode failures.
+  }
+};
+
+const removeLoginSettingsCache = () => {
+  if (typeof window === 'undefined') return;
+
+  try {
+    window.localStorage.removeItem(LOGIN_SETTINGS_CACHE_KEY);
+  } catch {
+    // Ignore storage failures.
+  }
 };
 
 export const defaultLoginPageSettings = {
@@ -100,15 +132,17 @@ const normalizeFromApi = (apiSettings) => {
   return deepMergeWithDefaults(base, parsed);
 };
 
+const getInitialLoginSettings = () => readLoginSettingsCache() || clone(defaultLoginPageSettings);
+
 export const useLoginPageSettingsStore = create((set, get) => ({
-  settings: clone(defaultLoginPageSettings),
+  settings: getInitialLoginSettings(),
   isDirty: false,
   isSaving: false,
-  isLoading: false,
+  isLoading: !readLoginSettingsCache(),
   saveError: null,
   loadError: null,
   lastSavedAt: null,
-  hasLoaded: false,
+  hasLoaded: Boolean(readLoginSettingsCache()),
 
   loadSettings: async () => {
     set({ isLoading: true, loadError: null });
@@ -124,14 +158,16 @@ export const useLoginPageSettingsStore = create((set, get) => ({
         loadError: null,
         hasLoaded: true,
       });
+      writeLoginSettingsCache(normalized);
 
       return normalized;
     } catch (error) {
+      const cached = readLoginSettingsCache();
       set({
-        settings: clone(defaultLoginPageSettings),
+        settings: cached || get().settings || clone(defaultLoginPageSettings),
         isLoading: false,
         loadError: error?.response?.data?.error || 'Gagal memuat login page settings',
-        hasLoaded: false,
+        hasLoaded: Boolean(cached),
       });
       throw error;
     }
@@ -163,6 +199,7 @@ export const useLoginPageSettingsStore = create((set, get) => ({
         saveError: null,
         lastSavedAt: new Date(),
       });
+      writeLoginSettingsCache(currentSettings);
 
       return true;
     } catch (error) {
@@ -192,9 +229,12 @@ export const useLoginPageSettingsStore = create((set, get) => ({
     }),
 
   resetSettings: () =>
-    set({
-      settings: clone(defaultLoginPageSettings),
-      isDirty: true,
-      saveError: null,
-    }),
+    {
+      removeLoginSettingsCache();
+      set({
+        settings: clone(defaultLoginPageSettings),
+        isDirty: true,
+        saveError: null,
+      });
+    },
 }));
