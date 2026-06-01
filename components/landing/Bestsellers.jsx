@@ -1,6 +1,7 @@
 'use client';
 
 import { bestsellersContent } from '@/data/landing/bestsellersContent';
+import { resolveAssetUrl } from '@/lib/assetUrl';
 
 function orderWA(item) {
   const msg = encodeURIComponent(
@@ -25,7 +26,7 @@ export default function Bestsellers({ content = bestsellersContent, previewMode 
         {(data.products || []).map((product, idx) => (
           <div className={`best-card reveal ${idx === 1 ? 'reveal-delay-1' : idx === 2 ? 'reveal-delay-2' : ''}`} key={product.id}>
             <div className="best-img-wrap">
-              <img className="best-img" src={product.image} alt={product.name} />
+              <img className="best-img" src={resolveAssetUrl(product.image, '')} alt={product.name} />
             </div>
             <span className="best-badge">{product.badge}</span>
             <span className="best-num">{product.number}</span>

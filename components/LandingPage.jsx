@@ -15,9 +15,12 @@ import CTA from '@/components/landing/CTA';
 import Footer from '@/components/landing/Footer';
 import FloatButton from '@/components/landing/FloatButton';
 import { getWebsiteSettings } from '@/lib/api';
+import { resolveAssetUrl } from '@/lib/assetUrl';
 import { getDefaultLandingContent, resolveLandingContentFromSettings } from '@/lib/landingContent';
 
 const LANDING_CONTENT_CACHE_KEY = 'landing-content-cache-v1';
+const IMAGE_KEY_PATTERN = /(image|img|logo|avatar|background|photo|gallery|media|thumbnail)/i;
+const IMAGE_VALUE_PATTERN = /^(https?:\/\/|\/images\/|data:image\/|blob:)/i;
 
 const readLandingContentCache = () => {
   if (typeof window === 'undefined') return null;
@@ -53,9 +56,55 @@ function LandingContentShell() {
   );
 }
 
+const collectLandingAssetUrls = (value, parentKey = '', urls = new Set()) => {
+  if (!value) return urls;
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (
+      trimmed
+      && !trimmed.includes('<iframe')
+      && (IMAGE_KEY_PATTERN.test(parentKey) || IMAGE_VALUE_PATTERN.test(trimmed))
+    ) {
+      urls.add(resolveAssetUrl(trimmed, ''));
+    }
+    return urls;
+  }
+
+  if (Array.isArray(value)) {
+    value.forEach((item) => collectLandingAssetUrls(item, parentKey, urls));
+    return urls;
+  }
+
+  if (typeof value === 'object') {
+    Object.entries(value).forEach(([key, child]) => collectLandingAssetUrls(child, key, urls));
+  }
+
+  return urls;
+};
+
+const preloadLandingAssets = async (content) => {
+  if (typeof window === 'undefined' || !content) return;
+  const urls = [...collectLandingAssetUrls(content)].filter(Boolean).slice(0, 120);
+  if (!urls.length) return;
+
+  await Promise.all(urls.map((url) => new Promise((resolve) => {
+    const image = new Image();
+    const timer = window.setTimeout(resolve, 9000);
+    const done = () => {
+      window.clearTimeout(timer);
+      resolve();
+    };
+    image.onload = done;
+    image.onerror = done;
+    image.src = url;
+  })));
+};
+
 export default function LandingPage() {
   const [landingContent, setLandingContent] = useState(() => readLandingContentCache());
   const [hasAttemptedLoad, setHasAttemptedLoad] = useState(() => Boolean(readLandingContentCache()));
+  const [assetsReady, setAssetsReady] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -86,6 +135,20 @@ export default function LandingPage() {
 
   useEffect(() => {
     if (!landingContent) return undefined;
+    let active = true;
+
+    setAssetsReady(false);
+    preloadLandingAssets(landingContent).finally(() => {
+      if (active) setAssetsReady(true);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [landingContent]);
+
+  useEffect(() => {
+    if (!landingContent || !assetsReady) return undefined;
 
     const revealEls = document.querySelectorAll('.reveal');
     const observer = new IntersectionObserver(
@@ -103,9 +166,9 @@ export default function LandingPage() {
     revealEls.forEach((el) => observer.observe(el));
 
     return () => observer.disconnect();
-  }, []);
+  }, [landingContent, assetsReady]);
 
-  if (!landingContent || !hasAttemptedLoad) {
+  if (!landingContent || !hasAttemptedLoad || !assetsReady) {
     return <LandingContentShell />;
   }
 

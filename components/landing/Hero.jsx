@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { heroContent } from '@/data/landing/heroContent';
+import { resolveAssetUrl } from '@/lib/assetUrl';
 
 function animateCounter(el, target, suffix) {
   let current = 0;
@@ -47,7 +48,7 @@ export default function Hero({ content = heroContent }) {
 
   return (
     <section id="hero">
-      <div className="hero-bg" style={{ backgroundImage: `url('${data.backgroundImage}')` }} />
+      <div className="hero-bg" style={{ backgroundImage: `url('${resolveAssetUrl(data.backgroundImage, '')}')` }} />
       <div className="hero-overlay" />
       <div className="hero-content">
         <div className="hero-badge">{data.badge}</div>

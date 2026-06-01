@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { menuContent } from '@/data/landing/menuContent';
+import { resolveAssetUrl } from '@/lib/assetUrl';
 
 function orderWA(item) {
   const msg = encodeURIComponent(
@@ -55,7 +56,7 @@ export default function MenuTabs({ content = menuContent, previewMode = false })
                   orderWA(item.orderName);
                 }}
               >
-                <img className="menu-item-img" src={item.image} alt={item.name} />
+                <img className="menu-item-img" src={resolveAssetUrl(item.image, '')} alt={item.name} />
                 <div className="menu-item-info">
                   {item.tag ? (
                     <div>

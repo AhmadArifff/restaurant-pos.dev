@@ -1,5 +1,6 @@
 import { ctaContent } from '@/data/landing/ctaContent';
 import Link from 'next/link';
+import { resolveAssetUrl } from '@/lib/assetUrl';
 
 const whatsappIcon = (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -15,7 +16,7 @@ export default function CTA({ content = ctaContent, previewMode = false }) {
 
   return (
     <section id="cta">
-      <div className="cta-bg" style={{ backgroundImage: `url('${data.backgroundImage}')` }} />
+      <div className="cta-bg" style={{ backgroundImage: `url('${resolveAssetUrl(data.backgroundImage, '')}')` }} />
       <div className="cta-overlay" />
       <div className="cta-content reveal">
         <div className="section-label" style={{ justifyContent: 'center' }}>{data.sectionLabel}</div>
@@ -45,7 +46,7 @@ export default function CTA({ content = ctaContent, previewMode = false }) {
           {deliveryPlatforms.map((platform, idx) => (
             <div key={`${platform.name || 'platform'}-${idx}`} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
               {platform.logo && (
-                <img src={platform.logo} alt={platform.name || 'Platform'} style={{ height: '24px', filter: 'brightness(0) invert(1)', opacity: 0.6 }} />
+                <img src={resolveAssetUrl(platform.logo, '')} alt={platform.name || 'Platform'} style={{ height: '24px', filter: 'brightness(0) invert(1)', opacity: 0.6 }} />
               )}
               {platform.text}
             </div>

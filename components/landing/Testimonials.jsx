@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { testimonialsContent } from '@/data/landing/testimonialsContent';
+import { resolveAssetUrl } from '@/lib/assetUrl';
 
 const splitTitle = (title = '', highlight = '') => {
   if (!highlight || !title.includes(highlight)) return { before: title, highlighted: '', after: '' };
@@ -51,7 +52,7 @@ function TestimonialsColumn({
                 }}
               >
                 <div className="testi-media">
-                  <img className="testi-bg-img" src={item.image} alt={item.imageAlt} />
+                  <img className="testi-bg-img" src={resolveAssetUrl(item.image, '')} alt={item.imageAlt} />
                   {item.badge ? <span className="influencer-badge">{item.badge}</span> : null}
                 </div>
 
@@ -61,7 +62,7 @@ function TestimonialsColumn({
                 </div>
 
                 <div className="testi-author-strip">
-                  <img className="testi-avatar" src={item.authorAvatar} alt={item.authorAvatarAlt} />
+                  <img className="testi-avatar" src={resolveAssetUrl(item.authorAvatar, '')} alt={item.authorAvatarAlt} />
                   <div>
                     <div className="testi-name">{item.author}</div>
                     <div className="testi-role">{item.role}</div>

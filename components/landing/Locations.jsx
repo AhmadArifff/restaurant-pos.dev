@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { locationsContent } from '@/data/landing/locationsContent';
+import { resolveAssetUrl } from '@/lib/assetUrl';
 
 const mapPinIcon = (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -49,7 +50,7 @@ export default function Locations({ content = locationsContent, previewMode = fa
         <div key={branch.id} className={`loc-panel ${activeBranch?.id === branch.id ? 'active' : ''}`} id={`loc-${branch.id}`}>
           <div className="loc-gallery reveal">
             {(branch.gallery || []).map((image, index) => (
-              <img key={`${branch.id}-${index}`} src={image} alt={`${branch.name} ${index + 1}`} />
+              <img key={`${branch.id}-${index}`} src={resolveAssetUrl(image, '')} alt={`${branch.name} ${index + 1}`} />
             ))}
           </div>
 

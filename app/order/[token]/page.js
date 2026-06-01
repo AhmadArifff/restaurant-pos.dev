@@ -15,6 +15,7 @@ import {
   getCustomerOrder,
   getDiningTableByToken,
   getPublicPaymentMethods,
+  getWebsiteSettings,
   previewDiscount,
   releaseTableSession,
   skipCustomerOrderReview,
@@ -221,12 +222,25 @@ function StarPicker({ value = 5, onChange }) {
   );
 }
 
-function ReviewVoucherCard({ voucher, order, onClose }) {
+const loadImage = (src) => new Promise((resolve, reject) => {
+  if (!src) {
+    reject(new Error('empty-image'));
+    return;
+  }
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = () => resolve(img);
+  img.onerror = reject;
+  img.src = src;
+});
+
+function ReviewVoucherCard({ voucher, order, onClose, storeLogoUrl, storeName = 'Sultan Kebab' }) {
   const [qrDataUrl, setQrDataUrl] = useState('');
   const discountText = getReviewVoucherDiscountText(voucher);
   const customerName = voucher?.customer_name || order?.customer_name || 'Pelanggan Sultan';
   const orderDate = voucher?.source_order_date || voucher?.issued_at || order?.created_at;
   const payload = getReviewVoucherPayload(voucher);
+  const logoUrl = resolveAssetUrl(storeLogoUrl, '/images/assets/logo.png');
 
   useEffect(() => {
     let active = true;
@@ -273,12 +287,20 @@ function ReviewVoucherCard({ voucher, order, onClose }) {
     ctx.fillText(`Expired: ${formatDateTime(voucher?.expires_at)}`, 80, 468);
     ctx.fillText('Upload gambar voucher ini saat order berikutnya untuk klaim.', 80, 540);
 
-    const qrImage = await new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => resolve(img);
-      img.onerror = reject;
-      img.src = qrDataUrl;
-    });
+    const [qrImage, logoImage] = await Promise.all([
+      loadImage(qrDataUrl),
+      loadImage(logoUrl).catch(() => null),
+    ]);
+    if (logoImage) {
+      ctx.save();
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(790, 76, 92, 92);
+      ctx.drawImage(logoImage, 800, 86, 72, 72);
+      ctx.restore();
+      ctx.fillStyle = '#F5EDD8';
+      ctx.font = '700 22px Arial';
+      ctx.fillText(storeName, 900, 128);
+    }
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(790, 150, 250, 250);
     ctx.drawImage(qrImage, 805, 165, 220, 220);
@@ -308,9 +330,15 @@ function ReviewVoucherCard({ voucher, order, onClose }) {
             <h2 className="mt-2 text-4xl font-black text-[#F5EDD8]">{discountText}</h2>
             <p className="mt-1 text-sm text-[#EDE0C4]/70">Untuk pesanan berikutnya</p>
           </div>
-          <div className="rounded-2xl border border-[#C9A84C]/25 px-3 py-2 text-right">
-            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#C9A84C]">Logo</p>
-            <p className="font-serif text-lg font-black">Sultan</p>
+          <div className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-2xl border border-[#C9A84C]/25 bg-white/95 p-1">
+            <img
+              src={logoUrl}
+              alt={storeName}
+              className="h-full w-full object-contain"
+              onError={(event) => {
+                event.currentTarget.src = '/images/assets/logo.png';
+              }}
+            />
           </div>
         </div>
 
@@ -398,6 +426,7 @@ export default function CustomerOrderPage() {
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [selectedPaymentMethodId, setSelectedPaymentMethodId] = useState('');
   const [paymentConfirmOrder, setPaymentConfirmOrder] = useState(null);
+  const [storeSettings, setStoreSettings] = useState(null);
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [reviewPromptSeenForOrder, setReviewPromptSeenForOrder] = useState('');
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
@@ -446,11 +475,12 @@ export default function CustomerOrderPage() {
         router.replace('/order');
         return;
       }
-      const [menuRes, rewardRes, bundleRes, paymentRes, orderRes] = await Promise.all([
+      const [menuRes, rewardRes, bundleRes, paymentRes, settingsRes, orderRes] = await Promise.all([
         getCustomerMenu({ branch_id: tableRes.data?.branch_id }),
         getActiveDiscountPrograms({ type: 'review_reward' }).catch(() => ({ data: [] })),
         getActiveDiscountPrograms({ type: 'bundle' }).catch(() => ({ data: [] })),
         getPublicPaymentMethods().catch(() => ({ data: [] })),
+        getWebsiteSettings().catch(() => ({ data: null })),
         savedOrderCode ? getCustomerOrder(savedOrderCode).catch(() => null) : Promise.resolve(null),
       ]);
       if (!mounted) return;
@@ -460,6 +490,7 @@ export default function CustomerOrderPage() {
       setBundlePrograms(Array.isArray(bundleRes.data) ? bundleRes.data : []);
       const activePayments = Array.isArray(paymentRes.data) ? paymentRes.data : [];
       setPaymentMethods(activePayments);
+      setStoreSettings(settingsRes?.data || null);
       setSelectedPaymentMethodId((prev) => prev || String(savedDraft?.selectedPaymentMethodId || activePayments[0]?.id || ''));
       if (orderRes?.data) {
         setOrder(orderRes.data);
@@ -1867,6 +1898,8 @@ export default function CustomerOrderPage() {
               voucher={reviewVoucherModal}
               order={order}
               onClose={() => setReviewVoucherModal(null)}
+              storeLogoUrl={storeSettings?.logo_url}
+              storeName={storeSettings?.store_name}
             />
           </>
         )}

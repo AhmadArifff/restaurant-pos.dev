@@ -1,4 +1,5 @@
 import { aboutContent } from '@/data/landing/aboutContent';
+import { resolveAssetUrl } from '@/lib/assetUrl';
 
 export default function About({ content = aboutContent }) {
   const data = content || aboutContent;
@@ -6,8 +7,8 @@ export default function About({ content = aboutContent }) {
     <section id="about">
       <div className="about-grid">
         <div className="about-img-wrap reveal">
-          <img className="about-img-main" src={data.mainImage} alt="Interior Sultan Kebab" />
-          <img className="about-img-accent" src={data.accentImage} alt="Kebab Premium" />
+          <img className="about-img-main" src={resolveAssetUrl(data.mainImage, '')} alt="Interior Sultan Kebab" />
+          <img className="about-img-accent" src={resolveAssetUrl(data.accentImage, '')} alt="Kebab Premium" />
           <div className="about-badge">
             <span>{data.badgeTop}</span>
             <small>{data.badgeBottom}</small>
