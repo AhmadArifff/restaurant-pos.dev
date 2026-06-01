@@ -434,6 +434,18 @@ export default function CustomerOrderPage() {
       const savedDraftHasCart = Array.isArray(savedDraft?.cart) && savedDraft.cart.length > 0;
       const existingSessionToken = tableSessionStorageKey ? localStorage.getItem(tableSessionStorageKey) || '' : '';
       const tableRes = await getDiningTableByToken(token, { session_token: existingSessionToken });
+      const tableLockedByOtherCustomer = Number(tableRes.data?.active_orders || 0) > 0
+        && !savedOrderCode
+        && !savedDraftHasCart;
+      if (tableLockedByOtherCustomer) {
+        if (!mounted) return;
+        if (tableSessionStorageKey) localStorage.removeItem(tableSessionStorageKey);
+        setTable(tableRes.data);
+        setDraftLoaded(true);
+        setLoading(false);
+        router.replace('/order');
+        return;
+      }
       const [menuRes, rewardRes, bundleRes, paymentRes, orderRes] = await Promise.all([
         getCustomerMenu({ branch_id: tableRes.data?.branch_id }),
         getActiveDiscountPrograms({ type: 'review_reward' }).catch(() => ({ data: [] })),
@@ -488,7 +500,7 @@ export default function CustomerOrderPage() {
     return () => {
       mounted = false;
     };
-  }, [token, storageKey, draftStorageKey, phoneStorageKey, tableSessionStorageKey]);
+  }, [token, storageKey, draftStorageKey, phoneStorageKey, tableSessionStorageKey, router]);
 
   useEffect(() => {
     if (!draftLoaded || !draftStorageKey || order) return;
@@ -745,6 +757,22 @@ export default function CustomerOrderPage() {
     }
   };
 
+  const ensureCartTableSession = async () => {
+    if (!token || order || !tableSessionStorageKey) return false;
+    const currentSessionToken = localStorage.getItem(tableSessionStorageKey) || tableSession?.session_token || '';
+    if (currentSessionToken) return true;
+
+    const session = await touchTableSession();
+    if (session?.session_token || localStorage.getItem(tableSessionStorageKey)) return true;
+
+    setOrderMessageModal({
+      title: 'Meja sedang dipakai',
+      message: 'Meja ini baru saja aktif di perangkat lain. Silakan pilih meja lain atau hubungi kasir.',
+      tone: 'warning',
+    });
+    return false;
+  };
+
   const releaseCurrentTableSession = async () => {
     const sessionToken = tableSessionStorageKey ? localStorage.getItem(tableSessionStorageKey) || '' : '';
     if (sessionToken) await releaseTableSession(sessionToken).catch(() => {});
@@ -815,10 +843,13 @@ export default function CustomerOrderPage() {
     };
   }, [cart, customerName, customerPhoneForApi, total, voucherCode, reviewVoucherToken]);
 
-  const addToCart = (product) => {
+  const addToCart = async (product) => {
     if (tableBusy) return;
     if (Number(product.stock || 0) <= 0) return;
-    if (!cartRef.current.length || !localStorage.getItem(tableSessionStorageKey)) touchTableSession();
+    if (!cartRef.current.length || !localStorage.getItem(tableSessionStorageKey)) {
+      const sessionReady = await ensureCartTableSession();
+      if (!sessionReady) return;
+    }
     setCart((prev) => {
       const existing = prev.find((item) => item.id === product.id);
       if (existing) {
@@ -829,9 +860,12 @@ export default function CustomerOrderPage() {
     });
   };
 
-  const addBundleToCart = (program) => {
+  const addBundleToCart = async (program) => {
     if (tableBusy) return;
-    if (!cartRef.current.length || !localStorage.getItem(tableSessionStorageKey)) touchTableSession();
+    if (!cartRef.current.length || !localStorage.getItem(tableSessionStorageKey)) {
+      const sessionReady = await ensureCartTableSession();
+      if (!sessionReady) return;
+    }
     const targets = (program.missingProducts?.length ? program.missingProducts : program.bundleProducts)
       .filter((product) => Number(product.stock || 0) > 0);
     if (!targets.length) return;
