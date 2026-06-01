@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
   claimPublicTableQueue,
+  getCustomerOrder,
+  getDiningTableByToken,
   getPublicBranches,
   getPublicDiningTables,
   getPublicTableQueue,
@@ -42,10 +44,14 @@ export default function SelectDiningTablePage() {
   const [queueName, setQueueName] = useState('');
   const queueStorageKey = selectedBranch?.id ? `customer-table-queue-${selectedBranch.id}` : '';
 
-  const readSavedTableState = (rows) => {
-    if (typeof window === 'undefined') return {};
-    return rows.reduce((acc, table) => {
+  const readSavedTableState = async (rows) => {
+    if (typeof window === 'undefined') return { orders: {}, drafts: {} };
+    const acc = { orders: {}, drafts: {} };
+
+    await Promise.all(rows.map(async (table) => {
       const savedOrderCode = window.localStorage.getItem(`customer-order-${table.qr_token}`);
+      const sessionKey = `customer-table-session-${table.qr_token}`;
+      const savedSessionToken = window.localStorage.getItem(sessionKey) || '';
       let savedDraft = null;
       try {
         savedDraft = JSON.parse(window.localStorage.getItem(`customer-order-draft-${table.qr_token}`) || 'null');
@@ -53,10 +59,52 @@ export default function SelectDiningTablePage() {
         savedDraft = null;
       }
       const hasDraft = Boolean(savedDraft && Array.isArray(savedDraft.cart) && savedDraft.cart.length);
-      if (savedOrderCode) acc.orders[table.qr_token] = savedOrderCode;
-      if (hasDraft) acc.drafts[table.qr_token] = savedDraft;
-      return acc;
-    }, { orders: {}, drafts: {} });
+      const activeOrderCodes = Array.isArray(table.active_order_codes) ? table.active_order_codes.map(String) : [];
+
+      if (savedOrderCode) {
+        if (activeOrderCodes.includes(String(savedOrderCode))) {
+          acc.orders[table.qr_token] = savedOrderCode;
+        } else if (Number(table.active_order_count || 0) > 0) {
+          window.localStorage.removeItem(`customer-order-${table.qr_token}`);
+        } else {
+          await getCustomerOrder(savedOrderCode)
+            .then((res) => {
+              const order = res.data?.data;
+              const belongsToTable = Number(order?.table_id) === Number(table.id);
+              const reusableStatuses = new Set(['pending', 'accepted', 'preparing', 'ready']);
+              if (belongsToTable && reusableStatuses.has(String(order?.status || ''))) {
+                acc.orders[table.qr_token] = savedOrderCode;
+                return;
+              }
+              window.localStorage.removeItem(`customer-order-${table.qr_token}`);
+            })
+            .catch(() => window.localStorage.removeItem(`customer-order-${table.qr_token}`));
+        }
+      }
+
+      if (hasDraft) {
+        if (Number(table.active_orders || 0) === 0) {
+          acc.drafts[table.qr_token] = savedDraft;
+        } else if (savedSessionToken) {
+          await getDiningTableByToken(table.qr_token, { session_token: savedSessionToken })
+            .then((res) => {
+              if (Number(res.data?.active_orders || 0) === 0) acc.drafts[table.qr_token] = savedDraft;
+              else {
+                window.localStorage.removeItem(`customer-order-draft-${table.qr_token}`);
+                window.localStorage.removeItem(sessionKey);
+              }
+            })
+            .catch(() => {
+              window.localStorage.removeItem(`customer-order-draft-${table.qr_token}`);
+              window.localStorage.removeItem(sessionKey);
+            });
+        } else {
+          window.localStorage.removeItem(`customer-order-draft-${table.qr_token}`);
+        }
+      }
+    }));
+
+    return acc;
   };
 
   useEffect(() => {
@@ -80,7 +128,9 @@ export default function SelectDiningTablePage() {
     ])
       .then(([res, queueRes]) => {
         const rows = res.data || [];
-        const savedState = readSavedTableState(rows);
+        return readSavedTableState(rows).then((savedState) => ({ rows, savedState, queueRes }));
+      })
+      .then(({ rows, savedState, queueRes }) => {
         setTables(rows);
         setSavedOrdersByToken(savedState.orders);
         setSavedDraftsByToken(savedState.drafts);
