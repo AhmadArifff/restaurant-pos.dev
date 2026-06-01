@@ -53,10 +53,126 @@ const statusFilters = [
   { value: 'cancelled', label: 'Dibatalkan' },
 ];
 
+const batchStatusActions = [
+  { status: 'accepted', label: 'Diterima', color: 'bg-blue-500 hover:bg-blue-400' },
+  { status: 'preparing', label: 'Disiapkan', color: 'bg-yellow-500 hover:bg-yellow-400' },
+  { status: 'ready', label: 'Siap Diantar', color: 'bg-emerald-500 hover:bg-emerald-400' },
+  { status: 'completed', label: 'Selesai', color: 'bg-orange-500 hover:bg-orange-400' },
+  { status: 'cancelled', label: 'Batalkan', color: 'bg-red-500 hover:bg-red-400' },
+];
+
 const formatRp = (value) => `Rp ${Number(value || 0).toLocaleString('id-ID')}`;
 const formatDateTime = (value) => value
   ? new Date(value).toLocaleString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
   : '-';
+const toDateKey = (date = new Date()) => {
+  const safeDate = date instanceof Date ? date : new Date(date);
+  const year = safeDate.getFullYear();
+  const month = String(safeDate.getMonth() + 1).padStart(2, '0');
+  const day = String(safeDate.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+const todayKey = () => toDateKey(new Date());
+const parseDateKey = (value) => {
+  const [year, month, day] = String(value || todayKey()).split('-').map(Number);
+  return new Date(year, month - 1, day);
+};
+const formatDateLabel = (value) => parseDateKey(value).toLocaleDateString('id-ID', {
+  day: '2-digit',
+  month: 'short',
+  year: 'numeric',
+});
+const isDateInRange = (dateKey, start, end) => dateKey >= start && dateKey <= (end || start);
+const sameDateKey = (a, b) => String(a || '') === String(b || '');
+
+function DateRangePicker({ value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const [monthDate, setMonthDate] = useState(() => parseDateKey(value.start));
+  const start = value.start || todayKey();
+  const end = value.end || value.start || todayKey();
+  const monthLabel = monthDate.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+  const firstDay = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
+  const lastDay = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
+  const leadingBlanks = (firstDay.getDay() + 6) % 7;
+  const days = [
+    ...Array.from({ length: leadingBlanks }, (_, index) => ({ key: `blank-${index}`, blank: true })),
+    ...Array.from({ length: lastDay.getDate() }, (_, index) => {
+      const date = new Date(monthDate.getFullYear(), monthDate.getMonth(), index + 1);
+      return { key: toDateKey(date), date };
+    }),
+  ];
+
+  const pickDate = (dateKey) => {
+    if (!value.start || (value.start && value.end)) {
+      onChange({ start: dateKey, end: '' });
+      return;
+    }
+    if (dateKey < value.start) onChange({ start: dateKey, end: value.start });
+    else onChange({ start: value.start, end: dateKey });
+    setOpen(false);
+  };
+
+  const moveMonth = (offset) => {
+    setMonthDate((current) => new Date(current.getFullYear(), current.getMonth() + offset, 1));
+  };
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className="w-full rounded-2xl border border-slate-700 bg-slate-800 px-4 py-3 text-left text-sm font-bold text-white outline-none transition hover:border-orange-500/70"
+      >
+        <span className="block text-[10px] uppercase tracking-[0.18em] text-slate-500">Tanggal Pesanan</span>
+        {formatDateLabel(start)} {end && !sameDateKey(start, end) ? `- ${formatDateLabel(end)}` : ''}
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full z-40 mt-2 w-[min(340px,calc(100vw-2rem))] rounded-3xl border border-slate-700 bg-slate-900 p-4 shadow-2xl shadow-black/40">
+          <div className="flex items-center justify-between gap-3">
+            <button type="button" onClick={() => moveMonth(-1)} className="grid h-9 w-9 place-items-center rounded-full bg-slate-800 text-white">‹</button>
+            <strong className="text-sm text-white">{monthLabel}</strong>
+            <button type="button" onClick={() => moveMonth(1)} className="grid h-9 w-9 place-items-center rounded-full bg-slate-800 text-white">›</button>
+          </div>
+          <div className="mt-4 grid grid-cols-7 gap-1 text-center text-[11px] font-bold uppercase text-slate-500">
+            {['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'].map((day) => <span key={day}>{day}</span>)}
+          </div>
+          <div className="mt-2 grid grid-cols-7 gap-1">
+            {days.map((item) => item.blank ? (
+              <span key={item.key} />
+            ) : (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => pickDate(item.key)}
+                className={`h-10 rounded-xl text-sm font-black transition ${
+                  sameDateKey(item.key, start) || sameDateKey(item.key, end)
+                    ? 'bg-orange-500 text-white'
+                    : isDateInRange(item.key, start, end)
+                      ? 'bg-orange-500/15 text-orange-200'
+                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                }`}
+              >
+                {item.date.getDate()}
+              </button>
+            ))}
+          </div>
+          <div className="mt-4 flex gap-2">
+            <button
+              type="button"
+              onClick={() => { const today = todayKey(); onChange({ start: today, end: today }); setMonthDate(parseDateKey(today)); setOpen(false); }}
+              className="flex-1 rounded-xl bg-slate-800 px-3 py-2 text-xs font-black text-slate-200"
+            >
+              Hari Ini
+            </button>
+            <button type="button" onClick={() => setOpen(false)} className="flex-1 rounded-xl bg-orange-500 px-3 py-2 text-xs font-black text-white">
+              Terapkan
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 const discountTypeMeta = {
   bundle: {
@@ -125,6 +241,12 @@ export default function CustomerOrdersPage() {
   const [orders, setOrders] = useState([]);
   const [tables, setTables] = useState([]);
   const [status, setStatus] = useState('all');
+  const [search, setSearch] = useState('');
+  const [dateRange, setDateRange] = useState(() => {
+    const today = todayKey();
+    return { start: today, end: today };
+  });
+  const [selectedOrderIds, setSelectedOrderIds] = useState([]);
   const [tableForm, setTableForm] = useState(emptyTable);
   const [editingTable, setEditingTable] = useState(null);
   const [selectedTable, setSelectedTable] = useState(null);
@@ -137,7 +259,12 @@ export default function CustomerOrdersPage() {
     else setLoading(true);
     try {
       const [ordersRes, tablesRes] = await Promise.all([
-        getCustomerOrders({}),
+        getCustomerOrders({
+          date_from: dateRange.start || todayKey(),
+          date_to: dateRange.end || dateRange.start || todayKey(),
+          search: search.trim() || undefined,
+          limit: 200,
+        }),
         isAdmin ? getManagedDiningTables() : Promise.resolve({ data: [] }),
       ]);
       setOrders(ordersRes.data || []);
@@ -157,12 +284,17 @@ export default function CustomerOrdersPage() {
     load();
     const timer = window.setInterval(() => load({ silent: true }), 10000);
     return () => window.clearInterval(timer);
-  }, [isAdmin]);
+  }, [isAdmin, dateRange.start, dateRange.end, search]);
 
   const visibleOrders = useMemo(
     () => (status === 'all' ? orders : orders.filter((order) => order.status === status)),
     [orders, status]
   );
+
+  useEffect(() => {
+    const visibleIds = new Set(visibleOrders.map((order) => Number(order.id)));
+    setSelectedOrderIds((prev) => prev.filter((id) => visibleIds.has(Number(id))));
+  }, [visibleOrders]);
 
   const statusCounts = useMemo(() => {
     const counts = { all: orders.length };
@@ -184,6 +316,28 @@ export default function CustomerOrdersPage() {
       revenue,
     };
   }, [orders]);
+
+  const selectedOrders = useMemo(
+    () => visibleOrders.filter((order) => selectedOrderIds.includes(Number(order.id))),
+    [selectedOrderIds, visibleOrders]
+  );
+  const allVisibleSelected = visibleOrders.length > 0 && selectedOrderIds.length === visibleOrders.length;
+
+  const toggleOrderSelection = (orderId) => {
+    const id = Number(orderId);
+    setSelectedOrderIds((prev) => (
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    ));
+  };
+
+  const toggleSelectAllVisible = () => {
+    setSelectedOrderIds(allVisibleSelected ? [] : visibleOrders.map((order) => Number(order.id)));
+  };
+
+  const canApplyStatus = (order, nextStatus) => {
+    if (nextStatus === 'cancelled') return !['completed', 'cancelled'].includes(order.status);
+    return nextActionByStatus[order.status]?.status === nextStatus;
+  };
 
   const saveTable = async (e) => {
     e.preventDefault();
@@ -251,6 +405,57 @@ export default function CustomerOrdersPage() {
     }
   };
 
+  const runBatchStatus = async (nextStatus) => {
+    const sourceOrders = selectedOrders.length ? selectedOrders : visibleOrders;
+    const targets = sourceOrders.filter((order) => canApplyStatus(order, nextStatus));
+    if (!targets.length) {
+      alert(selectedOrders.length
+        ? 'Tidak ada pesanan terpilih yang bisa diproses ke status ini.'
+        : 'Tidak ada pesanan pada filter ini yang bisa diproses ke status ini.');
+      return;
+    }
+
+    const actionLabel = statusLabels[nextStatus] || nextStatus;
+    const confirmed = await showConfirm(
+      `${selectedOrders.length ? 'Proses pesanan terpilih' : 'Proses semua pesanan yang cocok'} ke status "${actionLabel}"? (${targets.length} pesanan)`,
+      {
+        title: 'Update Status Pesanan',
+        confirmText: 'Proses',
+        tone: nextStatus === 'cancelled' ? 'danger' : 'info',
+      }
+    );
+    if (!confirmed) return;
+
+    let cancelReason = '';
+    if (nextStatus === 'cancelled') {
+      const reason = await showPrompt(`Alasan pembatalan untuk ${targets.length} pesanan:`, {
+        title: 'Batalkan Pesanan',
+        placeholder: 'Tulis alasan pembatalan...',
+        confirmText: 'Batalkan Pesanan',
+      });
+      if (!reason?.trim()) return;
+      cancelReason = reason.trim();
+    }
+
+    const failures = [];
+    for (const order of targets) {
+      try {
+        await updateCustomerOrderStatus(order.id, {
+          status: nextStatus,
+          ...(nextStatus === 'cancelled' ? { cancel_reason: cancelReason } : {}),
+        });
+      } catch (err) {
+        failures.push(`${order.order_code}: ${err.response?.data?.message || 'gagal diproses'}`);
+      }
+    }
+
+    setSelectedOrderIds([]);
+    await load({ silent: true });
+    if (failures.length) {
+      alert(`Sebagian pesanan gagal diproses:\n\n${failures.slice(0, 8).join('\n')}${failures.length > 8 ? `\n+${failures.length - 8} lainnya` : ''}`);
+    }
+  };
+
   const getStatusActions = (order) => {
     if (['completed', 'cancelled'].includes(order.status)) return [];
     const nextAction = nextActionByStatus[order.status];
@@ -303,6 +508,60 @@ export default function CustomerOrdersPage() {
             </div>
           </div>
 
+          <div className="grid gap-3 lg:grid-cols-[minmax(260px,360px)_1fr]">
+            <DateRangePicker value={dateRange} onChange={setDateRange} />
+            <div className="rounded-2xl border border-slate-700 bg-slate-800 px-4 py-3">
+              <label className="block text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+                Cari Pesanan
+              </label>
+              <input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Cari order, nama, nomor HP, atau meja..."
+                className="mt-1 w-full bg-transparent text-sm font-semibold text-white outline-none placeholder:text-slate-500"
+              />
+            </div>
+          </div>
+
+          <div className="rounded-3xl border border-slate-700 bg-slate-800 p-4">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={toggleSelectAllVisible}
+                  className={`rounded-xl px-3 py-2 text-xs font-black transition ${
+                    allVisibleSelected ? 'bg-orange-500 text-white' : 'bg-slate-700 text-slate-200 hover:bg-slate-600'
+                  }`}
+                >
+                  {allVisibleSelected ? 'Batalkan Pilihan' : 'Pilih Semua Tampilan'}
+                </button>
+                <p className="text-xs font-semibold text-slate-400">
+                  {selectedOrderIds.length
+                    ? `${selectedOrderIds.length} pesanan terpilih`
+                    : 'Tanpa pilihan: tombol akan memproses semua pesanan yang cocok pada tampilan ini.'}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {batchStatusActions.map((action) => {
+                  const sourceOrders = selectedOrders.length ? selectedOrders : visibleOrders;
+                  const eligibleCount = sourceOrders.filter((order) => canApplyStatus(order, action.status)).length;
+                  return (
+                    <button
+                      key={action.status}
+                      type="button"
+                      onClick={() => runBatchStatus(action.status)}
+                      disabled={eligibleCount === 0}
+                      className={`${action.color} rounded-xl px-3 py-2 text-xs font-black text-white transition disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500`}
+                    >
+                      {action.label}
+                      <span className="ml-2 rounded-full bg-white/20 px-1.5 py-0.5 text-[10px]">{eligibleCount}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {[
               ['Total Order', stats.total],
@@ -339,8 +598,8 @@ export default function CustomerOrdersPage() {
               {visibleOrders.map((order) => {
                 const discountComponents = getDiscountComponents(order);
                 return (
+                <div key={order.id} className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-start">
                 <motion.article
-                  key={order.id}
                   layout
                   className="rounded-3xl border border-slate-700 bg-slate-800 p-5 shadow-xl shadow-black/10"
                 >
@@ -499,6 +758,20 @@ export default function CustomerOrdersPage() {
                     </div>
                   </div>
                 </motion.article>
+                  <label className={`flex cursor-pointer items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-xs font-black transition lg:min-h-[112px] lg:w-20 lg:flex-col ${
+                    selectedOrderIds.includes(Number(order.id))
+                      ? 'border-orange-500 bg-orange-500/15 text-orange-200'
+                      : 'border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-500 hover:text-white'
+                  }`}>
+                    <input
+                      type="checkbox"
+                      checked={selectedOrderIds.includes(Number(order.id))}
+                      onChange={() => toggleOrderSelection(order.id)}
+                      className="h-5 w-5 accent-orange-500"
+                    />
+                    Pilih
+                  </label>
+                </div>
               );
               })}
             </section>
