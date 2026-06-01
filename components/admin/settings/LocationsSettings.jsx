@@ -3,6 +3,7 @@
 import AccordionSection from '../form/AccordionSection';
 import TextInput from '../form/TextInput';
 import TextArea from '../form/TextArea';
+import ImageUpload from '../form/ImageUpload';
 import DynamicArray from '../form/DynamicArray';
 import { useLandingSettingsStore } from '@/store/landingSettingsStore';
 
@@ -108,10 +109,12 @@ export default function LocationsSettings() {
                 onAdd={() => addArrayItem('locations', `branches.${bIdx}.gallery`, '')}
                 onRemove={(gIdx) => removeArrayItem('locations', `branches.${bIdx}.gallery`, gIdx)}
                 renderItem={(img, gIdx) => (
-                  <TextInput
-                    label={`Gallery URL ${gIdx + 1}`}
+                  <ImageUpload
+                    label={`Gallery Image ${gIdx + 1}`}
                     value={img}
                     onChange={(val) => updateNestedSetting('locations', `branches.${bIdx}.gallery.${gIdx}`, val)}
+                    uploadKey={`location-${bIdx + 1}-gallery-${gIdx + 1}`}
+                    hint="Upload gambar cabang atau tempel URL gambar."
                   />
                 )}
                 addButtonLabel="+ Add Gallery Image"

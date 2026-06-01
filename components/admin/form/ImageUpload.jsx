@@ -67,14 +67,17 @@ export default function ImageUpload({
           message: 'Gambar siap disimpan ke pengaturan.',
         },
       }));
-    } catch {
+    } catch (err) {
+      const message = err?.response?.data?.message
+        || err?.response?.data?.error
+        || 'Gagal mengunggah gambar. Coba pilih file lain atau gunakan URL gambar.';
       setLocalPreview(null);
-      setUploadError('Gagal mengunggah gambar. Coba pilih file lain atau gunakan URL gambar.');
+      setUploadError(message);
       window.dispatchEvent(new CustomEvent('app:feedback', {
         detail: {
           type: 'error',
           title: 'Upload Gambar Gagal',
-          message: 'Gambar belum bisa diunggah. Coba lagi beberapa saat.',
+          message,
         },
       }));
     } finally {
