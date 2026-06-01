@@ -25,6 +25,7 @@ import {
 import CustomerPaymentPanel from '@/components/customer/CustomerPaymentPanel';
 import PaymentMethodCard from '@/components/payment/PaymentMethodCard';
 import { resolveAssetUrl } from '@/lib/assetUrl';
+import { IMAGE_EXTENSIONS, acceptFromExtensions, getFileValidationError } from '@/lib/fileValidation';
 import { formatIndonesianPhone, normalizeIndonesianPhoneForSubmit } from '@/lib/phoneFormat';
 
 const statusSteps = [
@@ -1113,6 +1114,14 @@ export default function CustomerOrderPage() {
     if (!file) return;
 
     try {
+      const validationError = getFileValidationError(file, {
+        allowedExtensions: IMAGE_EXTENSIONS,
+        label: 'gambar voucher review',
+        maxSizeMB: 5,
+      });
+      if (validationError) {
+        throw new Error(validationError);
+      }
       setReviewVoucherScanning(true);
       setReviewVoucherValidation(null);
       const qrPayload = await decodeQrFromImageFile(file);
@@ -1210,7 +1219,7 @@ export default function CustomerOrderPage() {
             {reviewVoucherScanning ? 'Scan QR...' : reviewVoucherToken ? 'Ganti gambar voucher' : 'Upload gambar voucher review'}
             <input
               type="file"
-              accept="image/*"
+              accept={acceptFromExtensions(IMAGE_EXTENSIONS)}
               onChange={handleReviewVoucherUpload}
               className="hidden"
             />

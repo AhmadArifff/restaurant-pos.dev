@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { uploadWebsiteAsset } from '@/lib/api';
 import { resolveAssetUrl } from '@/lib/assetUrl';
+import { BRAND_IMAGE_EXTENSIONS, acceptFromExtensions, getFileValidationError } from '@/lib/fileValidation';
 import FormGroup from './FormGroup';
 
 export default function ImageUpload({
@@ -35,8 +36,13 @@ export default function ImageUpload({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
-      setUploadError('File harus berupa gambar.');
+    const validationError = getFileValidationError(file, {
+      allowedExtensions: BRAND_IMAGE_EXTENSIONS,
+      label: 'gambar',
+      maxSizeMB: 10,
+    });
+    if (validationError) {
+      setUploadError(validationError);
       e.target.value = '';
       return;
     }
@@ -93,7 +99,7 @@ export default function ImageUpload({
         <div className="flex gap-2 flex-wrap">
           <input
             type="file"
-            accept="image/*"
+            accept={acceptFromExtensions(BRAND_IMAGE_EXTENSIONS)}
             onChange={handleFileSelect}
             disabled={uploading}
             className="form-input flex-1 cursor-pointer"

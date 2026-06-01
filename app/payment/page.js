@@ -13,6 +13,7 @@ import {
 } from '@/lib/api';
 import { showConfirm } from '@/lib/modalDialog';
 import PaymentMethodCard from '@/components/payment/PaymentMethodCard';
+import { IMAGE_EXTENSIONS, acceptFromExtensions, getFileValidationError } from '@/lib/fileValidation';
 
 const emptyForm = {
   method_key: '',
@@ -57,6 +58,7 @@ export default function PaymentManagementPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [qrPreviewUrl, setQrPreviewUrl] = useState('');
+  const [fileError, setFileError] = useState(null);
   const loadSeqRef = useRef(0);
   const hasLoadedRef = useRef(false);
 
@@ -111,6 +113,7 @@ export default function PaymentManagementPage() {
     setEditing(null);
     setForm(emptyForm);
     setQrPreviewUrl('');
+    setFileError(null);
   };
 
   const editMethod = (method) => {
@@ -130,6 +133,31 @@ export default function PaymentManagementPage() {
       remove_qr: '0',
     });
     setQrPreviewUrl('');
+    setFileError(null);
+  };
+
+  const handleQrImageSelect = (event) => {
+    const file = event.target.files?.[0] || null;
+    if (!file) {
+      setForm((prev) => ({ ...prev, qr_image: null }));
+      setFileError(null);
+      return;
+    }
+
+    const validationError = getFileValidationError(file, {
+      allowedExtensions: IMAGE_EXTENSIONS,
+      label: 'gambar QRIS',
+      maxSizeMB: 5,
+    });
+    if (validationError) {
+      setFileError(validationError);
+      setForm((prev) => ({ ...prev, qr_image: null }));
+      event.target.value = '';
+      return;
+    }
+
+    setFileError(null);
+    setForm((prev) => ({ ...prev, qr_image: file, remove_qr: '0' }));
   };
 
   const save = async (event) => {
@@ -386,10 +414,11 @@ export default function PaymentManagementPage() {
                       <p className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Gambar QRIS</p>
                       <input
                         type="file"
-                        accept="image/*"
-                        onChange={(event) => setForm((prev) => ({ ...prev, qr_image: event.target.files?.[0] || null, remove_qr: '0' }))}
+                        accept={acceptFromExtensions(IMAGE_EXTENSIONS)}
+                        onChange={handleQrImageSelect}
                         className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-slate-300 outline-none focus:border-orange-500"
                       />
+                      {fileError && <p className="mt-2 text-xs font-semibold text-red-300">{fileError}</p>}
                       <p className="mt-2 text-xs leading-5 text-slate-500">Upload hanya untuk QRIS. Preview kartu di atas akan berubah otomatis.</p>
                     </div>
                   ) : (

@@ -4,6 +4,7 @@ import AdminLayout from '@/components/layout/AdminLayout';
 import { getProducts, getCategories, deleteProduct, getStockItems } from '@/lib/api';
 import api from '@/lib/axios';
 import { resolveAssetUrl } from '@/lib/assetUrl';
+import { IMAGE_EXTENSIONS, acceptFromExtensions, getFileValidationError } from '@/lib/fileValidation';
 import { showConfirm } from '@/lib/modalDialog';
 import { CardSkeleton } from '@/components/ui/SectionSkeleton';
 // Di app/pos/page.js atau wherever kasir lihat produk
@@ -22,6 +23,7 @@ export default function ProductsPage() {
   const [editing, setEditing]       = useState(null);
   const [imageFile, setImageFile]   = useState(null);
   const [imagePreview, setPreview]  = useState(null);
+  const [imageError, setImageError] = useState(null);
   const [search, setSearch]         = useState('');
   const [loading, setLoading]       = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
@@ -72,6 +74,7 @@ export default function ProductsPage() {
   const openAdd = () => {
     setForm({ ...emptyForm, ingredients: [] }); setEditing(null);
     setImageFile(null); setPreview(null);
+    setImageError(null);
     if (fileRef.current) fileRef.current.value = '';
     setModal(true);
   };
@@ -86,6 +89,7 @@ export default function ProductsPage() {
     setEditing(p.id);
     setPreview(p.image_url ? resolveAssetUrl(p.image_url) : null);
     setImageFile(null);
+    setImageError(null);
     if (fileRef.current) fileRef.current.value = '';
     setModal(true);
   };
@@ -93,6 +97,17 @@ export default function ProductsPage() {
   const handleImage = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    const validationError = getFileValidationError(file, {
+      allowedExtensions: IMAGE_EXTENSIONS,
+      label: 'gambar produk',
+      maxSizeMB: 10,
+    });
+    if (validationError) {
+      setImageError(validationError);
+      e.target.value = '';
+      return;
+    }
+    setImageError(null);
     setImageFile(file);
     setForm(f => ({ ...f, image_url: '' }));
     setPreview(URL.createObjectURL(file));
@@ -101,6 +116,7 @@ export default function ProductsPage() {
   const handleImageUrl = (value) => {
     setForm(f => ({ ...f, image_url: value }));
     setImageFile(null);
+    setImageError(null);
     if (fileRef.current) fileRef.current.value = '';
     setPreview(value.trim() ? resolveAssetUrl(value.trim()) : null);
   };
@@ -108,6 +124,7 @@ export default function ProductsPage() {
   const clearImage = () => {
     setImageFile(null);
     setPreview(null);
+    setImageError(null);
     setForm(f => ({ ...f, image_url: '' }));
     if (fileRef.current) fileRef.current.value = '';
   };
@@ -389,6 +406,11 @@ export default function ProductsPage() {
                       Tempel link gambar online agar hasilnya sama seperti preview landing page.
                       Jika upload file, URL online akan dikosongkan.
                     </p>
+                    {imageError && (
+                      <p className="rounded-lg bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-200">
+                        {imageError}
+                      </p>
+                    )}
                     {imageFile && (
                       <p className="rounded-lg bg-orange-500/10 px-3 py-2 text-xs font-semibold text-orange-200">
                         File dipilih: {imageFile.name}
@@ -414,7 +436,7 @@ export default function ProductsPage() {
                     </div>
                   </div>
                 </div>
-                <input ref={fileRef} type="file" accept="image/*"
+                <input ref={fileRef} type="file" accept={acceptFromExtensions(IMAGE_EXTENSIONS)}
                   onChange={handleImage} className="hidden"/>
               </div>
 

@@ -5,6 +5,7 @@ import AdminLayout from '@/components/layout/AdminLayout';
 import { useWebsiteSettings, DEFAULT_THEME_COLORS, DEFAULT_SETTINGS } from '@/store/settingsStore';
 import { uploadWebsiteImage, bulkUpdateWebsiteSettings } from '@/lib/api';
 import { resolveAssetUrl } from '@/lib/assetUrl';
+import { BRAND_IMAGE_EXTENSIONS, acceptFromExtensions, getFileValidationError } from '@/lib/fileValidation';
 import FaviconDebugger from '@/components/ui/FaviconDebugger';
 import SectionSkeleton from '@/components/ui/SectionSkeleton';
 
@@ -44,9 +45,10 @@ const validators = {
     return null;
   },
   file_type: (file) => {
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'image/x-icon', 'image/vnd.microsoft.icon'];
-    if (!allowedTypes.includes(file.type)) return 'Format file harus JPG, PNG, GIF, WebP, SVG, atau ICO';
-    return null;
+    return getFileValidationError(file, {
+      allowedExtensions: BRAND_IMAGE_EXTENSIONS,
+      label: 'gambar',
+    });
   },
 };
 
@@ -301,7 +303,7 @@ export default function SettingsPage() {
                   <div className="flex-1">
                     <input
                       type="file"
-                      accept="image/*"
+                      accept={acceptFromExtensions(BRAND_IMAGE_EXTENSIONS)}
                       onChange={(e) => handleImageSelect(e, 'logo_url', setLogoFile, setLogoPreview)}
                       className={`w-full px-4 py-2.5 bg-slate-700/50 border rounded-lg text-slate-400 focus:outline-none transition-all file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-orange-500 file:text-white file:cursor-pointer file:font-medium ${
                         fieldErrors.logo_url ? 'border-red-500/50 focus:border-red-500/70' : 'border-slate-600/50 focus:border-orange-500/50'
@@ -330,7 +332,7 @@ export default function SettingsPage() {
                   <div className="flex-1">
                     <input
                       type="file"
-                      accept="image/*"
+                      accept={acceptFromExtensions(BRAND_IMAGE_EXTENSIONS)}
                       onChange={(e) => handleImageSelect(e, 'favicon_url', setFaviconFile, setFaviconPreview)}
                       className={`w-full px-4 py-2.5 bg-slate-700/50 border rounded-lg text-slate-400 focus:outline-none transition-all file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-orange-500 file:text-white file:cursor-pointer file:font-medium ${
                         fieldErrors.favicon_url ? 'border-red-500/50 focus:border-red-500/70' : 'border-slate-600/50 focus:border-orange-500/50'

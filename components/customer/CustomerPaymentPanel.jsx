@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { submitCustomerPaymentProof } from '@/lib/api';
+import { PAYMENT_PROOF_EXTENSIONS, acceptFromExtensions, getFileValidationError } from '@/lib/fileValidation';
 import { resolveAssetUrl } from '@/lib/assetUrl';
 import PaymentMethodCard, { PaymentCopyButton } from '@/components/payment/PaymentMethodCard';
 
@@ -169,6 +170,32 @@ export default function CustomerPaymentPanel({ order, onOrderUpdate, compact = f
     }
   };
 
+  const handleProofSelect = (event) => {
+    const file = event.target.files?.[0] || null;
+    if (!file) {
+      setProof(null);
+      return;
+    }
+
+    const validationError = getFileValidationError(file, {
+      allowedExtensions: PAYMENT_PROOF_EXTENSIONS,
+      label: 'bukti pembayaran',
+      maxSizeMB: 5,
+    });
+    if (validationError) {
+      setProof(null);
+      event.target.value = '';
+      setMessageModal({
+        title: 'Format file tidak didukung',
+        message: validationError,
+        tone: 'warning',
+      });
+      return;
+    }
+
+    setProof(file);
+  };
+
   return (
     <div className={`mt-5 overflow-hidden rounded-3xl border border-[#C9A84C]/20 bg-[#241C0E] ${compact ? 'p-4' : 'p-5'} text-[#F5EDD8]`}>
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_220px]">
@@ -278,8 +305,8 @@ export default function CustomerPaymentPanel({ order, onOrderUpdate, compact = f
           </div>
           <input
             type="file"
-            accept="image/*,.pdf"
-            onChange={(event) => setProof(event.target.files?.[0] || null)}
+            accept={acceptFromExtensions(PAYMENT_PROOF_EXTENSIONS)}
+            onChange={handleProofSelect}
             className="w-full rounded-xl border border-sky-100/20 bg-[#0D0A06] px-4 py-3 text-sm text-sky-50 outline-none"
           />
           <textarea
