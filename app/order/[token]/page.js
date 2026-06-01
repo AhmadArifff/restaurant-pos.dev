@@ -5,6 +5,8 @@ import { useParams } from 'next/navigation';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
+import QRCode from 'qrcode';
+import jsQR from 'jsqr';
 import {
   createCustomerOrder,
   createTableSession,
@@ -17,6 +19,7 @@ import {
   releaseTableSession,
   skipCustomerOrderReview,
   submitCustomerOrderReview,
+  validateReviewVoucher,
 } from '@/lib/api';
 import CustomerPaymentPanel from '@/components/customer/CustomerPaymentPanel';
 import PaymentMethodCard from '@/components/payment/PaymentMethodCard';
@@ -120,8 +123,45 @@ const getDiscountTitleClass = (discountType) => {
 const getDiscountNote = (component) => {
   if (component.type === 'bundle') return 'Note: Potongan paket bundle hanya dihitung dari menu paket di atas.';
   if (component.type === 'voucher') return 'Note: Potongan Kode Vocher dihitung dari menu di luar paket bundle.';
-  if (component.type === 'review_reward') return 'Note: Potongan reward review dihitung dari menu di luar paket bundle.';
+  if (component.type === 'review_reward') return 'Note: Voucher review didapat dari review pesanan sebelumnya, dihitung dari menu di luar paket bundle, dan hanya bisa digunakan sekali.';
   return 'Note: Potongan diskon dihitung sesuai scope program.';
+};
+
+const getReviewVoucherDiscountText = (voucher) => {
+  if (!voucher) return '';
+  return voucher.discount_type === 'fixed'
+    ? formatRp(voucher.discount_value)
+    : `${Number(voucher.discount_value || 0)}%`;
+};
+
+const getReviewVoucherPayload = (voucher) => (
+  voucher?.qr_payload || JSON.stringify({ type: 'review_reward_voucher', token: voucher?.token || '' })
+);
+
+const fileToDataUrl = (file) => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onload = () => resolve(reader.result);
+  reader.onerror = reject;
+  reader.readAsDataURL(file);
+});
+
+const decodeQrFromImageFile = async (file) => {
+  const dataUrl = await fileToDataUrl(file);
+  const image = await new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = dataUrl;
+  });
+  const canvas = document.createElement('canvas');
+  canvas.width = image.naturalWidth || image.width;
+  canvas.height = image.naturalHeight || image.height;
+  const context = canvas.getContext('2d', { willReadFrequently: true });
+  context.drawImage(image, 0, 0, canvas.width, canvas.height);
+  const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+  const qr = jsQR(imageData.data, imageData.width, imageData.height);
+  if (!qr?.data) throw new Error('QR voucher review tidak terbaca');
+  return qr.data;
 };
 
 const calculateProgramDiscountAmount = (base, program) => {
@@ -181,6 +221,148 @@ function StarPicker({ value = 5, onChange }) {
   );
 }
 
+function ReviewVoucherCard({ voucher, order, onClose }) {
+  const [qrDataUrl, setQrDataUrl] = useState('');
+  const discountText = getReviewVoucherDiscountText(voucher);
+  const customerName = voucher?.customer_name || order?.customer_name || 'Pelanggan Sultan';
+  const orderDate = voucher?.source_order_date || voucher?.issued_at || order?.created_at;
+  const payload = getReviewVoucherPayload(voucher);
+
+  useEffect(() => {
+    let active = true;
+    QRCode.toDataURL(payload, {
+      width: 260,
+      margin: 1,
+      color: { dark: '#0D0A06', light: '#FFFFFF' },
+    }).then((url) => {
+      if (active) setQrDataUrl(url);
+    }).catch(() => {});
+    return () => { active = false; };
+  }, [payload]);
+
+  const downloadVoucher = async () => {
+    if (!voucher?.token || !qrDataUrl) return;
+    const canvas = document.createElement('canvas');
+    canvas.width = 1120;
+    canvas.height = 640;
+    const ctx = canvas.getContext('2d');
+    const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+    gradient.addColorStop(0, '#1A1409');
+    gradient.addColorStop(0.45, '#2B210F');
+    gradient.addColorStop(1, '#0D0A06');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.strokeStyle = 'rgba(201,168,76,0.65)';
+    ctx.lineWidth = 5;
+    ctx.strokeRect(36, 36, canvas.width - 72, canvas.height - 72);
+
+    ctx.fillStyle = '#C9A84C';
+    ctx.font = '700 34px Arial';
+    ctx.fillText('SULTAN KEBAB', 80, 112);
+    ctx.font = '900 82px Arial';
+    ctx.fillText(`${discountText} OFF`, 80, 230);
+
+    ctx.fillStyle = '#F5EDD8';
+    ctx.font = '700 34px Arial';
+    ctx.fillText(customerName, 80, 330);
+    ctx.font = '24px Arial';
+    ctx.fillStyle = 'rgba(245,237,216,0.78)';
+    ctx.fillText(`Order review: ${voucher?.source_order_code || order?.order_code || '-'}`, 80, 380);
+    ctx.fillText(`Tanggal: ${formatDateTime(orderDate)}`, 80, 424);
+    ctx.fillText(`Expired: ${formatDateTime(voucher?.expires_at)}`, 80, 468);
+    ctx.fillText('Upload gambar voucher ini saat order berikutnya untuk klaim.', 80, 540);
+
+    const qrImage = await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = qrDataUrl;
+    });
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(790, 150, 250, 250);
+    ctx.drawImage(qrImage, 805, 165, 220, 220);
+    ctx.fillStyle = '#C9A84C';
+    ctx.font = '700 22px Arial';
+    ctx.fillText(voucher.token, 785, 450);
+
+    const link = document.createElement('a');
+    link.href = canvas.toDataURL('image/png');
+    link.download = `voucher-review-${voucher.token}.png`;
+    link.click();
+  };
+
+  if (!voucher) return null;
+
+  return (
+    <motion.div
+      className="fixed inset-x-3 bottom-4 z-[110] mx-auto max-h-[92vh] max-w-xl overflow-y-auto rounded-[2rem] border border-[#C9A84C]/30 bg-[#0D0A06] p-4 text-[#F5EDD8] shadow-2xl shadow-black/70 sm:inset-x-0 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2"
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 24 }}
+    >
+      <div className="rounded-[1.6rem] border border-[#C9A84C]/35 bg-[linear-gradient(135deg,#1A1409,#2A210F_48%,#0D0A06)] p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.28em] text-[#C9A84C]">Voucher Review</p>
+            <h2 className="mt-2 text-4xl font-black text-[#F5EDD8]">{discountText}</h2>
+            <p className="mt-1 text-sm text-[#EDE0C4]/70">Untuk pesanan berikutnya</p>
+          </div>
+          <div className="rounded-2xl border border-[#C9A84C]/25 px-3 py-2 text-right">
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#C9A84C]">Logo</p>
+            <p className="font-serif text-lg font-black">Sultan</p>
+          </div>
+        </div>
+
+        <div className="mt-5 grid gap-4 sm:grid-cols-[1fr_170px]">
+          <div className="space-y-3 text-sm">
+            <div>
+              <p className="text-xs uppercase tracking-[0.16em] text-[#C9A84C]">Nama pelanggan</p>
+              <p className="mt-1 text-lg font-black">{customerName}</p>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-[0.16em] text-[#C9A84C]">Tanggal pesanan</p>
+              <p className="mt-1">{formatDateTime(orderDate)}</p>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-[0.16em] text-[#C9A84C]">Expired</p>
+              <p className="mt-1">{formatDateTime(voucher.expires_at)}</p>
+            </div>
+            <div className="rounded-2xl bg-black/25 p-3">
+              <p className="text-xs leading-5 text-[#EDE0C4]/75">
+                Cara klaim: simpan/download voucher ini, lalu pada pesanan berikutnya upload gambar voucher di kolom voucher review. Sistem akan scan QR dan mencocokkan nama serta nomor HP pemilik voucher.
+              </p>
+            </div>
+          </div>
+          <div className="rounded-3xl bg-white p-3">
+            {qrDataUrl ? (
+              <img src={qrDataUrl} alt="QR voucher review" className="h-full w-full object-contain" />
+            ) : (
+              <div className="grid aspect-square place-items-center text-sm font-bold text-[#0D0A06]">Memuat QR</div>
+            )}
+          </div>
+        </div>
+      </div>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <button
+          type="button"
+          onClick={downloadVoucher}
+          className="rounded-2xl bg-[#C9A84C] px-4 py-3 text-sm font-black text-[#0D0A06]"
+        >
+          Download Voucher
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-2xl border border-[#C9A84C]/25 px-4 py-3 text-sm font-black text-[#C9A84C]"
+        >
+          Tutup
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
 export default function CustomerOrderPage() {
   const params = useParams();
   const router = useRouter();
@@ -197,6 +379,9 @@ export default function CustomerOrderPage() {
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('+62');
   const [voucherCode, setVoucherCode] = useState('');
+  const [reviewVoucherToken, setReviewVoucherToken] = useState('');
+  const [reviewVoucherValidation, setReviewVoucherValidation] = useState(null);
+  const [reviewVoucherScanning, setReviewVoucherScanning] = useState(false);
   const [note, setNote] = useState('');
   const [order, setOrder] = useState(null);
   const [activeCategory, setActiveCategory] = useState('all');
@@ -221,6 +406,7 @@ export default function CustomerOrderPage() {
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [tableSession, setTableSession] = useState(null);
   const [leaveCartConfirmOpen, setLeaveCartConfirmOpen] = useState(false);
+  const [reviewVoucherModal, setReviewVoucherModal] = useState(null);
   const cartRef = useRef([]);
   const orderRef = useRef(null);
   const discountPreviewRef = useRef(null);
@@ -273,6 +459,8 @@ export default function CustomerOrderPage() {
         setCustomerName(savedDraft.customerName || '');
         setCustomerPhone(savedDraft.customerPhone || '+62');
         setVoucherCode(savedDraft.voucherCode || '');
+        setReviewVoucherToken(savedDraft.reviewVoucherToken || '');
+        setReviewVoucherValidation(savedDraft.reviewVoucherValidation || null);
         setNote(savedDraft.note || '');
       }
       if (!orderRes?.data && !savedDraftHasCart && existingSessionToken) {
@@ -317,10 +505,12 @@ export default function CustomerOrderPage() {
       customerName,
       customerPhone,
       voucherCode,
+      reviewVoucherToken,
+      reviewVoucherValidation,
       note,
       selectedPaymentMethodId,
     }));
-  }, [cart, customerName, customerPhone, voucherCode, note, selectedPaymentMethodId, draftLoaded, draftStorageKey, order]);
+  }, [cart, customerName, customerPhone, voucherCode, reviewVoucherToken, reviewVoucherValidation, note, selectedPaymentMethodId, draftLoaded, draftStorageKey, order]);
 
   useEffect(() => {
     if (!order?.order_code || order.status === 'completed' || order.status === 'cancelled') return;
@@ -450,7 +640,7 @@ export default function CustomerOrderPage() {
   const branchArea = table?.branch_area || table?.branch_address || '';
   const customerPhoneForApi = normalizeIndonesianPhoneForSubmit(customerPhone);
   const reviewRewardText = reviewRewardProgram
-    ? `Review semua menu dan dapatkan diskon ${
+    ? `Review semua menu dan dapatkan voucher diskon ${
         reviewRewardProgram.discount_type === 'percent'
           ? `${Number(reviewRewardProgram.discount_value || 0)}%`
           : formatRp(reviewRewardProgram.discount_value)
@@ -601,7 +791,9 @@ export default function CustomerOrderPage() {
           subtotal: total,
           items: cart.map((item) => ({ product_id: item.id, qty: item.qty, price: item.price })),
           customer_phone: customerPhoneForApi,
+          customer_name: customerName,
           voucher_code: voucherCode,
+          review_voucher_token: reviewVoucherToken,
         });
         if (!cancelled) setDiscountPreview(res.data?.applicable ? res.data : null);
       } catch (err) {
@@ -621,7 +813,7 @@ export default function CustomerOrderPage() {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [cart, customerPhoneForApi, total, voucherCode]);
+  }, [cart, customerName, customerPhoneForApi, total, voucherCode, reviewVoucherToken]);
 
   const addToCart = (product) => {
     if (tableBusy) return;
@@ -689,6 +881,9 @@ export default function CustomerOrderPage() {
     setOrder(null);
     setCart([]);
     setVoucherCode('');
+    setReviewVoucherToken('');
+    setReviewVoucherValidation(null);
+    setReviewVoucherModal(null);
     setNote('');
     setDiscountAlert(null);
     setDiscountPreview(null);
@@ -739,6 +934,7 @@ export default function CustomerOrderPage() {
         customer_name: customerName,
         customer_phone: customerPhoneForApi,
         voucher_code: voucherCode,
+        review_voucher_token: reviewVoucherToken,
         payment_method_id: selectedPaymentMethodId || null,
         note,
         items: orderCart.map((item) => ({ product_id: item.id, qty: item.qty, note: item.note || null })),
@@ -808,10 +1004,14 @@ export default function CustomerOrderPage() {
         service_rating: Number(review.service_rating || 5),
         service_comment: review.service_comment,
         customer_phone: reviewPhone,
+        customer_name: order?.customer_name || customerName,
         items: itemReviews,
       });
       setOrder(res.data.data);
       setDiscountAlert(res.data);
+      if (res.data.review_voucher || res.data.data?.review_voucher) {
+        setReviewVoucherModal(res.data.review_voucher || res.data.data.review_voucher);
+      }
       setReviewModalOpen(false);
     } catch (err) {
       setOrderMessageModal({
@@ -839,6 +1039,36 @@ export default function CustomerOrderPage() {
       });
     } finally {
       setSkipReviewLoading(false);
+    }
+  };
+
+  const handleReviewVoucherUpload = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+
+    try {
+      setReviewVoucherScanning(true);
+      setReviewVoucherValidation(null);
+      const qrPayload = await decodeQrFromImageFile(file);
+      const res = await validateReviewVoucher({
+        token: qrPayload,
+        customer_phone: customerPhoneForApi,
+        customer_name: customerName,
+      });
+      const voucher = res.data?.data;
+      setReviewVoucherToken(voucher?.token || qrPayload);
+      setReviewVoucherValidation(voucher || null);
+    } catch (err) {
+      setReviewVoucherToken('');
+      setReviewVoucherValidation(null);
+      setOrderMessageModal({
+        title: 'Voucher review tidak valid',
+        message: err.response?.data?.message || err.message || 'QR voucher review tidak terbaca. Pastikan gambar voucher jelas dan data nama serta nomor HP sesuai.',
+        tone: 'danger',
+      });
+    } finally {
+      setReviewVoucherScanning(false);
     }
   };
 
@@ -890,6 +1120,44 @@ export default function CustomerOrderPage() {
         <input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Nama pelanggan (opsional)" className="w-full rounded-2xl border border-[#C9A84C]/20 bg-[#0D0A06] px-4 py-3 outline-none" />
         <input value={customerPhone} onChange={(e) => setCustomerPhone(formatIndonesianPhone(e.target.value))} inputMode="numeric" placeholder="+62895-3530-25503" className="w-full rounded-2xl border border-[#C9A84C]/20 bg-[#0D0A06] px-4 py-3 outline-none" />
         <input value={voucherCode} onChange={(e) => setVoucherCode(e.target.value.toUpperCase())} placeholder="Kode vocher / voucher (opsional)" className="w-full rounded-2xl border border-[#C9A84C]/20 bg-[#0D0A06] px-4 py-3 font-bold uppercase outline-none" />
+        <div className="rounded-2xl border border-[#C9A84C]/20 bg-[#0D0A06] p-3">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-[#C9A84C]">Voucher Review QR</p>
+              <p className="mt-1 text-xs leading-5 text-[#EDE0C4]/60">
+                Upload gambar voucher review dari pesanan sebelumnya. Sistem scan QR, lalu mencocokkan nama dan nomor HP pemilik voucher.
+              </p>
+            </div>
+            {reviewVoucherToken && (
+              <button
+                type="button"
+                onClick={() => {
+                  setReviewVoucherToken('');
+                  setReviewVoucherValidation(null);
+                }}
+                className="shrink-0 rounded-full border border-red-300/25 px-3 py-1 text-xs font-black text-red-200"
+              >
+                Hapus
+              </button>
+            )}
+          </div>
+          <label className="mt-3 flex cursor-pointer items-center justify-center rounded-xl border border-dashed border-[#C9A84C]/30 px-4 py-3 text-sm font-black text-[#C9A84C]">
+            {reviewVoucherScanning ? 'Scan QR...' : reviewVoucherToken ? 'Ganti gambar voucher' : 'Upload gambar voucher review'}
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleReviewVoucherUpload}
+              className="hidden"
+            />
+          </label>
+          {reviewVoucherValidation && (
+            <div className="mt-3 rounded-xl border border-emerald-300/20 bg-emerald-500/10 p-3 text-xs leading-5 text-emerald-100">
+              <p className="font-black">Voucher valid: {getReviewVoucherDiscountText(reviewVoucherValidation)} dari {reviewVoucherValidation.program_name || 'Reward Review'}</p>
+              <p>Pemilik: {reviewVoucherValidation.customer_name || '-'} - {reviewVoucherValidation.customer_phone || '-'}</p>
+              <p>Order asal: {reviewVoucherValidation.source_order_code || '-'} · Expired {formatDateTime(reviewVoucherValidation.expires_at)}</p>
+            </div>
+          )}
+        </div>
         <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Catatan pesanan..." className="max-h-28 w-full rounded-2xl border border-[#C9A84C]/20 bg-[#0D0A06] px-4 py-3 outline-none" />
       </div>
 
@@ -1280,7 +1548,34 @@ export default function CustomerOrderPage() {
 
                 {discountAlert && (
                   <div className="mt-5 rounded-3xl border border-emerald-400/25 bg-emerald-500/12 p-4 text-sm text-emerald-100">
-                    Diskon review berhasil diterapkan. Potongan: {formatRp(discountAlert.discount_amount)}.
+                    {discountAlert.review_voucher || order.review_voucher
+                      ? 'Voucher review berhasil dibuat. Simpan voucher QR ini untuk klaim diskon di pesanan berikutnya.'
+                      : discountAlert.message || 'Terima kasih atas review Anda.'}
+                    {(discountAlert.review_voucher || order.review_voucher) && (
+                      <button
+                        type="button"
+                        onClick={() => setReviewVoucherModal(discountAlert.review_voucher || order.review_voucher)}
+                        className="mt-3 block rounded-xl bg-emerald-300 px-4 py-2 text-xs font-black text-emerald-950"
+                      >
+                        Lihat Voucher Review
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {!discountAlert && order.review_voucher && (
+                  <div className="mt-5 rounded-3xl border border-[#C9A84C]/25 bg-[#C9A84C]/10 p-4 text-sm text-[#F5EDD8]">
+                    <p className="font-black text-[#C9A84C]">Voucher review tersedia</p>
+                    <p className="mt-1 leading-6 text-[#EDE0C4]/75">
+                      Gunakan voucher {getReviewVoucherDiscountText(order.review_voucher)} ini pada pesanan berikutnya dengan upload gambar voucher di keranjang.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setReviewVoucherModal(order.review_voucher)}
+                      className="mt-3 rounded-xl bg-[#C9A84C] px-4 py-2 text-xs font-black text-[#0D0A06]"
+                    >
+                      Lihat Voucher Review
+                    </button>
                   </div>
                 )}
 
@@ -1519,6 +1814,26 @@ export default function CustomerOrderPage() {
                 Setelah review dikirim atau dilewati, meja masuk cooldown 20 menit sebelum bisa dipakai untuk pesanan baru.
               </p>
             </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {reviewVoucherModal && (
+          <>
+            <motion.button
+              type="button"
+              aria-label="Tutup voucher review"
+              className="fixed inset-0 z-[105] bg-black/80 backdrop-blur-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setReviewVoucherModal(null)}
+            />
+            <ReviewVoucherCard
+              voucher={reviewVoucherModal}
+              order={order}
+              onClose={() => setReviewVoucherModal(null)}
+            />
           </>
         )}
       </AnimatePresence>
