@@ -321,17 +321,23 @@ export default function CustomerOrdersPage() {
     () => visibleOrders.filter((order) => selectedOrderIds.includes(Number(order.id))),
     [selectedOrderIds, visibleOrders]
   );
-  const allVisibleSelected = visibleOrders.length > 0 && selectedOrderIds.length === visibleOrders.length;
+  const selectableOrders = useMemo(
+    () => visibleOrders.filter((order) => !['completed', 'cancelled'].includes(order.status)),
+    [visibleOrders]
+  );
+  const allVisibleSelected = selectableOrders.length > 0 && selectedOrderIds.length === selectableOrders.length;
 
   const toggleOrderSelection = (orderId) => {
     const id = Number(orderId);
+    const order = visibleOrders.find((item) => Number(item.id) === id);
+    if (!order || ['completed', 'cancelled'].includes(order.status)) return;
     setSelectedOrderIds((prev) => (
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
     ));
   };
 
   const toggleSelectAllVisible = () => {
-    setSelectedOrderIds(allVisibleSelected ? [] : visibleOrders.map((order) => Number(order.id)));
+    setSelectedOrderIds(allVisibleSelected ? [] : selectableOrders.map((order) => Number(order.id)));
   };
 
   const canApplyStatus = (order, nextStatus) => {
@@ -597,6 +603,7 @@ export default function CustomerOrdersPage() {
               )}
               {visibleOrders.map((order) => {
                 const discountComponents = getDiscountComponents(order);
+                const canSelectOrder = !['completed', 'cancelled'].includes(order.status);
                 return (
                 <div key={order.id} className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-start">
                 <motion.article
@@ -758,18 +765,21 @@ export default function CustomerOrdersPage() {
                     </div>
                   </div>
                 </motion.article>
-                  <label className={`flex cursor-pointer items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-xs font-black transition lg:min-h-[112px] lg:w-20 lg:flex-col ${
-                    selectedOrderIds.includes(Number(order.id))
+                  <label className={`flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-xs font-black transition lg:min-h-[112px] lg:w-20 lg:flex-col ${
+                    !canSelectOrder
+                      ? 'cursor-not-allowed border-slate-800 bg-slate-900/70 text-slate-600'
+                      : selectedOrderIds.includes(Number(order.id))
                       ? 'border-orange-500 bg-orange-500/15 text-orange-200'
-                      : 'border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-500 hover:text-white'
+                      : 'cursor-pointer border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-500 hover:text-white'
                   }`}>
                     <input
                       type="checkbox"
                       checked={selectedOrderIds.includes(Number(order.id))}
+                      disabled={!canSelectOrder}
                       onChange={() => toggleOrderSelection(order.id)}
-                      className="h-5 w-5 accent-orange-500"
+                      className="h-5 w-5 accent-orange-500 disabled:cursor-not-allowed disabled:opacity-40"
                     />
-                    Pilih
+                    {canSelectOrder ? 'Pilih' : 'Final'}
                   </label>
                 </div>
               );
