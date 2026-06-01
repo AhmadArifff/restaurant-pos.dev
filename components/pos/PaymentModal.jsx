@@ -249,10 +249,15 @@ export default function PaymentModal({
               >
                 <option value="">Tanpa QR status meja</option>
                 {tables.map((table) => {
-                  const busy = Number(table.active_orders || 0) > 0;
+                  const activeOrders = Number(table.active_order_count || 0);
+                  const activeSessions = Number(table.active_session_count || 0);
+                  const busy = Number(table.active_orders || 0) > 0 || activeOrders > 0 || activeSessions > 0;
+                  const busyLabel = activeSessions > 0
+                    ? 'sedang ditempati pelanggan'
+                    : 'ada pesanan aktif';
                   return (
                     <option key={table.id} value={table.id} disabled={busy}>
-                      Meja {table.table_number} {table.table_name ? `- ${table.table_name}` : ''}{busy ? ' (ada pesanan aktif)' : ''}
+                      Meja {table.table_number} {table.table_name ? `- ${table.table_name}` : ''}{busy ? ` (${busyLabel})` : ''}
                     </option>
                   );
                 })}

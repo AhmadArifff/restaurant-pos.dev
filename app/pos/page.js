@@ -114,6 +114,39 @@ export default function PosPage() {
     setFeedbackModal({ isOpen: true, type, title, message });
   }, []);
 
+  const isTableBusy = useCallback((table) => (
+    Number(table?.active_orders || 0) > 0
+    || Number(table?.active_order_count || 0) > 0
+    || Number(table?.active_session_count || 0) > 0
+  ), []);
+
+  const syncDiningTables = useCallback((tableRows = []) => {
+    setDiningTables(tableRows);
+    setSelectedTableId((prev) => {
+      if (prev && tableRows.some((table) => String(table.id) === String(prev) && !isTableBusy(table))) {
+        return prev;
+      }
+      return tableRows.find((table) => !isTableBusy(table))?.id || '';
+    });
+  }, [isTableBusy]);
+
+  const refreshDiningTables = useCallback(async () => {
+    const res = await getPublicDiningTables({ branch_id: selectedBranchId || user?.branch_id || undefined });
+    const tableRows = res.data || [];
+    syncDiningTables(tableRows);
+    return tableRows;
+  }, [selectedBranchId, syncDiningTables, user?.branch_id]);
+
+  const openPaymentModal = useCallback(async () => {
+    if (!items.length) return;
+    try {
+      await refreshDiningTables();
+    } catch (err) {
+      showFeedback('warning', 'Meja Belum Tersinkron', 'Data meja belum bisa disegarkan. Anda tetap bisa checkout tanpa memilih meja.');
+    }
+    setShowPayment(true);
+  }, [items.length, refreshDiningTables, showFeedback]);
+
   // ── Load data ──────────────────────────────────────────────
   const loadData = useCallback(({ silent = false } = {}) => {
     if (silent || productsRef.current.length > 0) setRefreshing(true);
@@ -133,14 +166,8 @@ export default function PosPage() {
         const tableRows = tableRes.data || [];
         setProducts(prods);
         setCategories(c.data || []);
-        setDiningTables(tableRows);
+        syncDiningTables(tableRows);
         setBundlePrograms(bundleRes.data || []);
-        setSelectedTableId((prev) => {
-          if (prev && tableRows.some((table) => String(table.id) === String(prev) && Number(table.active_orders || 0) === 0)) {
-            return prev;
-          }
-          return tableRows.find((table) => Number(table.active_orders || 0) === 0)?.id || '';
-        });
         if (stats?.data) {
           setTodayStats({
             total_trx: Number(stats.data.total_trx || 0),
@@ -169,7 +196,7 @@ export default function PosPage() {
         setLoading(false);
         setRefreshing(false);
       });
-  }, [isAdmin, selectedBranchId, user?.branch_id]);
+  }, [isAdmin, selectedBranchId, syncDiningTables, user?.branch_id]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -756,7 +783,7 @@ export default function PosPage() {
 
           {/* ── DESKTOP CART ── */}
           <div className="hidden lg:flex">
-            <Cart onCheckout={() => setShowPayment(true)} />
+            <Cart onCheckout={openPaymentModal} />
           </div>
 
           {/* ── MOBILE CART DRAWER ── */}
@@ -781,7 +808,7 @@ export default function PosPage() {
                   </button>
                 </div>
                 <div className="flex-1 overflow-hidden">
-                  <Cart onCheckout={() => { setShowMobileCart(false); setShowPayment(true); }} mobile />
+                  <Cart onCheckout={() => { setShowMobileCart(false); openPaymentModal(); }} mobile />
                 </div>
               </div>
             </>
