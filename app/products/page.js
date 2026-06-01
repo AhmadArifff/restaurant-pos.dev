@@ -11,7 +11,7 @@ import { getMyStockProducts } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import { getStockByKasir } from '@/lib/api';
 
-const emptyForm = { name: '', price: '', category_id: '', ingredients: [] };
+const emptyForm = { name: '', price: '', category_id: '', image_url: '', ingredients: [] };
 
 export default function ProductsPage() {
   const [products, setProducts]     = useState([]);
@@ -70,8 +70,9 @@ export default function ProductsPage() {
   }, [load]);
 
   const openAdd = () => {
-    setForm(emptyForm); setEditing(null);
+    setForm({ ...emptyForm, ingredients: [] }); setEditing(null);
     setImageFile(null); setPreview(null);
+    if (fileRef.current) fileRef.current.value = '';
     setModal(true);
   };
 
@@ -79,11 +80,13 @@ export default function ProductsPage() {
     setForm({
       name: p.name, price: p.price,
       category_id: p.category_id || '',
+      image_url: p.image_url || '',
       ingredients: p.ingredients || [],
     });
     setEditing(p.id);
     setPreview(p.image_url ? resolveAssetUrl(p.image_url) : null);
     setImageFile(null);
+    if (fileRef.current) fileRef.current.value = '';
     setModal(true);
   };
 
@@ -91,7 +94,22 @@ export default function ProductsPage() {
     const file = e.target.files[0];
     if (!file) return;
     setImageFile(file);
+    setForm(f => ({ ...f, image_url: '' }));
     setPreview(URL.createObjectURL(file));
+  };
+
+  const handleImageUrl = (value) => {
+    setForm(f => ({ ...f, image_url: value }));
+    setImageFile(null);
+    if (fileRef.current) fileRef.current.value = '';
+    setPreview(value.trim() ? resolveAssetUrl(value.trim()) : null);
+  };
+
+  const clearImage = () => {
+    setImageFile(null);
+    setPreview(null);
+    setForm(f => ({ ...f, image_url: '' }));
+    if (fileRef.current) fileRef.current.value = '';
   };
 
   const addIngredient = () => {
@@ -117,6 +135,7 @@ export default function ProductsPage() {
       fd.append('name', form.name);
       fd.append('price', form.price);
       fd.append('category_id', form.category_id);
+      fd.append('image_url', imageFile ? '' : (form.image_url || '').trim());
       fd.append('ingredients', JSON.stringify(form.ingredients.filter(i => i.stock_item_id)));
       if (imageFile) fd.append('image', imageFile);
 
@@ -337,20 +356,63 @@ export default function ProductsPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
 
               {/* Upload Gambar */}
-              <div>
-                <label className="text-slate-400 text-sm">Gambar Produk</label>
-                <div
-                  onClick={() => fileRef.current.click()}
-                  className="mt-1 w-full h-36 bg-slate-700 rounded-xl border-2 border-dashed border-slate-600 hover:border-orange-500 flex items-center justify-center cursor-pointer overflow-hidden transition-colors"
-                >
+              <div className="rounded-2xl border border-slate-700 bg-slate-900/45 p-3">
+                <label className="text-slate-300 text-sm font-semibold">Gambar Produk</label>
+                <div className="mt-3 grid gap-3 sm:grid-cols-[160px_1fr]">
+                  <button
+                    type="button"
+                    onClick={() => fileRef.current?.click()}
+                    className="h-36 w-full overflow-hidden rounded-xl border-2 border-dashed border-slate-600 bg-slate-800 transition-colors hover:border-orange-500 sm:h-32"
+                  >
                   {imagePreview
-                    ? <img src={imagePreview} alt="preview" className="w-full h-full object-cover"/>
+                    ? <img src={imagePreview} alt="preview produk" className="h-full w-full object-cover"/>
                     : <div className="text-center">
                         <div className="text-3xl mb-1">📷</div>
-                        <p className="text-slate-400 text-sm">Klik untuk upload gambar</p>
-                        <p className="text-slate-500 text-xs">JPG, PNG, WEBP maks 2MB</p>
+                        <p className="text-slate-400 text-sm">Preview gambar</p>
+                        <p className="text-slate-500 text-xs">Upload atau URL online</p>
                       </div>
                   }
+                  </button>
+                  <div className="space-y-2">
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                        URL asset online / embed
+                      </label>
+                      <input
+                        value={form.image_url || ''}
+                        onChange={e => handleImageUrl(e.target.value)}
+                        placeholder="https://images.unsplash.com/... atau /images/products/..."
+                        className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white outline-none focus:ring-2 focus:ring-orange-500"
+                      />
+                    </div>
+                    <p className="text-xs leading-5 text-slate-500">
+                      Tempel link gambar online agar hasilnya sama seperti preview landing page.
+                      Jika upload file, URL online akan dikosongkan.
+                    </p>
+                    {imageFile && (
+                      <p className="rounded-lg bg-orange-500/10 px-3 py-2 text-xs font-semibold text-orange-200">
+                        File dipilih: {imageFile.name}
+                      </p>
+                    )}
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => fileRef.current?.click()}
+                        className="rounded-lg border border-orange-500/35 px-3 py-2 text-xs font-bold text-orange-300 transition-colors hover:bg-orange-500/10"
+                      >
+                        Upload File
+                      </button>
+                      {(imagePreview || imageFile || form.image_url) && (
+                        <button
+                          type="button"
+                          onClick={clearImage}
+                          className="rounded-lg border border-red-500/30 px-3 py-2 text-xs font-bold text-red-300 transition-colors hover:bg-red-500/10"
+                        >
+                          Hapus Gambar
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
                 <input ref={fileRef} type="file" accept="image/*"
                   onChange={handleImage} className="hidden"/>
