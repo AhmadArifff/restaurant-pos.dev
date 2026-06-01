@@ -235,6 +235,13 @@ const getOrderUrl = (token) => {
   return `${window.location.origin}/order/${token}`;
 };
 
+const showFeedbackModal = (type, title, message) => {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent('app:feedback', {
+    detail: { type, title, message },
+  }));
+};
+
 export default function CustomerOrdersPage() {
   const { user } = useAuthStore();
   const isAdmin = user?.role === 'admin';
@@ -443,23 +450,35 @@ export default function CustomerOrdersPage() {
       cancelReason = reason.trim();
     }
 
-    const failures = [];
-    for (const order of targets) {
-      try {
-        await updateCustomerOrderStatus(order.id, {
+    const results = await Promise.allSettled(
+      targets.map((order) => updateCustomerOrderStatus(
+        order.id,
+        {
           status: nextStatus,
           ...(nextStatus === 'cancelled' ? { cancel_reason: cancelReason } : {}),
-        });
-      } catch (err) {
-        failures.push(`${order.order_code}: ${err.response?.data?.message || 'gagal diproses'}`);
-      }
-    }
+        },
+        { feedback: false }
+      ))
+    );
+
+    const failures = results
+      .map((result, index) => (result.status === 'rejected'
+        ? `${targets[index].order_code}: ${result.reason?.response?.data?.message || 'gagal diproses'}`
+        : null))
+      .filter(Boolean);
+    const successCount = results.length - failures.length;
 
     setSelectedOrderIds([]);
     await load({ silent: true });
     if (failures.length) {
-      alert(`Sebagian pesanan gagal diproses:\n\n${failures.slice(0, 8).join('\n')}${failures.length > 8 ? `\n+${failures.length - 8} lainnya` : ''}`);
+      showFeedbackModal(
+        successCount > 0 ? 'warning' : 'error',
+        successCount > 0 ? 'Sebagian Pesanan Diproses' : 'Batch Status Gagal',
+        `${successCount} pesanan berhasil, ${failures.length} pesanan gagal.\n\n${failures.slice(0, 6).join('\n')}${failures.length > 6 ? `\n+${failures.length - 6} lainnya` : ''}`
+      );
+      return;
     }
+    showFeedbackModal('success', 'Status Pesanan Berhasil Diproses', `${successCount} pesanan berhasil diubah ke status "${actionLabel}".`);
   };
 
   const getStatusActions = (order) => {
