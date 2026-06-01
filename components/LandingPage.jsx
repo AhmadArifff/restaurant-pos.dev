@@ -103,8 +103,9 @@ const preloadLandingAssets = async (content) => {
 
 export default function LandingPage() {
   const [landingContent, setLandingContent] = useState(() => readLandingContentCache());
+  const [renderedContent, setRenderedContent] = useState(() => readLandingContentCache());
   const [hasAttemptedLoad, setHasAttemptedLoad] = useState(() => Boolean(readLandingContentCache()));
-  const [assetsReady, setAssetsReady] = useState(false);
+  const [assetsReady, setAssetsReady] = useState(() => Boolean(readLandingContentCache()));
 
   useEffect(() => {
     let isMounted = true;
@@ -137,18 +138,20 @@ export default function LandingPage() {
     if (!landingContent) return undefined;
     let active = true;
 
-    setAssetsReady(false);
+    if (!renderedContent) setAssetsReady(false);
     preloadLandingAssets(landingContent).finally(() => {
-      if (active) setAssetsReady(true);
+      if (!active) return;
+      setRenderedContent(landingContent);
+      setAssetsReady(true);
     });
 
     return () => {
       active = false;
     };
-  }, [landingContent]);
+  }, [landingContent, renderedContent]);
 
   useEffect(() => {
-    if (!landingContent || !assetsReady) return undefined;
+    if (!renderedContent || !assetsReady) return undefined;
 
     const revealEls = document.querySelectorAll('.reveal');
     const observer = new IntersectionObserver(
@@ -166,27 +169,27 @@ export default function LandingPage() {
     revealEls.forEach((el) => observer.observe(el));
 
     return () => observer.disconnect();
-  }, [landingContent, assetsReady]);
+  }, [renderedContent, assetsReady]);
 
-  if (!landingContent || !hasAttemptedLoad || !assetsReady) {
+  if (!renderedContent || !hasAttemptedLoad || !assetsReady) {
     return <LandingContentShell />;
   }
 
   return (
     <div className="landing-page min-h-screen bg-[var(--dark)]">
-      <Header content={landingContent.header} />
-      <Hero content={landingContent.hero} />
-      <Marquee content={landingContent.marquee} />
-      <About content={landingContent.about} />
-      <Bestsellers content={landingContent.bestsellers} />
-      <MenuTabs content={landingContent.menuTabs} />
-      <Experience content={landingContent.experience} />
-      <Gallery content={landingContent.gallery} />
-      <Locations content={landingContent.locations} />
-      <Testimonials content={landingContent.testimonials} />
-      <CTA content={landingContent.cta} />
-      <Footer content={landingContent.footer} />
-      <FloatButton content={landingContent.floatButton} />
+      <Header content={renderedContent.header} />
+      <Hero content={renderedContent.hero} />
+      <Marquee content={renderedContent.marquee} />
+      <About content={renderedContent.about} />
+      <Bestsellers content={renderedContent.bestsellers} />
+      <MenuTabs content={renderedContent.menuTabs} />
+      <Experience content={renderedContent.experience} />
+      <Gallery content={renderedContent.gallery} />
+      <Locations content={renderedContent.locations} />
+      <Testimonials content={renderedContent.testimonials} />
+      <CTA content={renderedContent.cta} />
+      <Footer content={renderedContent.footer} />
+      <FloatButton content={renderedContent.floatButton} />
     </div>
   );
 }
