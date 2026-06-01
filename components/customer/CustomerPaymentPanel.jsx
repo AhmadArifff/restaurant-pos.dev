@@ -94,9 +94,44 @@ export default function CustomerPaymentPanel({ order, onOrderUpdate, compact = f
     }
   };
 
-  const qrUrl = method.qr_image_url ? resolveAssetUrl(method.qr_image_url) : '';
+  const rawQrUrl = method.qr_image_url || method.qr_image || method.qr_url || method.image_url || '';
+  const qrUrl = rawQrUrl ? resolveAssetUrl(rawQrUrl) : '';
   const proofUrl = order?.payment_proof_url ? resolveAssetUrl(order.payment_proof_url) : '';
   const isTransfer = method.type === 'transfer';
+
+  const downloadQrImage = async () => {
+    if (!qrUrl) {
+      setMessageModal({
+        title: 'QR belum tersedia',
+        message: 'Gambar QRIS belum tersedia pada metode pembayaran ini. Silakan hubungi kasir.',
+        tone: 'warning',
+      });
+      return;
+    }
+
+    const fileName = `qris-${order?.order_code || method.method_key || 'sultan-kebab'}.png`;
+    try {
+      const response = await fetch(qrUrl, { mode: 'cors' });
+      if (!response.ok) throw new Error('download-failed');
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(objectUrl);
+    } catch (_) {
+      const link = document.createElement('a');
+      link.href = qrUrl;
+      link.download = fileName;
+      link.rel = 'noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    }
+  };
 
   const submitProof = async () => {
     if (!proof) {
@@ -147,6 +182,16 @@ export default function CustomerPaymentPanel({ order, onOrderUpdate, compact = f
         </div>
       </div>
 
+      {method.type === 'qris' && (
+        <button
+          type="button"
+          onClick={downloadQrImage}
+          className="mt-4 inline-flex w-full items-center justify-center rounded-2xl border border-[#C9A84C]/35 bg-[#C9A84C]/10 px-4 py-3 text-sm font-black text-[#F5EDD8] transition hover:border-[#C9A84C]/70 hover:bg-[#C9A84C]/15"
+        >
+          Download QRIS untuk Scan
+        </button>
+      )}
+
       <div className="mt-4 grid gap-2 rounded-2xl border border-[#C9A84C]/15 bg-[#0D0A06]/45 p-3 sm:grid-cols-3">
         {[
           method.type === 'qris' ? '1. Scan QRIS toko' : '1. Salin rekening',
@@ -159,21 +204,21 @@ export default function CustomerPaymentPanel({ order, onOrderUpdate, compact = f
         ))}
       </div>
 
-      <div className={`mt-4 grid min-w-0 gap-4 ${method.type === 'qris' && method.qr_image_url ? 'xl:grid-cols-[minmax(180px,240px)_1fr]' : ''}`}>
-        {method.type === 'qris' && method.qr_image_url && (
+      <div className={`mt-4 grid min-w-0 gap-4 ${method.type === 'qris' && qrUrl ? 'xl:grid-cols-[minmax(180px,240px)_1fr]' : ''}`}>
+        {method.type === 'qris' && qrUrl && (
           <div className="min-w-0">
             <img
               src={qrUrl}
               alt={method.name}
               className="aspect-square w-full max-w-60 rounded-2xl border border-[#C9A84C]/20 bg-white object-contain p-2"
             />
-            <a
-              href={qrUrl}
-              download
+            <button
+              type="button"
+              onClick={downloadQrImage}
               className="mt-2 inline-flex w-full max-w-60 justify-center rounded-xl border border-[#C9A84C]/25 px-3 py-2 text-xs font-black text-[#F5EDD8]"
             >
               Download QR
-            </a>
+            </button>
           </div>
         )}
         <div className="min-w-0 space-y-3">

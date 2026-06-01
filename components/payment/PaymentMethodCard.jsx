@@ -19,7 +19,8 @@ export default function PaymentMethodCard({
   className = '',
 }) {
   const isTransfer = method.type === 'transfer';
-  const qrUrl = method.qr_image_url ? resolveAssetUrl(method.qr_image_url) : '';
+  const rawQrUrl = method.qr_image_url || method.qr_image || method.qr_url || method.image_url || '';
+  const qrUrl = rawQrUrl ? resolveAssetUrl(rawQrUrl) : '';
   const label = method.name || (isTransfer ? 'Transfer Bank' : 'QRIS');
   const provider = method.provider_name || (isTransfer ? 'Bank' : 'QRIS');
   const accountName = method.account_name || 'Sultan Kebab';
