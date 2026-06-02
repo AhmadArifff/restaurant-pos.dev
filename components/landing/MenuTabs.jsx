@@ -40,7 +40,7 @@ export default function MenuTabs({ content = menuContent, previewMode = false })
     () => categories.find((category) => category.id === activeCategory) || categories[0],
     [categories, activeCategory],
   );
-  const showcaseItems = useMemo(() => (currentCategory?.items || []).slice(0, 3), [currentCategory]);
+  const showcaseItems = useMemo(() => currentCategory?.items || [], [currentCategory]);
   const frontShowcaseItem = showcaseItems[showcaseOffset % Math.max(showcaseItems.length, 1)];
   const activeLabel = splitCategoryLabel(currentCategory?.label || '');
   const totalItems = currentCategory?.items?.length || 0;
@@ -93,7 +93,9 @@ export default function MenuTabs({ content = menuContent, previewMode = false })
 
                   return (
                     <motion.div
-                      className={`menu-3d-card menu-3d-card-${position}`}
+                      className={`menu-3d-card menu-3d-card-${Math.min(position, 3)} ${
+                        position > 3 ? 'menu-3d-card-queued' : ''
+                      }`}
                       key={`${currentCategory.id}-${item.id}`}
                       initial={{ opacity: 0, y: 24, rotateY: -12 }}
                       animate={{ opacity: 1, y: 0, rotateY: 0 }}

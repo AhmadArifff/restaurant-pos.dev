@@ -753,6 +753,15 @@ body {
   transform: translateZ(-110px) rotateY(14deg) scale(0.78);
   animation: menuFloatTertiary 8.4s ease-in-out infinite;
 }
+.landing-page .menu-3d-card-queued {
+  top: 168px;
+  left: 52%;
+  z-index: 0;
+  opacity: 0;
+  filter: blur(5px);
+  pointer-events: none;
+  animation: none;
+}
 .landing-page .menu-tabs {
   display: flex;
   gap: 0.75rem;
@@ -1579,6 +1588,10 @@ body {
   .landing-page .menu-3d-card-3 {
     top: 92px;
     left: 12%;
+  }
+  .landing-page .menu-3d-card-queued {
+    top: 118px;
+    left: 44%;
   }
   .landing-page .menu-tabs {
     flex-wrap: nowrap;
