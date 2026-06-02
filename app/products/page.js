@@ -25,6 +25,7 @@ export default function ProductsPage() {
   const [imagePreview, setPreview]  = useState(null);
   const [imageError, setImageError] = useState(null);
   const [search, setSearch]         = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all');
   const [loading, setLoading]       = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -177,9 +178,11 @@ export default function ProductsPage() {
     catch (err) { alert(err.response?.data?.message || 'Gagal menghapus'); }
   };
 
-  const filtered = products.filter(p =>
-    p.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = products.filter((p) => {
+    const matchSearch = p.name.toLowerCase().includes(search.toLowerCase());
+    const matchCategory = categoryFilter === 'all' || String(p.category_id || '') === String(categoryFilter);
+    return matchSearch && matchCategory;
+  });
   const getAdminCanMake = (product) => {
     const perKasir = stockByKasir?.[product.id];
     if (!Array.isArray(perKasir) || perKasir.length === 0) {
@@ -237,9 +240,23 @@ export default function ProductsPage() {
           </div>
         </div>
 
-        <input value={search} onChange={e => setSearch(e.target.value)}
-          placeholder="Cari produk..."
-          className="w-full bg-slate-800 text-white rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-orange-500 border border-slate-700"/>
+        <div className="grid gap-3 md:grid-cols-[1fr_240px]">
+          <input value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Cari produk..."
+            className="w-full bg-slate-800 text-white rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-orange-500 border border-slate-700"/>
+          <select
+            value={categoryFilter}
+            onChange={e => setCategoryFilter(e.target.value)}
+            className="w-full bg-slate-800 text-white rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-orange-500 border border-slate-700"
+          >
+            <option value="all">Semua kategori</option>
+            {categories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.name}
+              </option>
+            ))}
+          </select>
+        </div>
 
         {/* Grid Produk */}
         {pageLoading && products.length === 0 ? (
