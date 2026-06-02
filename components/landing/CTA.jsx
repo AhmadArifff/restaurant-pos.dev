@@ -42,11 +42,11 @@ export default function CTA({ content = ctaContent, previewMode = false }) {
           </a>
           <a href={data.secondaryButton?.href} className="btn-outline">{data.secondaryButton?.label}</a>
         </div>
-        <div style={{ marginTop: '2rem', display: 'flex', gap: '1.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+        <div className="cta-platforms">
           {deliveryPlatforms.map((platform, idx) => (
-            <div key={`${platform.name || 'platform'}-${idx}`} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+            <div key={`${platform.name || 'platform'}-${idx}`} className="cta-platform">
               {platform.logo && (
-                <img src={resolveAssetUrl(platform.logo, '')} alt={platform.name || 'Platform'} style={{ height: '24px', filter: 'brightness(0) invert(1)', opacity: 0.6 }} />
+                <img src={resolveAssetUrl(platform.logo, '')} alt={platform.name || 'Platform'} className="cta-platform-logo" />
               )}
               {platform.text}
             </div>
