@@ -41,10 +41,7 @@ export default function MenuTabs({ content = menuContent, previewMode = false })
     [categories, activeCategory],
   );
   const showcaseItems = useMemo(() => (currentCategory?.items || []).slice(0, 3), [currentCategory]);
-  const featuredItems = useMemo(() => {
-    if (!showcaseItems.length) return [];
-    return showcaseItems.map((_, index) => showcaseItems[(showcaseOffset + index) % showcaseItems.length]);
-  }, [showcaseItems, showcaseOffset]);
+  const frontShowcaseItem = showcaseItems[showcaseOffset % Math.max(showcaseItems.length, 1)];
   const activeLabel = splitCategoryLabel(currentCategory?.label || '');
   const totalItems = currentCategory?.items?.length || 0;
 
@@ -81,7 +78,7 @@ export default function MenuTabs({ content = menuContent, previewMode = false })
                 <span>{activeLabel.icon}</span>
                 {activeLabel.text || currentCategory.label}
               </h3>
-              <p>{featuredItems[0]?.description || data.description}</p>
+              <p>{frontShowcaseItem?.description || data.description}</p>
               <div className="menu-showcase-stats">
                 <span>{totalItems} menu pilihan</span>
                 <span>Preview 3D bergerak</span>
@@ -91,21 +88,25 @@ export default function MenuTabs({ content = menuContent, previewMode = false })
 
             <div className="menu-3d-stage" aria-label="Preview menu bergerak">
               <div className="menu-3d-orbit">
-                {featuredItems.map((item, index) => (
-                  <motion.div
-                    className={`menu-3d-card menu-3d-card-${index + 1}`}
-                    key={`${currentCategory.id}-${index}-${item.id}`}
-                    initial={{ opacity: 0, y: 24, rotateY: -12 }}
-                    animate={{ opacity: 1, y: 0, rotateY: 0 }}
-                    transition={{ delay: index * 0.08, duration: 0.5 }}
-                  >
-                    <img src={resolveAssetUrl(item.image, '')} alt={item.name} />
-                    <div>
-                      <span>{item.name}</span>
-                      <strong>{item.price}</strong>
-                    </div>
-                  </motion.div>
-                ))}
+                {showcaseItems.map((item, index) => {
+                  const position = ((index - showcaseOffset + showcaseItems.length) % showcaseItems.length) + 1;
+
+                  return (
+                    <motion.div
+                      className={`menu-3d-card menu-3d-card-${position}`}
+                      key={`${currentCategory.id}-${item.id}`}
+                      initial={{ opacity: 0, y: 24, rotateY: -12 }}
+                      animate={{ opacity: 1, y: 0, rotateY: 0 }}
+                      transition={{ delay: index * 0.08, duration: 0.5 }}
+                    >
+                      <img src={resolveAssetUrl(item.image, '')} alt={item.name} />
+                      <div>
+                        <span>{item.name}</span>
+                        <strong>{item.price}</strong>
+                      </div>
+                    </motion.div>
+                  );
+                })}
               </div>
             </div>
           </div>

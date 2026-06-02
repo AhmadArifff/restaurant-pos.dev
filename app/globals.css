@@ -703,7 +703,8 @@ body {
   background: rgba(26,20,9,0.9);
   box-shadow: 0 28px 70px rgba(0,0,0,0.45);
   transform-style: preserve-3d;
-  will-change: transform;
+  transition: top 0.85s cubic-bezier(.22,1,.36,1), left 0.85s cubic-bezier(.22,1,.36,1), opacity 0.45s ease, filter 0.85s ease;
+  will-change: top, left, transform;
 }
 .landing-page .menu-3d-card img {
   width: 100%;
@@ -733,19 +734,22 @@ body {
   top: 16px;
   left: 4%;
   z-index: 3;
+  opacity: 1;
   animation: menuFloatPrimary 6.8s ease-in-out infinite;
 }
 .landing-page .menu-3d-card-2 {
   top: 72px;
-  right: 0;
+  left: calc(100% - min(250px, 74vw));
   z-index: 2;
+  opacity: 0.92;
   transform: translateZ(-70px) rotateY(-16deg) scale(0.88);
   animation: menuFloatSecondary 7.6s ease-in-out infinite;
 }
 .landing-page .menu-3d-card-3 {
   left: 22%;
-  bottom: 0;
+  top: 146px;
   z-index: 1;
+  opacity: 0.78;
   transform: translateZ(-110px) rotateY(14deg) scale(0.78);
   animation: menuFloatTertiary 8.4s ease-in-out infinite;
 }
@@ -1563,14 +1567,19 @@ body {
     min-height: 310px;
     overflow: hidden;
   }
-  .landing-page .menu-3d-card {
+  .landing-page .menu-3d-card { 
     width: min(220px, 76vw);
     min-height: 220px;
   }
   .landing-page .menu-3d-card img { height: 150px; }
   .landing-page .menu-3d-card-1 { left: 0; }
-  .landing-page .menu-3d-card-2 { right: -4px; }
-  .landing-page .menu-3d-card-3 { left: 12%; }
+  .landing-page .menu-3d-card-2 {
+    left: calc(100% - min(220px, 76vw));
+  }
+  .landing-page .menu-3d-card-3 {
+    top: 92px;
+    left: 12%;
+  }
   .landing-page .menu-tabs {
     flex-wrap: nowrap;
     overflow-x: auto;
