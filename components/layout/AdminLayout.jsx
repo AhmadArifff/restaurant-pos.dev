@@ -26,12 +26,15 @@ import { useAuthStore } from '@/store/authStore';
 
 export default function AdminLayout({ children, noPadding = false }) {
   const selectedBranchId = useAuthStore((state) => state.selectedBranchId);
+  const mainSpacingClass = noPadding
+    ? 'pt-14 md:pt-0'
+    : 'overflow-y-auto px-4 pb-4 pt-[4.5rem] sm:px-6 sm:pb-6 sm:pt-20 md:p-6';
 
   return (
     <AuthGuard>
       <div className="admin-theme admin-shell flex h-screen overflow-hidden">
         <Sidebar />
-        <main key={selectedBranchId || 'no-branch'} className={`admin-main flex-1 overflow-hidden ${noPadding ? '' : 'overflow-y-auto p-4 sm:p-6'}`}>
+        <main key={selectedBranchId || 'no-branch'} className={`admin-main flex-1 overflow-hidden ${mainSpacingClass}`}>
           {children}
           <PWAInstallPrompt />
         </main>
