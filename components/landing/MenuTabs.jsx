@@ -164,7 +164,12 @@ export default function MenuTabs({ content = menuContent, previewMode = false })
                   <div className="menu-item-info">
                     {item.tag ? (
                       <div>
-                        <span className={`menu-item-tag ${item.tagClass}`}>{item.tag}</span>
+                        <span
+                          className={`menu-item-tag ${item.tagClass}`}
+                          style={item.tagColor ? { color: item.tagColor, borderColor: item.tagColor } : undefined}
+                        >
+                          {item.tag}
+                        </span>
                       </div>
                     ) : null}
                     <div className="menu-item-name">{item.name}</div>

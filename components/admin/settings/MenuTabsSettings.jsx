@@ -11,6 +11,17 @@ import { useLandingSettingsStore } from '@/store/landingSettingsStore';
 
 const formatRupiah = (value) => `Rp ${Number(value || 0).toLocaleString('id-ID')}`;
 
+const formatIngredientQty = (value) => {
+  const number = Number(value || 0);
+  if (!Number.isFinite(number)) return '';
+  return new Intl.NumberFormat('id-ID', {
+    maximumFractionDigits: 2,
+  }).format(number);
+};
+
+const normalizeColorInputValue = (value) =>
+  /^#[0-9a-fA-F]{6}$/.test(value || '') ? value : '#C9A84C';
+
 const buildRecipeDescription = (product) => {
   const ingredients = Array.isArray(product?.ingredients) ? product.ingredients : [];
   if (!ingredients.length) return product?.description || product?.name || '';
@@ -18,7 +29,7 @@ const buildRecipeDescription = (product) => {
   return ingredients
     .map((ingredient) => {
       const name = ingredient.ingredient_name || ingredient.name || ingredient.stock_item_name || 'Bahan';
-      const qty = ingredient.qty ? ` ${ingredient.qty}` : '';
+      const qty = ingredient.qty ? ` ${formatIngredientQty(ingredient.qty)}` : '';
       const unit = ingredient.unit ? ` ${ingredient.unit}` : '';
       return `${name}${qty}${unit}`.trim();
     })
@@ -48,6 +59,7 @@ const buildMenuItemsFromProducts = (products, existingItems = []) => {
       image: product.image_url || '',
       tag: previous.tag || '',
       tagClass: previous.tagClass || 'tag-new',
+      tagColor: previous.tagColor || '',
       description: buildRecipeDescription(product),
       price: formatRupiah(product.price),
     };
@@ -207,6 +219,7 @@ export default function MenuTabsSettings() {
                     image: '',
                     tag: '',
                     tagClass: 'tag-new',
+                    tagColor: '',
                     description: 'Deskripsi menu',
                     price: 'Rp 0',
                   })
@@ -262,6 +275,29 @@ export default function MenuTabsSettings() {
                       }
                       maxLength={30}
                     />
+                    <div className="grid grid-cols-[56px_1fr] gap-3">
+                      <div className="form-group">
+                        <label className="form-label">Warna</label>
+                        <input
+                          type="color"
+                          value={normalizeColorInputValue(item.tagColor)}
+                          onChange={(e) =>
+                            updateNestedSetting('menuTabs', `categories.${cIdx}.items.${iIdx}.tagColor`, e.target.value)
+                          }
+                          className="h-10 w-full cursor-pointer rounded-lg border border-slate-600 bg-slate-800 p-1"
+                        />
+                      </div>
+                      <TextInput
+                        label="Tag Color"
+                        value={item.tagColor}
+                        onChange={(val) =>
+                          updateNestedSetting('menuTabs', `categories.${cIdx}.items.${iIdx}.tagColor`, val)
+                        }
+                        placeholder="#C9A84C"
+                        maxLength={20}
+                        hint="Kosongkan untuk memakai warna dari Tag Class."
+                      />
+                    </div>
                     <TextArea
                       label="Description"
                       value={item.description}
