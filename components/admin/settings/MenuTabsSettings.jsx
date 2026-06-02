@@ -1,16 +1,116 @@
 'use client';
 
+import { useEffect, useMemo, useState } from 'react';
 import AccordionSection from '../form/AccordionSection';
 import TextInput from '../form/TextInput';
 import TextArea from '../form/TextArea';
 import ImageUpload from '../form/ImageUpload';
 import DynamicArray from '../form/DynamicArray';
+import { getCategories, getProducts } from '@/lib/api';
 import { useLandingSettingsStore } from '@/store/landingSettingsStore';
 
+const formatRupiah = (value) => `Rp ${Number(value || 0).toLocaleString('id-ID')}`;
+
+const buildRecipeDescription = (product) => {
+  const ingredients = Array.isArray(product?.ingredients) ? product.ingredients : [];
+  if (!ingredients.length) return product?.description || product?.name || '';
+
+  return ingredients
+    .map((ingredient) => {
+      const name = ingredient.ingredient_name || ingredient.name || ingredient.stock_item_name || 'Bahan';
+      const qty = ingredient.qty ? ` ${ingredient.qty}` : '';
+      const unit = ingredient.unit ? ` ${ingredient.unit}` : '';
+      return `${name}${qty}${unit}`.trim();
+    })
+    .join(', ');
+};
+
+const buildMenuItemsFromProducts = (products, existingItems = []) => {
+  const existingByProduct = new Map();
+  const existingByName = new Map();
+
+  existingItems.forEach((item) => {
+    if (item.productId) existingByProduct.set(String(item.productId), item);
+    if (item.name) existingByName.set(String(item.name).toLowerCase(), item);
+  });
+
+  return products.map((product, index) => {
+    const previous =
+      existingByProduct.get(String(product.id)) ||
+      existingByName.get(String(product.name || '').toLowerCase()) ||
+      {};
+
+    return {
+      id: index + 1,
+      productId: product.id,
+      name: product.name || '',
+      orderName: product.name || '',
+      image: product.image_url || '',
+      tag: previous.tag || '',
+      tagClass: previous.tagClass || 'tag-new',
+      description: buildRecipeDescription(product),
+      price: formatRupiah(product.price),
+    };
+  });
+};
+
 export default function MenuTabsSettings() {
-  const { settings, updateNestedSetting, addArrayItem, removeArrayItem } = useLandingSettingsStore();
+  const { settings, updateNestedSetting, updateArrayItem, addArrayItem, removeArrayItem } = useLandingSettingsStore();
   const menuTabsSettings = settings.menuTabs || {};
   const categories = menuTabsSettings.categories || [];
+  const [productCategories, setProductCategories] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [catalogLoading, setCatalogLoading] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadCatalog = async () => {
+      setCatalogLoading(true);
+      try {
+        const [categoryRes, productRes] = await Promise.all([getCategories(), getProducts()]);
+        if (!active) return;
+        setProductCategories(Array.isArray(categoryRes.data) ? categoryRes.data : []);
+        setProducts(Array.isArray(productRes.data) ? productRes.data : []);
+      } catch (_) {
+        if (!active) return;
+        setProductCategories([]);
+        setProducts([]);
+      } finally {
+        if (active) setCatalogLoading(false);
+      }
+    };
+
+    loadCatalog();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const productsByCategoryId = useMemo(() => {
+    const map = new Map();
+    products.forEach((product) => {
+      const key = String(product.category_id || '');
+      if (!key) return;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(product);
+    });
+    return map;
+  }, [products]);
+
+  const syncCategoryFromProductCategory = (categoryIndex, selectedProductCategoryId) => {
+    const selectedCategory = productCategories.find((item) => String(item.id) === String(selectedProductCategoryId));
+    const categoryProducts = productsByCategoryId.get(String(selectedProductCategoryId)) || [];
+    const currentCategory = categories[categoryIndex] || {};
+    const nextItems = buildMenuItemsFromProducts(categoryProducts, currentCategory.items || []);
+
+    updateArrayItem('menuTabs', 'categories', categoryIndex, {
+      ...currentCategory,
+      label: selectedCategory?.name || currentCategory.label || '',
+      items: nextItems,
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -43,6 +143,14 @@ export default function MenuTabsSettings() {
       </AccordionSection>
 
       <AccordionSection title="Categories & Items">
+        <div className="rounded-xl border border-yellow-500/20 bg-yellow-500/10 p-3 text-xs leading-6 text-yellow-100">
+          Isi <b>Category ID</b> untuk ID landing page, lalu pilih <b>Category Label</b> dari kategori produk.
+          Items akan otomatis terisi dari data menu produk pada kategori tersebut. Item ID dibuat berurutan dan tidak
+          perlu diedit.
+        </div>
+        {catalogLoading && (
+          <p className="text-xs text-slate-400">Memuat kategori dan produk...</p>
+        )}
         <DynamicArray
           items={categories}
           label="Menu Categories"
@@ -68,13 +176,32 @@ export default function MenuTabsSettings() {
                 onChange={(val) => updateNestedSetting('menuTabs', `categories.${cIdx}.label`, val)}
                 maxLength={80}
               />
+              <div className="form-group">
+                <label className="form-label">Load Category Label dari Produk</label>
+                <select
+                  value={productCategories.find((item) => item.name === category.label)?.id || ''}
+                  onChange={(e) => syncCategoryFromProductCategory(cIdx, e.target.value)}
+                  className="form-input"
+                  disabled={catalogLoading}
+                >
+                  <option value="">-- Pilih kategori produk untuk auto-load items --</option>
+                  {productCategories.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name} ({productsByCategoryId.get(String(item.id))?.length || 0} produk)
+                    </option>
+                  ))}
+                </select>
+                <p className="form-hint">
+                  Pilihan ini mengisi Name, Order Name, Image, Description bahan, dan Price dari data produk.
+                </p>
+              </div>
 
               <DynamicArray
                 items={category.items || []}
                 label="Items"
                 onAdd={() =>
                   addArrayItem('menuTabs', `categories.${cIdx}.items`, {
-                    id: Date.now(),
+                    id: (category.items || []).length + 1,
                     name: 'Menu Baru',
                     orderName: 'Menu Baru',
                     image: '',
@@ -90,10 +217,10 @@ export default function MenuTabsSettings() {
                     <div className="grid grid-cols-2 gap-3">
                       <TextInput
                         label="Item ID"
-                        value={item.id}
-                        onChange={(val) =>
-                          updateNestedSetting('menuTabs', `categories.${cIdx}.items.${iIdx}.id`, val)
-                        }
+                        value={iIdx + 1}
+                        onChange={() => {}}
+                        disabled
+                        hint="Otomatis berurutan dari daftar item."
                       />
                       <TextInput
                         label="Tag Class"
