@@ -703,7 +703,12 @@ body {
   background: rgba(26,20,9,0.9);
   box-shadow: 0 28px 70px rgba(0,0,0,0.45);
   transform-style: preserve-3d;
-  transition: top 0.85s cubic-bezier(.22,1,.36,1), left 0.85s cubic-bezier(.22,1,.36,1), opacity 0.45s ease, filter 0.85s ease;
+  transition:
+    top 1.15s cubic-bezier(.22,1,.36,1),
+    left 1.15s cubic-bezier(.22,1,.36,1),
+    transform 1.15s cubic-bezier(.22,1,.36,1),
+    opacity 0.8s ease,
+    filter 1.15s ease;
   will-change: top, left, transform;
 }
 .landing-page .menu-3d-card img {
@@ -735,33 +740,30 @@ body {
   left: 4%;
   z-index: 3;
   opacity: 1;
-  animation: menuFloatPrimary 6.8s ease-in-out infinite;
+  transform: translate3d(0, 0, 56px) rotateY(-7deg) rotateX(2deg) scale(1);
 }
 .landing-page .menu-3d-card-2 {
   top: 72px;
   left: calc(100% - min(250px, 74vw));
   z-index: 2;
   opacity: 0.92;
-  transform: translateZ(-70px) rotateY(-16deg) scale(0.88);
-  animation: menuFloatSecondary 7.6s ease-in-out infinite;
+  transform: translate3d(-10px, 10px, -42px) rotateY(-15deg) scale(0.88);
 }
 .landing-page .menu-3d-card-3 {
   left: 22%;
   top: 146px;
   z-index: 1;
   opacity: 0.78;
-  transform: translateZ(-110px) rotateY(14deg) scale(0.78);
-  animation: menuFloatTertiary 8.4s ease-in-out infinite;
+  transform: translate3d(12px, -6px, -100px) rotateY(14deg) scale(0.78);
 }
 .landing-page .menu-3d-card-queued {
   top: 168px;
   left: 52%;
   z-index: 0;
   opacity: 0 !important;
-  visibility: hidden;
   filter: blur(5px);
   pointer-events: none;
-  animation: none;
+  transform: translate3d(24px, 8px, -150px) rotateY(8deg) scale(0.68);
 }
 .landing-page .menu-tabs {
   display: flex;
@@ -1356,11 +1358,13 @@ body {
 .landing-page .cta-bg {
   position: absolute; inset: 0;
   background: url('https://images.unsplash.com/photo-1544025162-d76694265947?w=1600&q=80') center/cover;
-  filter: brightness(0.25);
+  filter: brightness(0.72) saturate(1.28) contrast(1.06);
 }
 .landing-page .cta-overlay {
   position: absolute; inset: 0;
-  background: linear-gradient(rgba(139,26,26,0.3), rgba(13,10,6,0.7));
+  background:
+    linear-gradient(180deg, rgba(13,10,6,0.42), rgba(13,10,6,0.58)),
+    linear-gradient(115deg, rgba(139,26,26,0.24), rgba(201,168,76,0.16), rgba(13,10,6,0.28));
 }
 .landing-page .cta-content { position: relative; z-index: 2; max-width: 700px; margin: 0 auto; }
 .landing-page .cta-title {
