@@ -27,6 +27,7 @@ export default function MenuTabs({ content = menuContent, previewMode = false })
   const data = content || menuContent;
   const categories = data.categories || [];
   const [activeCategory, setActiveCategory] = useState(categories[0]?.id || '');
+  const [showcaseOffset, setShowcaseOffset] = useState(0);
 
   useEffect(() => {
     if (!categories.length) return;
@@ -39,9 +40,27 @@ export default function MenuTabs({ content = menuContent, previewMode = false })
     () => categories.find((category) => category.id === activeCategory) || categories[0],
     [categories, activeCategory],
   );
-  const featuredItems = useMemo(() => (currentCategory?.items || []).slice(0, 3), [currentCategory]);
+  const showcaseItems = useMemo(() => (currentCategory?.items || []).slice(0, 3), [currentCategory]);
+  const featuredItems = useMemo(() => {
+    if (!showcaseItems.length) return [];
+    return showcaseItems.map((_, index) => showcaseItems[(showcaseOffset + index) % showcaseItems.length]);
+  }, [showcaseItems, showcaseOffset]);
   const activeLabel = splitCategoryLabel(currentCategory?.label || '');
   const totalItems = currentCategory?.items?.length || 0;
+
+  useEffect(() => {
+    setShowcaseOffset(0);
+  }, [currentCategory?.id]);
+
+  useEffect(() => {
+    if (showcaseItems.length < 2) return undefined;
+
+    const timer = window.setInterval(() => {
+      setShowcaseOffset((current) => (current + 1) % showcaseItems.length);
+    }, 3600);
+
+    return () => window.clearInterval(timer);
+  }, [showcaseItems.length]);
 
   return (
     <section id="menu">
@@ -75,7 +94,7 @@ export default function MenuTabs({ content = menuContent, previewMode = false })
                 {featuredItems.map((item, index) => (
                   <motion.div
                     className={`menu-3d-card menu-3d-card-${index + 1}`}
-                    key={`${currentCategory.id}-${item.id}`}
+                    key={`${currentCategory.id}-${index}-${item.id}`}
                     initial={{ opacity: 0, y: 24, rotateY: -12 }}
                     animate={{ opacity: 1, y: 0, rotateY: 0 }}
                     transition={{ delay: index * 0.08, duration: 0.5 }}
