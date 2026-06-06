@@ -6,6 +6,7 @@ import DynamicArray from '../form/DynamicArray';
 import ImageUpload from '../form/ImageUpload';
 import TextArea from '../form/TextArea';
 import TextInput from '../form/TextInput';
+import VisibilityToggle from '../form/VisibilityToggle';
 import { useLoginPageSettingsStore } from '@/store/loginSettingsStore';
 import { SettingsPageSkeleton } from '@/components/ui/SectionSkeleton';
 
@@ -89,6 +90,12 @@ export default function LoginPageSettingsLayout() {
         <div className="grid grid-cols-1 xl:grid-cols-[620px_minmax(0,1fr)] gap-6">
           <div className="bg-slate-900 rounded-lg p-6 border border-slate-800 space-y-4">
             <AccordionSection title="Hero Images" defaultOpen>
+              <VisibilityToggle
+                enabled={settings.media?.enabled}
+                onChange={(value) => updateNestedSetting('media.enabled', value)}
+                title="Hero images aktif"
+                description="Nonaktifkan untuk menyembunyikan background dan floating image di login page."
+              />
               <ImageUpload
                 label="Background Image"
                 value={settings.media?.backgroundImage}
@@ -139,6 +146,12 @@ export default function LoginPageSettingsLayout() {
             </AccordionSection>
 
             <AccordionSection title="Hero Text">
+              <VisibilityToggle
+                enabled={settings.hero?.enabled}
+                onChange={(value) => updateNestedSetting('hero.enabled', value)}
+                title="Hero text aktif"
+                description="Nonaktifkan untuk menyembunyikan badge, judul, deskripsi, dan statistik di panel kiri login page."
+              />
               <TextInput
                 label="Badge Text"
                 value={settings.hero?.badge}
@@ -200,6 +213,18 @@ export default function LoginPageSettingsLayout() {
             </AccordionSection>
 
             <AccordionSection title="Brand & Form Text">
+              <VisibilityToggle
+                enabled={settings.brand?.enabled}
+                onChange={(value) => updateNestedSetting('brand.enabled', value)}
+                title="Brand header aktif"
+                description="Nonaktifkan untuk menyembunyikan logo dan nama toko di atas form login."
+              />
+              <VisibilityToggle
+                enabled={settings.form?.enabled}
+                onChange={(value) => updateNestedSetting('form.enabled', value)}
+                title="Form login aktif"
+                description="Nonaktifkan hanya jika halaman login sementara tidak ingin menampilkan form masuk."
+              />
               <TextInput
                 label="Brand Subtitle"
                 value={settings.brand?.subtitle}
@@ -238,6 +263,12 @@ export default function LoginPageSettingsLayout() {
             </AccordionSection>
 
             <AccordionSection title="Messages & Footer">
+              <VisibilityToggle
+                enabled={settings.footer?.enabled}
+                onChange={(value) => updateNestedSetting('footer.enabled', value)}
+                title="Footer login aktif"
+                description="Nonaktifkan untuk menyembunyikan teks footer dan versi di login page."
+              />
               <TextInput label="Forgot Password Toast" value={settings.form?.forgotPasswordToast} onChange={(value) => updateNestedSetting('form.forgotPasswordToast', value)} maxLength={140} />
               <TextInput label="Success Toast" value={settings.form?.successToast} onChange={(value) => updateNestedSetting('form.successToast', value)} maxLength={100} hint="Gunakan {name} untuk nama user." />
               <TextInput label="Login Error Message" value={settings.form?.errorMessage} onChange={(value) => updateNestedSetting('form.errorMessage', value)} maxLength={120} />
@@ -258,7 +289,7 @@ export default function LoginPageSettingsLayout() {
             <div className="overflow-hidden rounded border border-slate-700 bg-[#0D0A06]">
               <div className="grid md:grid-cols-2 min-h-[620px]">
                 <div className="relative hidden md:flex flex-col justify-end p-8 overflow-hidden">
-                  {settings.media?.backgroundImage && (
+                  {settings.media?.enabled !== false && settings.media?.backgroundImage && (
                     <img
                       src={settings.media.backgroundImage}
                       alt=""
@@ -266,6 +297,7 @@ export default function LoginPageSettingsLayout() {
                     />
                   )}
                   <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/45 to-black/90" />
+                  {settings.hero?.enabled !== false && (
                   <div className="relative">
                     <div className="inline-flex border border-yellow-500/50 px-3 py-1 text-[10px] uppercase tracking-[0.25em] text-yellow-400 mb-5">
                       {settings.hero?.badge}
@@ -284,36 +316,49 @@ export default function LoginPageSettingsLayout() {
                       ))}
                     </div>
                   </div>
+                  )}
                 </div>
                 <div className="flex items-center justify-center p-8 bg-[#1A1409]">
                   <div className="w-full max-w-sm">
-                    <p className="text-xs uppercase tracking-[0.25em] text-yellow-400 mb-2">{settings.brand?.subtitle}</p>
-                    <h3 className="font-serif text-3xl text-cream mb-2">
-                      {settings.form?.title} <span className="italic text-yellow-400">{settings.form?.titleAccent}</span>
-                    </h3>
-                    <p className="text-sm text-slate-400 mb-8">{settings.form?.subtitle}</p>
-                    <div className="space-y-4">
-                      <div>
-                        <label className="text-xs uppercase tracking-[0.18em] text-slate-400">{settings.form?.emailLabel}</label>
-                        <div className="mt-2 h-11 rounded border border-yellow-500/20 bg-white/5 px-3 flex items-center text-slate-500 text-sm">
-                          {settings.form?.emailPlaceholder}
+                    {settings.brand?.enabled !== false && (
+                      <p className="text-xs uppercase tracking-[0.25em] text-yellow-400 mb-2">{settings.brand?.subtitle}</p>
+                    )}
+                    {settings.form?.enabled !== false ? (
+                      <>
+                        <h3 className="font-serif text-3xl text-cream mb-2">
+                          {settings.form?.title} <span className="italic text-yellow-400">{settings.form?.titleAccent}</span>
+                        </h3>
+                        <p className="text-sm text-slate-400 mb-8">{settings.form?.subtitle}</p>
+                        <div className="space-y-4">
+                          <div>
+                            <label className="text-xs uppercase tracking-[0.18em] text-slate-400">{settings.form?.emailLabel}</label>
+                            <div className="mt-2 h-11 rounded border border-yellow-500/20 bg-white/5 px-3 flex items-center text-slate-500 text-sm">
+                              {settings.form?.emailPlaceholder}
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-xs uppercase tracking-[0.18em] text-slate-400">{settings.form?.passwordLabel}</label>
+                            <div className="mt-2 h-11 rounded border border-yellow-500/20 bg-white/5 px-3 flex items-center text-slate-500 text-sm">
+                              {settings.form?.passwordPlaceholder}
+                            </div>
+                          </div>
+                          <div className="h-11 rounded bg-yellow-500 text-slate-950 flex items-center justify-center text-xs uppercase tracking-[0.2em] font-bold">
+                            {settings.form?.submitLabel}
+                          </div>
                         </div>
+                      </>
+                    ) : (
+                      <div className="rounded-xl border border-slate-700 bg-slate-950/60 p-5 text-sm text-slate-300">
+                        Form login sedang dinonaktifkan dari pengaturan.
                       </div>
-                      <div>
-                        <label className="text-xs uppercase tracking-[0.18em] text-slate-400">{settings.form?.passwordLabel}</label>
-                        <div className="mt-2 h-11 rounded border border-yellow-500/20 bg-white/5 px-3 flex items-center text-slate-500 text-sm">
-                          {settings.form?.passwordPlaceholder}
-                        </div>
-                      </div>
-                      <div className="h-11 rounded bg-yellow-500 text-slate-950 flex items-center justify-center text-xs uppercase tracking-[0.2em] font-bold">
-                        {settings.form?.submitLabel}
-                      </div>
-                    </div>
-                    <p className="text-center text-xs text-slate-500 leading-6 mt-8">
-                      {settings.footer?.text}
-                      <br />
-                      {settings.footer?.version}
-                    </p>
+                    )}
+                    {settings.footer?.enabled !== false && (
+                      <p className="text-center text-xs text-slate-500 leading-6 mt-8">
+                        {settings.footer?.text}
+                        <br />
+                        {settings.footer?.version}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>

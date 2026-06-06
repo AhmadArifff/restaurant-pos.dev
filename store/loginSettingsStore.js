@@ -70,8 +70,13 @@ const removeLoginSettingsCache = () => {
   }
 };
 
+const withEnabled = (settings) => ({
+  enabled: true,
+  ...settings,
+});
+
 export const defaultLoginPageSettings = {
-  media: {
+  media: withEnabled({
     backgroundImage: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=1200&q=85',
     floatingImages: [
       { src: 'https://images.unsplash.com/photo-1561651188-d207bbec4ec3?w=200&q=80', alt: 'Kebab' },
@@ -79,8 +84,8 @@ export const defaultLoginPageSettings = {
       { src: 'https://images.unsplash.com/photo-1593001872095-7d5b3868fb1d?w=200&q=80', alt: 'Falafel' },
       { src: 'https://images.unsplash.com/photo-1547592180-85f173990554?w=200&q=80', alt: 'Hummus' },
     ],
-  },
-  hero: {
+  }),
+  hero: withEnabled({
     badge: 'Sultan Kebab Admin Panel',
     titleTop: 'Kelola Restoran',
     titleAccent: 'Dengan Mudah',
@@ -90,11 +95,11 @@ export const defaultLoginPageSettings = {
       { value: '50K+', label: 'Pelanggan' },
       { value: '4.9*', label: 'Rating' },
     ],
-  },
-  brand: {
+  }),
+  brand: withEnabled({
     subtitle: 'Admin Dashboard',
-  },
-  form: {
+  }),
+  form: withEnabled({
     title: 'Selamat',
     titleAccent: 'Datang',
     subtitle: 'Masuk ke panel admin untuk mengelola operasional restoran',
@@ -111,17 +116,17 @@ export const defaultLoginPageSettings = {
     backLinkLabel: 'Halaman Utama Sultan Kebab',
     successToast: 'Selamat datang, {name}!',
     errorMessage: 'Email atau password salah. Silakan coba lagi.',
-  },
+  }),
   validation: {
     emailRequired: 'Email tidak boleh kosong',
     emailInvalid: 'Format email tidak valid',
     passwordRequired: 'Password tidak boleh kosong',
     passwordMinLength: 'Password minimal 6 karakter',
   },
-  footer: {
+  footer: withEnabled({
     text: '2024 Sultan Kebab. Hak cipta dilindungi.',
     version: 'Sistem POS & Admin Panel v2.0',
-  },
+  }),
 };
 
 const normalizeFromApi = (apiSettings) => {

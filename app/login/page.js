@@ -137,6 +137,12 @@ export default function LoginPage() {
   const loginValidation = loginPageSettings.validation || {};
   const loginFooter = loginPageSettings.footer || {};
   const floatingImages = loginMedia.floatingImages || [];
+  const mediaEnabled = loginMedia.enabled !== false;
+  const heroEnabled = loginHero.enabled !== false;
+  const brandEnabled = loginBrand.enabled !== false;
+  const formEnabled = loginForm.enabled !== false;
+  const footerEnabled = loginFooter.enabled !== false;
+  const showLeftPanel = mediaEnabled || heroEnabled;
 
   /* mount animation */
   useEffect(() => {
@@ -446,10 +452,11 @@ export default function LoginPage() {
       <div className="login-layout" style={{
         minHeight:           '100vh',
         display:             'grid',
-        gridTemplateColumns: 'clamp(320px, 50%, 700px) 1fr',
+        gridTemplateColumns: showLeftPanel ? 'clamp(320px, 50%, 700px) 1fr' : '1fr',
       }}>
 
         {/* ═══ LEFT PANEL ═══ */}
+        {showLeftPanel && (
         <div className="login-left-panel" style={{
           position:   'relative',
           overflow:   'hidden',
@@ -460,19 +467,21 @@ export default function LoginPage() {
           minHeight:  '100vh',
         }}>
           {/* BG image */}
-          <img
-            src={loginMedia.backgroundImage || 'https://images.unsplash.com/photo-1544025162-d76694265947?w=1200&q=85'}
-            alt="Sultan Kebab"
-            style={{
-              position:   'absolute',
-              inset:      0,
-              width:      '100%',
-              height:     '100%',
-              objectFit:  'cover',
-              animation:  'bgZoom 25s ease-in-out infinite alternate',
-              zIndex:     0,
-            }}
-          />
+          {mediaEnabled && (
+            <img
+              src={loginMedia.backgroundImage || 'https://images.unsplash.com/photo-1544025162-d76694265947?w=1200&q=85'}
+              alt="Sultan Kebab"
+              style={{
+                position:   'absolute',
+                inset:      0,
+                width:      '100%',
+                height:     '100%',
+                objectFit:  'cover',
+                animation:  'bgZoom 25s ease-in-out infinite alternate',
+                zIndex:     0,
+              }}
+            />
+          )}
           {/* Gradient overlay */}
           <div style={{
             position:   'absolute',
@@ -507,22 +516,27 @@ export default function LoginPage() {
             }} />
           ))}
 
-          {/* Floating food */}
-          <FloatingFoodImg src={floatingImages[0]?.src || 'https://images.unsplash.com/photo-1561651188-d207bbec4ec3?w=200&q=80'} alt={floatingImages[0]?.alt || 'Kebab'}
-            style={{ width:'90px', height:'90px', top:'12%', right:'15%', animation:'floatFood 7s ease-in-out infinite' }} />
-          <FloatingFoodImg src={floatingImages[1]?.src || 'https://images.unsplash.com/photo-1519676867240-f03562e64548?w=200&q=80'} alt={floatingImages[1]?.alt || 'Baklava'}
-            style={{ width:'65px', height:'65px', top:'28%', right:'8%', animation:'floatFood 5s -2s ease-in-out infinite' }} />
-          <FloatingFoodImg src={floatingImages[2]?.src || 'https://images.unsplash.com/photo-1593001872095-7d5b3868fb1d?w=200&q=80'} alt={floatingImages[2]?.alt || 'Falafel'}
-            style={{ width:'80px', height:'80px', top:'45%', right:'20%', animation:'floatFood 8s -4s ease-in-out infinite' }}
-            className="food-float-3" />
-          <FloatingFoodImg src={floatingImages[3]?.src || 'https://images.unsplash.com/photo-1547592180-85f173990554?w=200&q=80'} alt={floatingImages[3]?.alt || 'Hummus'}
-            style={{ width:'55px', height:'55px', top:'62%', right:'6%', animation:'floatFood 6s -1s ease-in-out infinite' }}
-            className="food-float-4" />
+          {mediaEnabled && (
+            <>
+              {/* Floating food */}
+              <FloatingFoodImg src={floatingImages[0]?.src || 'https://images.unsplash.com/photo-1561651188-d207bbec4ec3?w=200&q=80'} alt={floatingImages[0]?.alt || 'Kebab'}
+                style={{ width:'90px', height:'90px', top:'12%', right:'15%', animation:'floatFood 7s ease-in-out infinite' }} />
+              <FloatingFoodImg src={floatingImages[1]?.src || 'https://images.unsplash.com/photo-1519676867240-f03562e64548?w=200&q=80'} alt={floatingImages[1]?.alt || 'Baklava'}
+                style={{ width:'65px', height:'65px', top:'28%', right:'8%', animation:'floatFood 5s -2s ease-in-out infinite' }} />
+              <FloatingFoodImg src={floatingImages[2]?.src || 'https://images.unsplash.com/photo-1593001872095-7d5b3868fb1d?w=200&q=80'} alt={floatingImages[2]?.alt || 'Falafel'}
+                style={{ width:'80px', height:'80px', top:'45%', right:'20%', animation:'floatFood 8s -4s ease-in-out infinite' }}
+                className="food-float-3" />
+              <FloatingFoodImg src={floatingImages[3]?.src || 'https://images.unsplash.com/photo-1547592180-85f173990554?w=200&q=80'} alt={floatingImages[3]?.alt || 'Hummus'}
+                style={{ width:'55px', height:'55px', top:'62%', right:'6%', animation:'floatFood 6s -1s ease-in-out infinite' }}
+                className="food-float-4" />
 
-          {/* Particles */}
-          <Particles />
+              {/* Particles */}
+              <Particles />
+            </>
+          )}
 
           {/* Left content */}
+          {heroEnabled && (
           <div className="login-hero-content" style={{
             position:  'relative',
             zIndex:    10,
@@ -580,7 +594,9 @@ export default function LoginPage() {
               ))}
             </div>
           </div>
+          )}
         </div>
+        )}
 
         {/* ═══ RIGHT PANEL ═══ */}
         <div className="login-right-panel" style={{
@@ -601,6 +617,7 @@ export default function LoginPage() {
           <div className="login-form-wrapper" style={{ width:'100%', maxWidth:'420px', position:'relative', zIndex:2 }}>
 
             {/* ── Logo ── */}
+            {brandEnabled && (
             <div className="login-brand" style={{
               display:       'flex',
               alignItems:    'center',
@@ -634,8 +651,11 @@ export default function LoginPage() {
                 <div style={{ fontSize:'0.65rem', letterSpacing:'2px', textTransform:'uppercase', color:'var(--text-muted)' }}>{loginBrand.subtitle || 'Admin Dashboard'}</div>
               </div>
             </div>
+            )}
 
             {/* ── Form Header ── */}
+            {formEnabled ? (
+            <>
             <div style={{
               marginBottom: '1.8rem',
               animation:    mounted ? 'fadeSlideUp 0.8s 0.15s ease forwards' : 'none',
@@ -854,8 +874,22 @@ export default function LoginPage() {
 
               </div>
             </form>
+            </>
+            ) : (
+              <div style={{
+                border: '1px solid rgba(201,168,76,0.18)',
+                background: 'rgba(13,10,6,0.45)',
+                color: 'var(--text-muted)',
+                padding: '1.25rem',
+                lineHeight: 1.7,
+                fontSize: '0.88rem',
+              }}>
+                Form login sedang dinonaktifkan dari pengaturan.
+              </div>
+            )}
 
             {/* ── Footer ── */}
+            {footerEnabled && (
             <div style={{
               marginTop:  '2rem',
               textAlign:  'center',
@@ -867,6 +901,7 @@ export default function LoginPage() {
                 {loginFooter.version || 'Sistem POS & Admin Panel v2.0'}
               </p>
             </div>
+            )}
 
           </div>
         </div>

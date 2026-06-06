@@ -101,6 +101,8 @@ const preloadLandingAssets = async (content) => {
   })));
 };
 
+const sectionIsEnabled = (section) => section?.enabled !== false;
+
 export default function LandingPage() {
   const [landingContent, setLandingContent] = useState(() => readLandingContentCache());
   const [renderedContent, setRenderedContent] = useState(() => readLandingContentCache());
@@ -177,19 +179,19 @@ export default function LandingPage() {
 
   return (
     <div className="landing-page min-h-screen bg-[var(--dark)]">
-      <Header content={renderedContent.header} />
-      <Hero content={renderedContent.hero} />
-      <Marquee content={renderedContent.marquee} />
-      <About content={renderedContent.about} />
-      <Bestsellers content={renderedContent.bestsellers} />
-      <MenuTabs content={renderedContent.menuTabs} />
-      <Experience content={renderedContent.experience} />
-      <Gallery content={renderedContent.gallery} />
-      <Locations content={renderedContent.locations} />
-      <Testimonials content={renderedContent.testimonials} />
-      <CTA content={renderedContent.cta} />
-      <Footer content={renderedContent.footer} />
-      <FloatButton content={renderedContent.floatButton} />
+      {sectionIsEnabled(renderedContent.header) && <Header content={renderedContent.header} />}
+      {sectionIsEnabled(renderedContent.hero) && <Hero content={renderedContent.hero} />}
+      {sectionIsEnabled(renderedContent.marquee) && <Marquee content={renderedContent.marquee} />}
+      {sectionIsEnabled(renderedContent.about) && <About content={renderedContent.about} />}
+      {sectionIsEnabled(renderedContent.bestsellers) && <Bestsellers content={renderedContent.bestsellers} />}
+      {sectionIsEnabled(renderedContent.menuTabs) && <MenuTabs content={renderedContent.menuTabs} />}
+      {sectionIsEnabled(renderedContent.experience) && <Experience content={renderedContent.experience} />}
+      {sectionIsEnabled(renderedContent.gallery) && <Gallery content={renderedContent.gallery} />}
+      {sectionIsEnabled(renderedContent.locations) && <Locations content={renderedContent.locations} />}
+      {sectionIsEnabled(renderedContent.testimonials) && <Testimonials content={renderedContent.testimonials} />}
+      {sectionIsEnabled(renderedContent.cta) && <CTA content={renderedContent.cta} />}
+      {sectionIsEnabled(renderedContent.footer) && <Footer content={renderedContent.footer} />}
+      {sectionIsEnabled(renderedContent.floatButton) && <FloatButton content={renderedContent.floatButton} />}
     </div>
   );
 }

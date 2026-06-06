@@ -17,6 +17,7 @@ import FloatButtonSettings from './FloatButtonSettings';
 import LandingPageFullPreview from '../preview/LandingPageFullPreview';
 import { useLandingSettingsStore } from '@/store/landingSettingsStore';
 import { SettingsPageSkeleton } from '@/components/ui/SectionSkeleton';
+import VisibilityToggle from '../form/VisibilityToggle';
 
 const SETTINGS_SECTIONS = [
   { id: 'header', title: 'Header', component: HeaderSettings },
@@ -50,6 +51,7 @@ export default function LandingPageSettingsLayout() {
     saveSettings,
     loadSettings,
     resetSettings,
+    updateNestedSetting,
   } = useLandingSettingsStore();
 
   useEffect(() => {
@@ -144,6 +146,12 @@ export default function LandingPageSettingsLayout() {
 
             {SettingsComponent && (
               <div className="space-y-4">
+                <VisibilityToggle
+                  enabled={settings?.[expandedSection]?.enabled}
+                  onChange={(value) => updateNestedSetting(expandedSection, 'enabled', value)}
+                  title={`${currentSection?.title || 'Section'} aktif`}
+                  description="Nonaktifkan jika section ini tidak ingin ditampilkan di landing page dan preview publik."
+                />
                 <SettingsComponent />
               </div>
             )}
@@ -176,6 +184,15 @@ export default function LandingPageSettingsLayout() {
                 }`}
               >
                 {section.title}
+                <span className={`ml-2 rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                  settings?.[section.id]?.enabled === false
+                    ? 'bg-rose-500/15 text-rose-200'
+                    : expandedSection === section.id
+                      ? 'bg-slate-950/15 text-slate-950'
+                      : 'bg-emerald-500/15 text-emerald-200'
+                }`}>
+                  {settings?.[section.id]?.enabled === false ? 'Nonaktif' : 'Aktif'}
+                </span>
               </button>
             ))}
           </div>

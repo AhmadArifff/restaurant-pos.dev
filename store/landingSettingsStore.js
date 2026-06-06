@@ -67,6 +67,11 @@ const deepMergeWithDefaults = (defaults, overrides) => {
   return overrides ?? defaults;
 };
 
+const withEnabled = (settings) => ({
+  enabled: true,
+  ...settings,
+});
+
 const normalizeExperienceFeatures = (settings) => {
   const defaultImagesByTitle = new Map(
     (experienceContent.features || []).map((feature) => [feature.title, feature.image || '']),
@@ -95,7 +100,7 @@ const normalizeExperienceFeatures = (settings) => {
 };
 
 const defaultLandingSettings = {
-  header: {
+  header: withEnabled({
     logo: {
       part1: headerContent.logo || 'SULTAN',
       part2: headerContent.logoSpan || 'KEBAB',
@@ -111,8 +116,8 @@ const defaultLandingSettings = {
         href: headerContent.adminButton?.href || '/login',
       },
     },
-  },
-  hero: {
+  }),
+  hero: withEnabled({
     backgroundImage: heroContent.backgroundImage || '',
     badge: heroContent.badge || '',
     title: {
@@ -136,12 +141,12 @@ const defaultLandingSettings = {
       suffix: stat.suffix || '',
       label: stat.label || '',
     })),
-  },
-  marquee: {
+  }),
+  marquee: withEnabled({
     items: marqueeContent.items || [],
     dot: marqueeContent.dot || '*',
-  },
-  about: {
+  }),
+  about: withEnabled({
     sectionLabel: aboutContent.sectionLabel || '',
     title: aboutContent.title || '',
     highlight: aboutContent.highlight || '',
@@ -151,47 +156,47 @@ const defaultLandingSettings = {
     badgeTop: aboutContent.badgeTop || '',
     badgeBottom: aboutContent.badgeBottom || '',
     features: aboutContent.features || [],
-  },
-  bestsellers: {
+  }),
+  bestsellers: withEnabled({
     sectionLabel: bestsellersContent.sectionLabel || '',
     title: bestsellersContent.title || '',
     highlight: bestsellersContent.highlight || '',
     description: bestsellersContent.description || '',
     products: bestsellersContent.products || [],
-  },
-  menuTabs: {
+  }),
+  menuTabs: withEnabled({
     sectionLabel: menuContent.sectionLabel || '',
     title: menuContent.title || '',
     highlight: menuContent.highlight || '',
     description: menuContent.description || '',
     categories: menuContent.categories || [],
-  },
-  experience: {
+  }),
+  experience: withEnabled({
     sectionLabel: experienceContent.sectionLabel || '',
     title: experienceContent.title || '',
     highlight: experienceContent.highlight || '',
     subtitle: experienceContent.subtitle || '',
     features: experienceContent.features || [],
-  },
-  gallery: {
+  }),
+  gallery: withEnabled({
     images: galleryContent.images || [],
-  },
-  locations: {
+  }),
+  locations: withEnabled({
     sectionLabel: locationsContent.sectionLabel || '',
     title: locationsContent.title || '',
     highlight: locationsContent.highlight || '',
     subtitle: locationsContent.subtitle || '',
     description: locationsContent.description || '',
     branches: locationsContent.branches || [],
-  },
-  testimonials: {
+  }),
+  testimonials: withEnabled({
     sectionLabel: testimonialsContent.sectionLabel || '',
     title: testimonialsContent.title || '',
     highlight: testimonialsContent.highlight || '',
     description: testimonialsContent.description || '',
     items: testimonialsContent.items || [],
-  },
-  cta: {
+  }),
+  cta: withEnabled({
     backgroundImage: ctaContent.backgroundImage || '',
     sectionLabel: ctaContent.sectionLabel || '',
     title: ctaContent.title || '',
@@ -200,20 +205,20 @@ const defaultLandingSettings = {
     whatsappUrl: ctaContent.whatsappUrl || '',
     secondaryButton: ctaContent.secondaryButton || { label: '', href: '' },
     deliveryPlatforms: ctaContent.deliveryPlatforms || [],
-  },
-  footer: {
+  }),
+  footer: withEnabled({
     brand: footerContent.brand || '',
     brandDescription: footerContent.brandDescription || '',
     socialLinks: footerContent.socialLinks || [],
     columns: footerContent.columns || [],
     copyright: footerContent.copyright || '',
     note: footerContent.note || '',
-  },
-  floatButton: {
+  }),
+  floatButton: withEnabled({
     href: ctaContent.whatsappUrl || '',
     icon: 'Chat',
     ariaLabel: 'Pesan via WhatsApp',
-  },
+  }),
 };
 
 const normalizeFromApi = (apiSettings) => {

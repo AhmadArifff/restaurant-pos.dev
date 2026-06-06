@@ -31,6 +31,8 @@ const PREVIEW_SECTIONS = [
   { id: 'floatButton', title: 'Float Button Section', Component: FloatButton, previewMode: true },
 ];
 
+const sectionIsEnabled = (section) => section?.enabled !== false;
+
 function normalizeContent(settings) {
   const header = settings?.header || {};
   const hero = settings?.hero || {};
@@ -50,6 +52,7 @@ function normalizeContent(settings) {
 
   return {
     header: {
+      enabled: header.enabled !== false,
       logo: header.logo?.part1 || 'SULTAN',
       logoSpan: header.logo?.part2 || 'KEBAB',
       navLinks: header.navLinks || [],
@@ -59,6 +62,7 @@ function normalizeContent(settings) {
       mobileAdminButton: header.buttons?.admin || { label: 'Login Admin', href: '/login' },
     },
     hero: {
+      enabled: hero.enabled !== false,
       backgroundImage: hero.backgroundImage,
       badge: hero.badge,
       titleTop: hero.title?.part1,
@@ -80,6 +84,7 @@ function normalizeContent(settings) {
     cta: settings?.cta || {},
     footer: settings?.footer || {},
     floatButton: {
+      enabled: settings?.floatButton?.enabled !== false,
       whatsappUrl: settings?.floatButton?.href || settings?.cta?.whatsappUrl || '#',
       icon: settings?.floatButton?.icon === 'Chat' ? '💬' : (settings?.floatButton?.icon || '💬'),
       ariaLabel: settings?.floatButton?.ariaLabel || 'Pesan via WhatsApp',
@@ -131,15 +136,24 @@ export default function LandingPageFullPreview({ settings, highlightedSection })
       {PREVIEW_SECTIONS.map((section) => {
         const SectionComponent = section.Component;
         const isActive = highlightedSection === section.id;
+        const isVisible = sectionIsEnabled(content[section.id]);
 
         return (
           <div
             key={section.id}
             data-preview-section={section.id}
-            className={`landing-preview-hover-block ${isActive ? 'landing-preview-section--active' : ''}`}
+            className={`landing-preview-hover-block ${isActive ? 'landing-preview-section--active' : ''} ${
+              isVisible ? '' : 'opacity-60 grayscale'
+            }`}
           >
             <div className="landing-preview-hover-content">
-              <SectionComponent content={content[section.id]} previewMode={section.previewMode} />
+              {isVisible ? (
+                <SectionComponent content={content[section.id]} previewMode={section.previewMode} />
+              ) : (
+                <div className="flex min-h-[180px] items-center justify-center border border-dashed border-slate-700 bg-slate-950/80 p-6 text-center text-sm font-semibold text-slate-300">
+                  {section.title} nonaktif dan tidak ditampilkan di landing page.
+                </div>
+              )}
             </div>
             <div className="landing-preview-hover-overlay" aria-hidden="true">
               <span className="landing-preview-hover-title">{section.title}</span>
