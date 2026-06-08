@@ -1683,6 +1683,12 @@ export default function FloatingTutorialButton() {
       }
 
       if (action === 'pos-demo-add-first-product') {
+        if (window.__POS_TUTORIAL__?.ensureDemoOrder) {
+          window.__POS_TUTORIAL__.ensureDemoOrder();
+          const timer = window.setTimeout(() => runActions(index + 1, 0), 520);
+          actionTimers.push(timer);
+          return;
+        }
         const availableCard = document.querySelector('[data-tour="pos-product-card"][data-soldout="false"] button');
         if (!availableCard && attempt < 24) {
           if (attempt === 0) {
@@ -1705,6 +1711,13 @@ export default function FloatingTutorialButton() {
         if (document.querySelector('[data-tour="pos-payment-modal"]')) {
           const timer = window.setTimeout(() => runActions(index + 1, 0), 220);
           actionTimers.push(timer);
+          return;
+        }
+        if (window.__POS_TUTORIAL__?.openPayment) {
+          Promise.resolve(window.__POS_TUTORIAL__.openPayment()).finally(() => {
+            const timer = window.setTimeout(() => runActions(index + 1, 0), 520);
+            actionTimers.push(timer);
+          });
           return;
         }
         const checkoutButton = document.querySelector('[data-tour="pos-cart-checkout"]');

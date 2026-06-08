@@ -383,6 +383,48 @@ export default function PosPage() {
 
   // ── Transaksi ──────────────────────────────────────────────
   // ✅ CHANGED: Track admin execution dan request_id yang digunakan
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+
+    const findAvailableProduct = () => products.find((product) => Number(getProductStock(product) || 0) > 0);
+
+    window.__POS_TUTORIAL__ = {
+      ensureDemoOrder: () => {
+        setSearch('');
+        setActiveCategory('all');
+        if (items.length > 0) return true;
+        const product = findAvailableProduct();
+        if (!product) {
+          showFeedback(
+            'warning',
+            'Stok Demo Tidak Tersedia',
+            'Tutorial membutuhkan minimal satu menu dengan stok tersedia untuk membuka modal pembayaran.'
+          );
+          return false;
+        }
+        handleAddItem(product);
+        return true;
+      },
+      openPayment: async () => {
+        setSearch('');
+        setActiveCategory('all');
+        const hasOrder = items.length > 0 || window.__POS_TUTORIAL__?.ensureDemoOrder();
+        if (!hasOrder) return false;
+        try {
+          await refreshDiningTables();
+        } catch (err) {
+          showFeedback('warning', 'Meja Belum Tersinkron', 'Data meja belum bisa disegarkan. Anda tetap bisa checkout tanpa memilih meja.');
+        }
+        setShowPayment(true);
+        return true;
+      },
+    };
+
+    return () => {
+      if (window.__POS_TUTORIAL__) delete window.__POS_TUTORIAL__;
+    };
+  }, [getProductStock, items.length, products, refreshDiningTables, showFeedback]);
+
   const handlePayment = async (paymentMethod, tunai = 0, _kembalian = 0, discountMeta = {}) => {
     if (paymentProcessing) return;
     for (const cartItem of items) {
