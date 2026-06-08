@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import AdminLayout from '@/components/layout/AdminLayout';
 import AuthGuard from '@/components/ui/AuthGuard';
+import DateRangePicker from '@/components/ui/DateRangePicker';
 import {
   createDiscountProgram,
   getDiscountPrograms,
@@ -106,6 +107,30 @@ const getProgramState = (program) => {
   return { label: 'Aktif', className: 'bg-emerald-500/15 text-emerald-300' };
 };
 
+const getEndOfDate = (value) => {
+  if (!value) return null;
+  const date = new Date(`${value}T23:59:59`);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const getStartOfDate = (value) => {
+  if (!value) return null;
+  const date = new Date(`${value}T00:00:00`);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const isProgramInDateRange = (program, range) => {
+  if (!range.start || !range.end) return true;
+  if (!program.start_at && !program.end_at) return true;
+  const rangeStart = getStartOfDate(range.start);
+  const rangeEnd = getEndOfDate(range.end);
+  if (!rangeStart || !rangeEnd) return true;
+
+  const programStart = program.start_at ? new Date(program.start_at) : new Date(0);
+  const programEnd = program.end_at ? new Date(program.end_at) : new Date(8640000000000000);
+  return programStart.getTime() <= rangeEnd.getTime() && programEnd.getTime() >= rangeStart.getTime();
+};
+
 export default function DiscountsPage() {
   const [programs, setPrograms] = useState([]);
   const [products, setProducts] = useState([]);
@@ -115,6 +140,7 @@ export default function DiscountsPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [typeFilter, setTypeFilter] = useState('all');
+  const [dateFilter, setDateFilter] = useState({ start: '', end: '' });
   const loadSeqRef = useRef(0);
   const hasLoadedRef = useRef(false);
 
@@ -159,11 +185,12 @@ export default function DiscountsPage() {
     { key: 'bundle', label: 'Paket Bundle', count: programs.filter((item) => item.type === 'bundle').length },
   ]), [programs]);
 
-  const filteredPrograms = useMemo(() => (
-    typeFilter === 'all'
+  const filteredPrograms = useMemo(() => {
+    const byType = typeFilter === 'all'
       ? programs
-      : programs.filter((program) => program.type === typeFilter)
-  ), [programs, typeFilter]);
+      : programs.filter((program) => program.type === typeFilter);
+    return byType.filter((program) => isProgramInDateRange(program, dateFilter));
+  }, [programs, typeFilter, dateFilter]);
 
   const allBundleProductIds = useMemo(() => products.map((product) => product.id), [products]);
   const allBundleSelected = allBundleProductIds.length > 0
@@ -523,6 +550,19 @@ export default function DiscountsPage() {
                     Sinkronisasi diskon...
                   </span>
                 )}
+              </div>
+              <div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,360px)_auto] md:items-center">
+                <DateRangePicker
+                  label="Range masa berlaku"
+                  value={dateFilter}
+                  onChange={setDateFilter}
+                  onClear={() => setDateFilter({ start: '', end: '' })}
+                  placeholder="Semua masa berlaku"
+                  helperText="Klik tanggal awal masa berlaku, lalu tanggal akhir"
+                />
+                <p className="text-xs leading-5 text-slate-500">
+                  Filter ini membaca rentang aktif program. Program tanpa expired tetap ditampilkan karena aktif sampai kuota habis atau dinonaktifkan.
+                </p>
               </div>
               <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
                 {typeFilters.map((filter) => (

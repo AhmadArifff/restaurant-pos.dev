@@ -6,6 +6,7 @@ import { deleteTransaction, getTransactions } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { TableSkeleton } from '@/components/ui/SectionSkeleton';
+import DateRangePicker from '@/components/ui/DateRangePicker';
 
 export default function TransactionHistoryPage() {
   const { user } = useAuthStore();
@@ -223,34 +224,16 @@ export default function TransactionHistoryPage() {
           {/* Filters */}
           <div className="bg-slate-800 border border-slate-700 rounded-xl p-6 mb-8">
             <h2 className="text-lg font-bold text-white mb-4">🔍 Filter & Cari</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-              {/* Date From */}
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Dari Tanggal
-                </label>
-                <input
-                  type="date"
-                  value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg 
-                    text-white focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
-                />
-              </div>
-
-              {/* Date To */}
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Sampai Tanggal
-                </label>
-                <input
-                  type="date"
-                  value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg 
-                    text-white focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
-                />
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)_minmax(0,1fr)] gap-4 mb-4">
+              <DateRangePicker
+                label="Range transaksi"
+                value={{ start: dateFrom, end: dateTo }}
+                onChange={({ start, end }) => {
+                  setDateFrom(start);
+                  setDateTo(end);
+                }}
+                helperText="Klik tanggal awal transaksi, lalu tanggal akhir"
+              />
 
               {/* Search */}
               <div>
