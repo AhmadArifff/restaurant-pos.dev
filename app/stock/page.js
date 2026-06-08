@@ -1562,7 +1562,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
               </div>
               <div data-tour="stock-master-actions-field" className="flex gap-3 pt-2">
                 <button onClick={resetForm} className="flex-1 bg-slate-700 hover:bg-slate-600 text-white rounded-xl py-3 text-sm font-semibold">Batal</button>
-                <button onClick={handleSaveMaster} disabled={formLoading||!formData.name.trim()}
+                <button data-tour="stock-master-save-button" onClick={handleSaveMaster} disabled={formLoading||!formData.name.trim()}
                   className="flex-1 bg-orange-500 hover:bg-orange-400 disabled:opacity-50 text-white font-bold rounded-xl py-3 text-sm">
                   {formLoading?'Menyimpan...':editId?'Update':'Simpan'}
                 </button>
@@ -1653,7 +1653,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
             <div data-tour="stock-purchase-actions" className="flex gap-3 p-5 pt-0">
               <button onClick={() => setShowPurchase(false)}
                 className="flex-1 py-3 rounded-xl bg-slate-700 text-slate-300 hover:bg-slate-600 text-sm font-semibold">Batal</button>
-              <button onClick={handlePurchase} disabled={purchLoading}
+              <button data-tour="stock-purchase-save-button" onClick={handlePurchase} disabled={purchLoading}
                 className="flex-1 py-3 rounded-xl bg-orange-500 hover:bg-orange-400 text-white text-sm font-bold disabled:opacity-50">
                 {purchLoading?'Menyimpan...':'💾 Simpan Pembelian'}
               </button>
@@ -1707,6 +1707,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                 Batal
               </button>
               <button
+                data-tour="stock-out-save-button"
                 onClick={async () => {
                   const qty  = Number(document.getElementById('edit-qty').value);
                   const cost = Number(document.getElementById('edit-cost').value);
@@ -1995,6 +1996,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                 Batal
               </button>
               <button
+                data-tour="stock-out-save-button"
                 onClick={async () => {
                   if (!outUserId) return alert('Pilih kasir terlebih dahulu');
                   if (hasOutMenuSelection && (!hasOutRecipeSelection || outRecipeOverStock)) {

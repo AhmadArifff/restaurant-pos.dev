@@ -238,6 +238,7 @@ const TUTORIALS = [
       {
         selector: '[data-tour="stock-master-name-field"]',
         roles: ['admin'],
+        actions: ['stock-demo-master-fill'],
         title: 'Nama Bahan',
         body: 'Field ini adalah nama ingredient yang akan dipakai di tabel stok dan resep produk.',
         details: ['Wajib diisi.', 'Gunakan nama bahan yang mudah dikenali tim dapur.', 'Contoh: Daging Cincang Bumbu, Saus Tahini, Cup Minuman.', 'Nama ini akan muncul di stok gudang, produk, dan pengajuan.'],
@@ -245,6 +246,7 @@ const TUTORIALS = [
       {
         selector: '[data-tour="stock-master-unit-field"]',
         roles: ['admin'],
+        actions: ['stock-demo-master-fill'],
         title: 'Satuan Bahan',
         body: 'Dropdown satuan menentukan cara sistem menghitung qty bahan.',
         details: ['Pilih gram, ml, pcs, porsi, atau satuan lain sesuai bahan.', 'Satuan ini ikut tampil di saldo, pemasukan, pengeluaran, dan resep.', 'Satuan yang salah akan membuat perhitungan HPP dan stok sulit dibaca.', 'Ubah satuan dengan hati-hati jika bahan sudah punya histori.'],
@@ -252,6 +254,7 @@ const TUTORIALS = [
       {
         selector: '[data-tour="stock-master-min-field"]',
         roles: ['admin'],
+        actions: ['stock-demo-master-fill'],
         title: 'Minimal Stok Alert',
         body: 'Field ini menjadi batas stok menipis untuk bahan tersebut.',
         details: ['Opsional, tapi disarankan diisi.', 'Jika saldo stok sama atau di bawah batas ini, status menjadi Menipis.', 'Jika stok 0, status menjadi Habis.', 'Nilai ini membantu dashboard dan tabel stok memberi peringatan lebih cepat.'],
@@ -259,9 +262,18 @@ const TUTORIALS = [
       {
         selector: '[data-tour="stock-master-actions-field"]',
         roles: ['admin'],
+        actions: ['stock-demo-master-fill'],
         title: 'Aksi Simpan Bahan',
         body: 'Bagian bawah modal menentukan apakah perubahan dibatalkan atau disimpan.',
         details: ['Batal menutup modal dan membuang perubahan form.', 'Simpan membuat bahan baru.', 'Update menyimpan perubahan saat mode edit.', 'Saat proses berjalan, tombol menampilkan status menyimpan.'],
+      },
+      {
+        selector: '[data-tour="stock-master-save-button"]',
+        roles: ['admin'],
+        actions: ['stock-demo-master-fill'],
+        title: 'Simpan Bahan ke Database',
+        body: 'Tombol ini menjalankan submit asli form bahan baku. Saat user klik Simpan, data dikirim ke backend lalu disimpan di database Supabase.',
+        details: ['Tutorial sudah mengisi data demo pada field di atas.', 'Klik Simpan jika ingin benar-benar membuat bahan demo.', 'Setelah sukses, bahan muncul di tabel Bahan Baku.', 'Jika batal, data demo tidak dikirim ke database.'],
       },
       {
         selector: '[data-tour="stock-purchase-modal"]',
@@ -281,6 +293,7 @@ const TUTORIALS = [
       {
         selector: '[data-tour="stock-purchase-select-field"]',
         roles: ['admin'],
+        actions: ['stock-demo-purchase-fill'],
         title: 'Pilih Bahan Pembelian',
         body: 'Dropdown ini memilih bahan baku yang stoknya akan bertambah.',
         details: ['Daftar bahan berasal dari Master Bahan Baku.', 'Pilih satu bahan per baris item.', 'Nama dan satuan bahan akan menentukan label jumlah.', 'Jika bahan belum ada, tambahkan dulu di tab Bahan Baku.'],
@@ -288,6 +301,7 @@ const TUTORIALS = [
       {
         selector: '[data-tour="stock-purchase-qty-cost-field"]',
         roles: ['admin'],
+        actions: ['stock-demo-purchase-fill'],
         title: 'Jumlah dan Harga Pembelian',
         body: 'Dua input ini menentukan berapa stok yang masuk dan berapa harga satuannya.',
         details: ['Jumlah memakai satuan bahan yang dipilih.', 'Harga/Satuan diisi dalam Rupiah.', 'Sistem menghitung subtotal dari jumlah dikali harga.', 'Nilai ini mempengaruhi average cost bahan.'],
@@ -295,6 +309,7 @@ const TUTORIALS = [
       {
         selector: '[data-tour="stock-purchase-subtotal"]',
         roles: ['admin'],
+        actions: ['stock-demo-purchase-fill'],
         title: 'Subtotal Item',
         body: 'Subtotal muncul otomatis setelah jumlah dan harga diisi.',
         details: ['Subtotal = jumlah x harga per satuan.', 'Gunakan ini untuk cek cepat apakah input pembelian sudah benar.', 'Jika jumlah atau harga kosong, subtotal belum muncul.', 'Subtotal setiap item digabung ke Total Pembelian.'],
@@ -309,6 +324,7 @@ const TUTORIALS = [
       {
         selector: '[data-tour="stock-purchase-note-field"]',
         roles: ['admin'],
+        actions: ['stock-demo-purchase-fill'],
         title: 'Catatan Pembelian',
         body: 'Catatan opsional dipakai untuk konteks pembelian.',
         details: ['Contoh: nama supplier, nomor nota, atau lokasi pembelian.', 'Catatan tampil di histori pemasukan.', 'Tidak wajib, tapi berguna untuk audit.', 'Jangan isi data sensitif yang tidak perlu.'],
@@ -316,6 +332,7 @@ const TUTORIALS = [
       {
         selector: '[data-tour="stock-purchase-total"]',
         roles: ['admin'],
+        actions: ['stock-demo-purchase-fill'],
         title: 'Total Pembelian',
         body: 'Kartu ini merangkum semua item pembelian sebelum disimpan.',
         details: ['Jumlah item membaca baris bahan yang dipilih.', 'Nominal total menjumlahkan semua subtotal.', 'Gunakan total ini untuk cocokkan dengan nota pembelian.', 'Jika total belum sesuai, cek kembali jumlah dan harga setiap item.'],
@@ -323,9 +340,18 @@ const TUTORIALS = [
       {
         selector: '[data-tour="stock-purchase-actions"]',
         roles: ['admin'],
+        actions: ['stock-demo-purchase-fill'],
         title: 'Aksi Simpan Pembelian',
         body: 'Bagian ini menyelesaikan proses pencatatan stok masuk.',
         details: ['Batal menutup modal tanpa menyimpan.', 'Simpan Pembelian menambah stok gudang.', 'Saat loading, tombol menampilkan status menyimpan.', 'Setelah sukses, saldo dan histori pemasukan diperbarui.'],
+      },
+      {
+        selector: '[data-tour="stock-purchase-save-button"]',
+        roles: ['admin'],
+        actions: ['stock-demo-purchase-fill'],
+        title: 'Simpan Pembelian ke Database',
+        body: 'Tombol ini menjalankan submit pembelian asli. Saat diklik, stok gudang bertambah dan histori pemasukan tersimpan di Supabase.',
+        details: ['Tutorial sudah memilih bahan, qty, harga, dan catatan demo.', 'Klik Simpan Pembelian untuk menyimpan contoh transaksi stok masuk.', 'Setelah sukses, data muncul di Pemasukan dan Saldo Stok.', 'Jika tidak ingin membuat data demo, klik Batal.'],
       },
       {
         selector: '[data-tour="stock-out-modal"]',
@@ -337,6 +363,7 @@ const TUTORIALS = [
       {
         selector: '[data-tour="stock-out-user-field"]',
         roles: ['admin'],
+        actions: ['stock-demo-out-user'],
         title: 'Pilih Kasir atau Pengguna',
         body: 'Admin memilih kasir yang menerima atau terkait dengan pengeluaran stok.',
         details: ['Wajib dipilih untuk pengeluaran admin.', 'Nama kasir akan muncul sebagai konteks stok keluar.', 'Ini membantu audit siapa yang memakai stok.', 'Kasir tidak melihat field ini karena sistem memakai user login.'],
@@ -443,9 +470,17 @@ const TUTORIALS = [
       },
       {
         selector: '[data-tour="stock-out-actions"]',
+        actions: ['stock-demo-manual-first', 'stock-demo-out-user'],
         title: 'Aksi Submit Form',
         body: 'Bagian akhir form menentukan apakah user membatalkan atau mengirim data.',
         details: ['Batal menutup modal dan mengosongkan draft form.', 'Admin memakai Simpan Pengeluaran.', 'Kasir memakai Kirim Pengajuan.', 'Setelah sukses, sistem menampilkan modal konfirmasi dan memuat ulang data terkait.'],
+      },
+      {
+        selector: '[data-tour="stock-out-save-button"]',
+        actions: ['stock-demo-manual-first', 'stock-demo-out-user'],
+        title: 'Submit Pengeluaran atau Pengajuan ke Database',
+        body: 'Tombol ini menjalankan submit asli. Admin menyimpan pengeluaran stok, sedangkan kasir mengirim pengajuan stok untuk disetujui admin.',
+        details: ['Tutorial sudah mengisi contoh bahan dan qty.', 'Admin perlu memilih kasir terlebih dahulu.', 'Klik tombol ini jika ingin menyimpan demo ke Supabase.', 'Setelah sukses, data masuk ke Pengeluaran atau Pengajuan sesuai role.'],
       },
     ],
   },
@@ -457,6 +492,69 @@ function getStorageKey(user) {
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
+}
+
+const STOCK_STEP_ORDER = [
+  '[data-tour="stock-header"]',
+  '[data-tour="stock-tabs"]',
+  '[data-tour="stock-master"]',
+  '[data-tour="stock-master-actions"]',
+  '[data-tour="stock-master-trends"]',
+  '[data-tour="stock-master-table"]',
+  '[data-tour="stock-master-modal"]',
+  '[data-tour="stock-master-name-field"]',
+  '[data-tour="stock-master-unit-field"]',
+  '[data-tour="stock-master-min-field"]',
+  '[data-tour="stock-master-actions-field"]',
+  '[data-tour="stock-master-save-button"]',
+  '[data-tour="stock-warehouse-tabs"]',
+  '[data-tour="stock-summary"]',
+  '[data-tour="stock-summary-cards"]',
+  '[data-tour="stock-summary-table"]',
+  '[data-tour="stock-in"]',
+  '[data-tour="stock-in-filters"]',
+  '[data-tour="stock-in-table"]',
+  '[data-tour="stock-purchase-modal"]',
+  '[data-tour="stock-purchase-item"]',
+  '[data-tour="stock-purchase-select-field"]',
+  '[data-tour="stock-purchase-qty-cost-field"]',
+  '[data-tour="stock-purchase-subtotal"]',
+  '[data-tour="stock-purchase-add-item"]',
+  '[data-tour="stock-purchase-note-field"]',
+  '[data-tour="stock-purchase-total"]',
+  '[data-tour="stock-purchase-actions"]',
+  '[data-tour="stock-purchase-save-button"]',
+  '[data-tour="stock-out"]',
+  '[data-tour="stock-out-filters"]',
+  '[data-tour="stock-out-pills"]',
+  '[data-tour="stock-out-table"]',
+  '[data-tour="stock-out-modal"]',
+  '[data-tour="stock-out-user-field"]',
+  '[data-tour="stock-out-user-info"]',
+  '[data-tour="stock-recipe-picker"]',
+  '[data-tour="stock-recipe-menu-select"]',
+  '[data-tour="stock-recipe-menu-qty"]',
+  '[data-tour="stock-recipe-add"]',
+  '[data-tour="stock-recipe-note"]',
+  '[data-tour="stock-recipe-summary"]',
+  '[data-tour="stock-out-manual-list"]',
+  '[data-tour="stock-out-manual-select"]',
+  '[data-tour="stock-out-stock-price-info"]',
+  '[data-tour="stock-out-manual-qty"]',
+  '[data-tour="stock-out-manual-note"]',
+  '[data-tour="stock-out-item-preview"]',
+  '[data-tour="stock-out-add-item"]',
+  '[data-tour="stock-out-total"]',
+  '[data-tour="stock-out-actions"]',
+  '[data-tour="stock-out-save-button"]',
+  '[data-tour="stock-requests"]',
+  '[data-tour="stock-request-filters"]',
+  '[data-tour="stock-request-list"]',
+];
+
+function getStockStepOrder(selector) {
+  const index = STOCK_STEP_ORDER.indexOf(selector);
+  return index === -1 ? STOCK_STEP_ORDER.length : index;
 }
 
 export default function FloatingTutorialButton() {
@@ -476,7 +574,14 @@ export default function FloatingTutorialButton() {
   ), [user?.role]);
   const activeTutorial = availableTutorials.find((item) => item.id === activeTutorialId);
   const activeSteps = useMemo(() => (
-    (activeTutorial?.steps || []).filter((step) => !step.roles || step.roles.includes(user?.role))
+    (activeTutorial?.steps || [])
+      .filter((step) => !step.roles || step.roles.includes(user?.role))
+      .map((step, index) => ({ ...step, _originalIndex: index }))
+      .sort((a, b) => {
+        if (activeTutorial?.id !== 'stock') return a._originalIndex - b._originalIndex;
+        const orderDiff = getStockStepOrder(a.selector) - getStockStepOrder(b.selector);
+        return orderDiff || a._originalIndex - b._originalIndex;
+      })
   ), [activeTutorial, user?.role]);
   const activeStep = activeSteps[stepIndex];
 
@@ -555,6 +660,15 @@ export default function FloatingTutorialButton() {
       return true;
     };
 
+    const setInputValue = (element, value) => {
+      if (!element) return;
+      const proto = element.tagName === 'SELECT' ? window.HTMLSelectElement.prototype : window.HTMLInputElement.prototype;
+      const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
+      setter?.call(element, value);
+      element.dispatchEvent(new Event('input', { bubbles: true }));
+      element.dispatchEvent(new Event('change', { bubbles: true }));
+    };
+
     const pollTarget = (attempt = 0) => {
       if (cancelled) return;
       const found = updateHighlight();
@@ -574,6 +688,42 @@ export default function FloatingTutorialButton() {
       }
 
       const action = actions[index];
+      if (action === 'stock-demo-master-fill') {
+        const suffix = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).replace(/\D/g, '');
+        setInputValue(document.querySelector('[data-tour="stock-master-name-field"] input'), `Bahan Tutorial ${suffix}`);
+        setInputValue(document.querySelector('[data-tour="stock-master-unit-field"] select'), 'gram');
+        setInputValue(document.querySelector('[data-tour="stock-master-min-field"] input'), '10');
+        const timer = window.setTimeout(() => runActions(index + 1, 0), 360);
+        actionTimers.push(timer);
+        return;
+      }
+
+      if (action === 'stock-demo-purchase-fill') {
+        const purchaseSelect = document.querySelector('[data-tour="stock-purchase-select-field"] select');
+        const firstPurchaseValue = purchaseSelect
+          ? Array.from(purchaseSelect.options).find((option) => option.value)?.value || ''
+          : '';
+        if (firstPurchaseValue) setInputValue(purchaseSelect, firstPurchaseValue);
+        const purchaseInputs = document.querySelectorAll('[data-tour="stock-purchase-qty-cost-field"] input');
+        setInputValue(purchaseInputs[0], '10');
+        setInputValue(purchaseInputs[1], '1000');
+        setInputValue(document.querySelector('[data-tour="stock-purchase-note-field"] input'), 'Pembelian stok demo tutorial');
+        const timer = window.setTimeout(() => runActions(index + 1, 0), 520);
+        actionTimers.push(timer);
+        return;
+      }
+
+      if (action === 'stock-demo-out-user') {
+        const userSelect = document.querySelector('[data-tour="stock-out-user-field"] select');
+        const firstUserValue = userSelect
+          ? Array.from(userSelect.options).find((option) => option.value)?.value || ''
+          : '';
+        if (firstUserValue) setInputValue(userSelect, firstUserValue);
+        const timer = window.setTimeout(() => runActions(index + 1, 0), 320);
+        actionTimers.push(timer);
+        return;
+      }
+
       if (action === 'stock-demo-recipe-first' || action === 'stock-demo-recipe-clear') {
         const select = document.querySelector('[data-tour="stock-recipe-menu-select"] select');
         if (!select && attempt < 24) {
@@ -587,10 +737,7 @@ export default function FloatingTutorialButton() {
             ? ''
             : Array.from(select.options).find((option) => option.value)?.value || '';
           if (select.value !== nextValue) {
-            const setter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value')?.set;
-            setter?.call(select, nextValue);
-            select.dispatchEvent(new Event('input', { bubbles: true }));
-            select.dispatchEvent(new Event('change', { bubbles: true }));
+            setInputValue(select, nextValue);
           }
         }
 
@@ -610,19 +757,13 @@ export default function FloatingTutorialButton() {
         if (select) {
           const nextValue = Array.from(select.options).find((option) => option.value)?.value || '';
           if (nextValue && select.value !== nextValue) {
-            const selectSetter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value')?.set;
-            selectSetter?.call(select, nextValue);
-            select.dispatchEvent(new Event('input', { bubbles: true }));
-            select.dispatchEvent(new Event('change', { bubbles: true }));
+            setInputValue(select, nextValue);
           }
         }
 
         const qtyInput = document.querySelector('[data-tour="stock-out-manual-qty"] input');
         if (qtyInput && qtyInput.value !== '1') {
-          const inputSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
-          inputSetter?.call(qtyInput, '1');
-          qtyInput.dispatchEvent(new Event('input', { bubbles: true }));
-          qtyInput.dispatchEvent(new Event('change', { bubbles: true }));
+          setInputValue(qtyInput, '1');
         }
 
         const timer = window.setTimeout(() => runActions(index + 1, 0), 520);
