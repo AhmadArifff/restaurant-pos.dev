@@ -61,6 +61,93 @@ function CartIcon() {
   );
 }
 
+function PosTutorialDemo() {
+  return (
+    <div className="pos-tutorial-demo space-y-4 px-4 sm:px-5 py-4">
+      <div className="rounded-3xl border border-orange-400/35 bg-orange-500/5 p-4">
+        <p className="text-xs font-black uppercase tracking-[0.22em] text-orange-300">Mode Demo Tutorial</p>
+        <p className="mt-1 text-sm leading-6 text-slate-300">
+          Data kasir di bawah adalah dummy untuk latihan alur. Item demo tidak tersimpan ke database kecuali user memproses transaksi asli.
+        </p>
+      </div>
+      <div data-tour="pos-product-count" className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
+        4 menu demo tersedia · pengajuan dari Kasir Tutorial
+      </div>
+      <div data-tour="pos-bundle-hints" className="grid gap-3 md:grid-cols-2">
+        <button type="button" data-tour="pos-bundle-card" className="rounded-2xl border border-emerald-400/35 bg-emerald-500/10 p-4 text-left text-emerald-100">
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-orange-300">Paket Bundle</p>
+          <div className="mt-1 flex items-start justify-between gap-3">
+            <h3 className="text-sm font-black text-white">Bundle Demo Kebab</h3>
+            <span className="rounded-full bg-slate-950/60 px-2.5 py-1 text-xs font-black">50%</span>
+          </div>
+          <p className="mt-2 text-xs leading-5 text-slate-300">Syarat paket sudah lengkap, diskon otomatis dicek saat pembayaran.</p>
+        </button>
+      </div>
+      <div data-tour="pos-product-grid" className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
+        {[
+          ['Adana Kebab Platter', 89000, '12 porsi', 'bg-emerald-500'],
+          ['Arabic Qahwa Coffee', 35000, '7 porsi', 'bg-emerald-500'],
+          ['Ayran Sultan', 28000, '3 porsi', 'bg-yellow-500'],
+          ['Lahmacun Sultan', 52000, 'Stok habis', 'bg-red-500'],
+        ].map(([name, price, stock, dot], index) => (
+          <div key={name} data-tour={index === 0 ? 'pos-product-card' : undefined} data-soldout={index === 3 ? 'true' : 'false'} className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-800">
+            <div className="h-28 bg-slate-700">
+              <img alt={name} src={`https://images.unsplash.com/photo-${index === 0 ? '1601050690597-df0568f70950' : index === 1 ? '1509042239860-f550ce710b93' : index === 2 ? '1570197788417-0e82375c9371' : '1574484284002-952d92456975'}?w=400&q=80`} className="h-full w-full object-cover" />
+            </div>
+            <div className="p-3">
+              <p className="line-clamp-2 text-sm font-semibold text-white">{name}</p>
+              <p className="mt-1 text-sm font-bold text-orange-400">Rp {price.toLocaleString('id-ID')}</p>
+              <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-400">
+                <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
+                {stock}
+              </div>
+              {index !== 3 && (
+                <button type="button" className="mt-3 w-full rounded-lg bg-orange-500/90 py-2 text-xs font-black text-white">
+                  Tambah demo
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
+        <div data-tour="pos-payment-modal" className="rounded-3xl border border-slate-700 bg-slate-900 p-5">
+          <div data-tour="pos-payment-discount" className="rounded-xl border border-slate-700 bg-slate-800/60 p-3 text-sm">
+            <p className="font-black uppercase tracking-[0.16em] text-slate-500">Voucher & Diskon</p>
+            <div className="mt-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-emerald-100">
+              Bundle Demo Kebab + Kode Voucher <strong className="float-right text-red-300">-Rp 69.600</strong>
+            </div>
+          </div>
+          <div data-tour="pos-payment-methods" className="mt-4 grid grid-cols-3 gap-2">
+            {['Tunai', 'QRIS', 'Transfer'].map((method) => (
+              <button key={method} type="button" className="rounded-xl border border-orange-500 bg-orange-500/10 py-3 text-sm font-bold text-orange-300">{method}</button>
+            ))}
+          </div>
+          <div data-tour="pos-payment-actions" className="mt-4 flex gap-3">
+            <button type="button" className="flex-1 rounded-xl bg-slate-800 py-3 font-bold text-slate-300">Batal</button>
+            <button type="button" className="flex-[2] rounded-xl bg-orange-500 py-3 font-black text-white">Proses & Cetak Struk</button>
+          </div>
+        </div>
+        <div data-tour="pos-cart" className="rounded-3xl border border-slate-700 bg-slate-800 p-5">
+          <div data-tour="pos-cart-items" className="space-y-3">
+            {['Adana Kebab Platter', 'Arabic Qahwa Coffee'].map((name) => (
+              <div key={name} className="flex justify-between gap-3 text-sm">
+                <span className="text-white">{name} x1</span>
+                <span className="text-orange-300">Demo</span>
+              </div>
+            ))}
+          </div>
+          <div data-tour="pos-cart-total" className="mt-4 flex justify-between border-t border-slate-700 pt-4">
+            <span className="text-slate-400">Total</span>
+            <strong className="text-white">Rp 124.000</strong>
+          </div>
+          <button data-tour="pos-cart-checkout" type="button" className="mt-4 w-full rounded-xl bg-orange-500 py-3 font-black text-white">Bayar</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main ──────────────────────────────────────────────────────
 export default function PosPage() {
   const [products,        setProducts]        = useState([]);
@@ -672,6 +759,8 @@ export default function PosPage() {
               ))}
             </div>
 
+            <PosTutorialDemo />
+
             {/* ── PRODUCT GRID ── */}
             <div className="flex-1 overflow-y-auto px-4 sm:px-5 py-4" data-tour="pos-product-section">
               {!loading && (
@@ -874,6 +963,10 @@ export default function PosPage() {
             to   { transform: translateY(0); }
           }
           .animate-slide-up { animation: slide-up 0.3s cubic-bezier(0.32,0.72,0,1); }
+          .pos-tutorial-demo { display: none; }
+          html[data-tutorial-id="pos"] .pos-tutorial-demo { display: block; }
+          html[data-tutorial-id="pos"] [data-tour="pos-product-section"],
+          html[data-tutorial-id="pos"] [data-tour="pos-desktop-cart"] { display: none; }
         `}</style>
       </AdminLayout>
     </AuthGuard>

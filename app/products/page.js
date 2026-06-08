@@ -14,6 +14,59 @@ import { getStockByKasir } from '@/lib/api';
 
 const emptyForm = { name: '', price: '', category_id: '', image_url: '', ingredients: [] };
 
+function ProductsTutorialDemo() {
+  const demoProducts = [
+    {
+      name: 'Adana Kebab Platter',
+      price: 89000,
+      category_name: 'Kebab & Shawarma',
+      stock: 12,
+      image_url: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=500&q=80',
+      ingredients: ['Daging Cincang Bumbu x160 gram', 'Nasi Bulgur x180 gram', 'Saus Pedas Sultan x25 ml'],
+    },
+    {
+      name: 'Arabic Qahwa Coffee',
+      price: 35000,
+      category_name: 'Minuman',
+      stock: 7,
+      image_url: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=500&q=80',
+      ingredients: ['Cup Minuman x1 pcs', 'Kopi Arabica x22 gram', 'Rempah Timur Tengah x2 gram'],
+    },
+  ];
+  return (
+    <div className="products-tutorial-demo space-y-4">
+      <div className="rounded-3xl border border-orange-400/35 bg-orange-500/5 p-4">
+        <p className="text-xs font-black uppercase tracking-[0.22em] text-orange-300">Mode Demo Tutorial</p>
+        <p className="mt-1 text-sm leading-6 text-slate-300">Produk ini contoh dummy untuk tutorial. Tidak masuk database kecuali user klik Simpan pada form produk asli.</p>
+      </div>
+      <div data-tour="product-grid" className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {demoProducts.map((product, index) => (
+          <div key={product.name} data-tour={index === 0 ? 'product-card' : undefined} className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-800">
+            <div data-tour={index === 0 ? 'product-card-image' : undefined} className="h-32 bg-slate-700">
+              <img src={product.image_url} alt={product.name} className="h-full w-full object-cover" />
+            </div>
+            <div data-tour={index === 0 ? 'product-card-info' : undefined} className="p-3">
+              <p className="truncate text-sm font-semibold text-white">{product.name}</p>
+              <p className="mt-0.5 text-sm font-bold text-orange-400">Rp {product.price.toLocaleString('id-ID')}</p>
+              <p className="mt-1 text-xs text-slate-400">{product.category_name}</p>
+              <div className="mt-2 flex flex-wrap gap-1">
+                {product.ingredients.map((ingredient) => (
+                  <span key={ingredient} className="rounded-lg bg-slate-700 px-2 py-0.5 text-xs text-slate-300">{ingredient}</span>
+                ))}
+              </div>
+              <div data-tour={index === 0 ? 'product-card-stock' : undefined} className="mt-2 text-xs font-bold text-green-400">Bisa buat: {product.stock}</div>
+              <div data-tour={index === 0 ? 'product-card-actions' : undefined} className="mt-3 flex gap-2">
+                <button type="button" className="flex-1 rounded-lg bg-slate-700 py-1.5 text-xs font-medium text-blue-400">Edit</button>
+                <button type="button" className="flex-1 rounded-lg bg-slate-700 py-1.5 text-xs font-medium text-red-400">Hapus</button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function ProductsPage() {
   const [products, setProducts]     = useState([]);
   const [categories, setCategories] = useState([]);
@@ -260,10 +313,11 @@ export default function ProductsPage() {
         </div>
 
         {/* Grid Produk */}
+        <ProductsTutorialDemo />
         {pageLoading && products.length === 0 ? (
           <CardSkeleton count={8} />
         ) : (
-          <div data-tour="product-grid" className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div data-tour="product-grid" className="product-real-grid grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {filtered.map(p => (
             <div key={p.id} data-tour="product-card" className="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden">
               {/* Gambar */}
@@ -637,6 +691,11 @@ export default function ProductsPage() {
           </div>
         </div>
       )}
+      <style>{`
+        .products-tutorial-demo { display: none; }
+        html[data-tutorial-id="products"] .products-tutorial-demo { display: block; }
+        html[data-tutorial-id="products"] .product-real-grid { display: none; }
+      `}</style>
     </AdminLayout>
   );
 }

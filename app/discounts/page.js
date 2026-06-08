@@ -41,6 +41,86 @@ const typeLabel = {
 
 const formatCurrency = (value) => `Rp ${Number(value || 0).toLocaleString('id-ID')}`;
 
+function DiscountsTutorialDemo() {
+  const demoPrograms = [
+    {
+      type: 'Reward Review',
+      status: 'Aktif',
+      name: 'Reward Review Tutorial',
+      summary: '10% diskon, 1x klaim per nomor HP',
+      period: 'Mulai 1/6/2026, 08.00.00 - sampai 8/6/2026, 23.00.00',
+      distributed: 38000,
+      claims: '4/1000 klaim',
+      bundle: [],
+    },
+    {
+      type: 'Kode Voucher',
+      status: 'Aktif',
+      code: 'DEMOJUNI2026',
+      name: 'Kode Voucher Sosial Media',
+      summary: '5% diskon, 1x klaim per nomor HP',
+      period: 'Tidak expired, berhenti saat kuota habis atau dinonaktifkan',
+      distributed: 2100,
+      claims: '1/5 klaim',
+      bundle: [],
+    },
+    {
+      type: 'Paket Bundle',
+      status: 'Aktif',
+      name: 'Paket Combo Tutorial',
+      summary: '50% diskon, 1x klaim per nomor HP',
+      period: 'Mulai 1/6/2026, 08.00.00 - sampai 15/6/2026, 23.00.00',
+      distributed: 70500,
+      claims: '1/10 klaim',
+      bundle: ['Adana Kebab Platter x1', 'Lahmacun Sultan x1'],
+    },
+  ];
+
+  return (
+    <div data-tour="discount-program-list" className="discounts-tutorial-demo mt-4 space-y-3">
+      <div className="rounded-xl border border-orange-400/35 bg-orange-500/5 p-4">
+        <p className="text-xs font-black uppercase tracking-[0.22em] text-orange-300">Mode Demo Tutorial</p>
+        <p className="mt-1 text-sm leading-6 text-slate-300">Program di bawah adalah contoh dummy untuk tutorial. Data real tetap aman dan tidak berubah.</p>
+      </div>
+      {demoPrograms.map((program, index) => (
+        <article key={program.name} data-tour={index === 0 ? 'discount-program-card' : undefined} className="rounded-xl border border-slate-700 bg-slate-900 p-4">
+          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div>
+              <div data-tour={index === 0 ? 'discount-program-status' : undefined} className="flex flex-wrap items-center gap-2">
+                <span className="rounded-full bg-orange-500/15 px-2.5 py-1 text-[11px] font-black text-orange-300">{program.type}</span>
+                <span className="rounded-full bg-emerald-500/15 px-2.5 py-1 text-[11px] font-black text-emerald-300">{program.status}</span>
+                {program.code && <span className="rounded-full bg-slate-800 px-2.5 py-1 text-[11px] font-black text-white">{program.code}</span>}
+              </div>
+              <h3 className="mt-2 text-lg font-black text-white">{program.name}</h3>
+              <p className="mt-1 text-sm text-slate-400">{program.summary}</p>
+              {program.bundle.length > 0 && (
+                <div className="mt-2 rounded-xl border border-slate-800 bg-slate-950/55 p-3">
+                  <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Bundle: {program.bundle.length} menu dipilih</p>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {program.bundle.map((item) => (
+                      <span key={item} className="rounded-full bg-slate-800 px-2.5 py-1 text-[11px] font-bold text-slate-300">{item}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <p className="mt-1 text-xs text-slate-500">{program.period}</p>
+            </div>
+            <div data-tour={index === 0 ? 'discount-program-result' : undefined} className="text-left md:text-right">
+              <p className="text-sm font-bold text-emerald-400">{formatCurrency(program.distributed)}</p>
+              <p className="text-xs text-slate-500">{program.claims}</p>
+              <div data-tour={index === 0 ? 'discount-program-actions' : undefined} className="mt-3 flex flex-wrap gap-2 md:justify-end">
+                <button type="button" className="rounded-lg bg-slate-700 px-3 py-1.5 text-xs font-bold text-white">Edit</button>
+                <button type="button" className="rounded-lg bg-yellow-500/15 px-3 py-1.5 text-xs font-bold text-yellow-200">Nonaktif</button>
+                <button type="button" className="rounded-lg bg-red-500/15 px-3 py-1.5 text-xs font-bold text-red-200">Hapus</button>
+              </div>
+            </div>
+          </div>
+        </article>
+      ))}
+    </div>
+  );
+}
+
 const uniqueNumbers = (items) => [...new Set((items || []).map(Number).filter(Boolean))];
 
 const normalizeBundleItems = (value) => {
@@ -587,7 +667,8 @@ export default function DiscountsPage() {
                   </button>
                 ))}
               </div>
-              <div data-tour="discount-program-list" className="mt-4 space-y-3">
+              <DiscountsTutorialDemo />
+              <div data-tour="discount-program-list" className="discount-real-program-list mt-4 space-y-3">
                 {loading && programs.length === 0 && <p className="rounded-xl bg-slate-900 p-5 text-slate-400">Memuat data...</p>}
                 {!loading && programs.length === 0 && <p className="rounded-xl bg-slate-900 p-5 text-slate-400">Belum ada program diskon.</p>}
                 {!loading && programs.length > 0 && filteredPrograms.length === 0 && (
@@ -649,6 +730,11 @@ export default function DiscountsPage() {
             </section>
           </div>
         </div>
+        <style>{`
+          .discounts-tutorial-demo { display: none; }
+          html[data-tutorial-id="discounts"] .discounts-tutorial-demo { display: block; }
+          html[data-tutorial-id="discounts"] .discount-real-program-list { display: none; }
+        `}</style>
       </AdminLayout>
     </AuthGuard>
   );

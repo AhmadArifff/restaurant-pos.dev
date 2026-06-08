@@ -424,6 +424,153 @@ function EmptyState({ icon = '📋', title, sub }) {
 }
 
 // ── ADMIN VIEW ────────────────────────────────────────────────
+function StockTutorialDemo() {
+  const masterRows = [
+    { name: 'Daging Cincang Bumbu', unit: 'gram', min: 5000, stock: 33800, price: 78, status: 'Aman' },
+    { name: 'Saus Pedas Sultan', unit: 'ml', min: 2000, stock: 17875, price: 30, status: 'Aman' },
+    { name: 'Cup Minuman', unit: 'pcs', min: 100, stock: 347, price: 1200, status: 'Aman' },
+  ];
+  const recipeRows = [
+    { name: 'Daging Cincang Bumbu', qty: 160, unit: 'gram', stock: 33800, price: 78 },
+    { name: 'Nasi Bulgur', qty: 180, unit: 'gram', stock: 39100, price: 22 },
+    { name: 'Saus Pedas Sultan', qty: 25, unit: 'ml', stock: 17875, price: 30 },
+  ];
+
+  return (
+    <div className="stock-tutorial-demo space-y-5">
+      <div className="rounded-3xl border border-orange-400/35 bg-orange-500/5 p-4">
+        <p className="text-xs font-black uppercase tracking-[0.22em] text-orange-300">Mode Demo Tutorial</p>
+        <p className="mt-1 text-sm leading-6 text-slate-300">Data stok di area ini adalah dummy agar tutorial stabil. Form asli tetap terbuka saat step input berjalan.</p>
+      </div>
+
+      <section data-tour="stock-master" className="space-y-4 rounded-3xl border border-slate-700 bg-slate-800/70 p-4">
+        <div data-tour="stock-master-actions" className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold text-slate-300">24 bahan baku demo</p>
+            <p className="mt-0.5 text-xs text-slate-500">Stok & harga dikelola di Stok Gudang - Catat Pembelian</p>
+          </div>
+          <div className="flex gap-2">
+            <span className="rounded-xl bg-slate-700 px-3 py-2 text-xs font-bold text-slate-300">2026</span>
+            <span className="rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white">+ Tambah Bahan</span>
+          </div>
+        </div>
+        <div data-tour="stock-master-trends" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {masterRows.map((row) => (
+            <div key={row.name} className="rounded-2xl border border-slate-700 bg-slate-900 p-4">
+              <p className="text-sm font-bold text-white">{row.name}</p>
+              <p className="mt-2 text-xs text-slate-500">Avg Rp {row.price.toLocaleString('id-ID')} / {row.unit}</p>
+              <p className="mt-1 text-xs font-bold text-emerald-400">Stabil 0.00%</p>
+            </div>
+          ))}
+        </div>
+        <div data-tour="stock-master-table" className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-900">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[760px]">
+              <thead>
+                <tr className="border-b border-slate-700 bg-slate-800/70">
+                  {['Nama Bahan', 'Satuan', 'Min. Stok', 'Stok Saat Ini', 'Harga/Satuan', 'Status', 'Aksi'].map((head) => (
+                    <th key={head} className={thC}>{head}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {masterRows.map((row, index) => (
+                  <tr key={row.name} className={trC(index)}>
+                    <td className={`${tdC} font-semibold text-white`}>{row.name}</td>
+                    <td className={`${tdC} text-slate-400`}>{row.unit}</td>
+                    <td className={`${tdC} text-slate-400`}>{row.min} {row.unit}</td>
+                    <td className={`${tdC} font-bold text-white`}>{row.stock} {row.unit}</td>
+                    <td className={`${tdC} text-slate-300`}>Avg Rp {row.price.toLocaleString('id-ID')}</td>
+                    <td className={tdC}><span className="rounded-full bg-green-500/15 px-2 py-0.5 text-xs font-bold text-green-400">{row.status}</span></td>
+                    <td className={tdC}><div className="flex gap-2"><span className="rounded-lg bg-slate-700 px-3 py-1.5 text-xs text-slate-300">Edit</span><span className="rounded-lg bg-red-500/10 px-3 py-1.5 text-xs text-red-300">Hapus</span></div></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section data-tour="stock-warehouse" className="space-y-4 rounded-3xl border border-slate-700 bg-slate-800/70 p-4">
+        <div data-tour="stock-warehouse-tabs" className="flex flex-wrap gap-2">
+          <span className="rounded-xl bg-orange-500 px-3 py-1.5 text-xs font-bold text-white">Saldo Stok</span>
+          <span className="rounded-xl border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-bold text-slate-300">Pemasukan</span>
+          <span className="rounded-xl border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-bold text-slate-300">Pengeluaran</span>
+        </div>
+        <div data-tour="stock-summary" className="space-y-4">
+          <div data-tour="stock-summary-cards" className="grid gap-3 md:grid-cols-3">
+            <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4"><p className="text-xs text-slate-400">Total Nilai Masuk</p><p className="mt-2 text-xl font-black text-emerald-300">Rp 68.250.000</p></div>
+            <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-4"><p className="text-xs text-slate-400">Total Nilai Keluar</p><p className="mt-2 text-xl font-black text-red-300">Rp 16.467.615</p></div>
+            <div className="rounded-2xl border border-sky-500/20 bg-sky-500/10 p-4"><p className="text-xs text-slate-400">Nilai Stok Gudang</p><p className="mt-2 text-xl font-black text-sky-300">Rp 51.782.385</p></div>
+          </div>
+          <div data-tour="stock-summary-table" className="rounded-2xl border border-slate-700 bg-slate-900 p-4">
+            <p className="text-sm font-black text-white">Saldo bahan demo</p>
+            <div className="mt-3 grid gap-2">
+              {masterRows.map((row) => (
+                <div key={row.name} className="grid gap-2 rounded-xl bg-slate-800 px-3 py-2 text-xs sm:grid-cols-[1fr_auto_auto]">
+                  <span className="font-semibold text-white">{row.name}</span>
+                  <span className="text-slate-400">Saldo {row.stock} {row.unit}</span>
+                  <span className="font-bold text-green-400">{row.status}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div data-tour="stock-in" className="rounded-2xl border border-slate-700 bg-slate-900 p-4">
+          <div data-tour="stock-in-filters" className="flex flex-wrap items-center gap-2">
+            <span className="rounded-xl bg-slate-800 px-3 py-2 text-xs font-bold text-slate-300">Jun 2026</span>
+            <span className="rounded-xl bg-orange-500/15 px-3 py-2 text-xs font-bold text-orange-300">Semua bahan</span>
+          </div>
+          <div data-tour="stock-in-table" className="mt-3 rounded-xl border border-slate-800 p-3 text-sm text-slate-300">
+            Pembelian demo: Daging Cincang Bumbu 1.000 gram x Rp 78 = Rp 78.000
+          </div>
+        </div>
+        <div data-tour="stock-out" className="rounded-2xl border border-slate-700 bg-slate-900 p-4">
+          <div data-tour="stock-out-filters" className="flex flex-wrap gap-2">
+            <span className="rounded-xl bg-slate-800 px-3 py-2 text-xs font-bold text-slate-300">1 Jun 2026 - 8 Jun 2026</span>
+            <span className="rounded-xl bg-orange-500 px-3 py-2 text-xs font-bold text-white">Cari</span>
+          </div>
+          <div data-tour="stock-out-pills" className="mt-3 flex flex-wrap gap-2">
+            {['Semua', 'Sudah Keluar', 'Menunggu', 'Ditolak', 'Transaksi POS'].map((label, index) => (
+              <span key={label} className={`rounded-full px-3 py-1 text-xs font-bold ${index === 0 ? 'bg-orange-500 text-white' : 'bg-slate-800 text-slate-400'}`}>{label}</span>
+            ))}
+          </div>
+          <div data-tour="stock-out-table" className="mt-3 rounded-xl border border-slate-800 p-3 text-sm text-slate-300">
+            Pengeluaran demo: Adana Kebab Platter x1 memakai {recipeRows.length} bahan resep.
+          </div>
+        </div>
+      </section>
+
+      <section data-tour="stock-requests" className="space-y-3 rounded-3xl border border-slate-700 bg-slate-800/70 p-4">
+        <div data-tour="stock-request-filters" className="flex flex-wrap items-center gap-2">
+          <span className="rounded-xl bg-slate-900 px-3 py-2 text-xs font-bold text-slate-300">1 Jun 2026 - 8 Jun 2026</span>
+          {['Semua', 'Menunggu', 'Disetujui', 'Ditolak'].map((label, index) => (
+            <span key={label} className={`rounded-xl px-3 py-2 text-xs font-bold ${index === 1 ? 'bg-yellow-500/15 text-yellow-300' : 'bg-slate-900 text-slate-400'}`}>{label}</span>
+          ))}
+        </div>
+        <div data-tour="stock-request-list" className="rounded-2xl border border-slate-700 bg-slate-900 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-black text-white">Kasir Tutorial</p>
+              <p className="mt-1 text-xs text-slate-500">Stok untuk Adana Kebab Platter</p>
+            </div>
+            <span className="rounded-full bg-yellow-500/15 px-3 py-1 text-xs font-black text-yellow-300">Menunggu</span>
+          </div>
+          <div className="mt-3 grid gap-2">
+            {recipeRows.map((row) => (
+              <div key={row.name} className="grid gap-2 rounded-xl bg-slate-800 px-3 py-2 text-xs sm:grid-cols-[1fr_auto_auto]">
+                <span className="font-semibold text-white">{row.name}</span>
+                <span className="text-slate-400">{row.qty} {row.unit}</span>
+                <span className="font-bold text-orange-300">Rp {(row.qty * row.price).toLocaleString('id-ID')}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function AdminStockPage({ successModal, setSuccessModal }) {
   const { selectedBranchId, user } = useAuthStore();
   const [tab,     setTab]     = useState('master');
@@ -3083,6 +3230,7 @@ export default function StockPage() {
           </p>
         </div>
 
+        <StockTutorialDemo />
         {isAdmin ? <AdminStockPage successModal={successModal} setSuccessModal={setSuccessModal} /> : <KasirStockPage successModal={successModal} setSuccessModal={setSuccessModal} />}
       </div>
 
@@ -3094,6 +3242,10 @@ export default function StockPage() {
         message={successModal.message}
         requestType={successModal.requestType}
       />
+      <style>{`
+        .stock-tutorial-demo { display: none; }
+        html[data-tutorial-id="stock"] .stock-tutorial-demo { display: block; }
+      `}</style>
     </AdminLayout>
   );
 }

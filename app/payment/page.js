@@ -32,6 +32,74 @@ const emptyForm = {
 
 const formatTimeout = (minutes) => `${Number(minutes || 0)} menit`;
 
+function PaymentTutorialDemo() {
+  const demoMethods = [
+    {
+      id: 'demo-qris',
+      type: 'qris',
+      status: 'active',
+      name: 'QRIS Tutorial',
+      provider_name: 'QRIS',
+      account_number: '0895353025503',
+      account_name: 'Sultan Kebab',
+      instructions: 'Scan QRIS, pastikan nominal sesuai total bayar, lalu upload bukti pembayaran.',
+      payment_timeout_minutes: 15,
+    },
+    {
+      id: 'demo-transfer',
+      type: 'transfer',
+      status: 'active',
+      name: 'Transfer Tutorial',
+      provider_name: 'Bank',
+      account_number: '123123112327',
+      account_name: 'Sultan Kebab',
+      instructions: 'Transfer sesuai total bayar, lalu upload bukti pembayaran.',
+      payment_timeout_minutes: 15,
+    },
+  ];
+
+  return (
+    <div className="payment-tutorial-demo space-y-4">
+      <div className="rounded-3xl border border-orange-400/35 bg-orange-500/5 p-4">
+        <p className="text-xs font-black uppercase tracking-[0.22em] text-orange-300">Mode Demo Tutorial</p>
+        <p className="mt-1 text-sm leading-6 text-slate-300">Kartu payment ini data dummy. Tidak masuk database kecuali user mengisi form asli dan klik Simpan Payment.</p>
+      </div>
+      {demoMethods.map((method, index) => (
+        <motion.article
+          key={method.id}
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: index * 0.04 }}
+          data-tour={index === 0 ? 'payment-card' : undefined}
+          className="rounded-3xl border border-slate-700 bg-slate-800 p-5"
+        >
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px_auto] lg:items-start">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-full bg-orange-500/15 px-3 py-1 text-xs font-black uppercase text-orange-300">{method.type}</span>
+                <span className="rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-black uppercase text-emerald-300">Aktif</span>
+                <span className="rounded-full bg-slate-700 px-3 py-1 text-xs font-bold text-slate-300">{formatTimeout(method.payment_timeout_minutes)}</span>
+              </div>
+              <h2 className="mt-3 text-xl font-black text-white">{method.name}</h2>
+              <p className="mt-1 text-sm text-slate-400">{method.provider_name} - {method.account_number}</p>
+              <p className="mt-1 text-xs text-slate-500">a/n {method.account_name}</p>
+              <p className="mt-3 rounded-2xl bg-slate-900/60 p-3 text-sm leading-6 text-slate-300">{method.instructions}</p>
+            </div>
+            <div data-tour={index === 0 ? 'payment-card-preview' : undefined}>
+              <PaymentMethodCard method={method} compact preview />
+            </div>
+            <div data-tour={index === 0 ? 'payment-card-actions' : undefined} className="flex shrink-0 flex-col gap-3 lg:w-32">
+              <button type="button" className="rounded-xl bg-slate-700 px-3 py-2 text-sm font-black text-white">Edit</button>
+              <button type="button" className="rounded-xl bg-red-500/80 px-3 py-2 text-sm font-black text-white">Nonaktif</button>
+              <button type="button" className="rounded-xl border border-red-500/35 bg-red-500/10 px-3 py-2 text-sm font-black text-red-200">Hapus</button>
+            </div>
+          </div>
+        </motion.article>
+      ))}
+    </div>
+  );
+}
+
 const toFormData = (form) => {
   const data = new FormData();
   const payload = {
@@ -261,6 +329,7 @@ export default function PaymentManagementPage() {
                   </div>
                 </div>
               </div>
+              <PaymentTutorialDemo />
               {loading && methods.length === 0 && (
                 <div className="rounded-3xl border border-slate-700 bg-slate-800 p-6 text-slate-400">
                   Memuat metode pembayaran...
@@ -457,6 +526,11 @@ export default function PaymentManagementPage() {
               </div>
             </aside>
           </div>
+          <style>{`
+            .payment-tutorial-demo { display: none; }
+            html[data-tutorial-id="payment"] .payment-tutorial-demo { display: block; }
+            html[data-tutorial-id="payment"] [data-tour="payment-list"] > article[data-tour="payment-card"] { display: none; }
+          `}</style>
         </div>
       </AdminLayout>
     </AuthGuard>
