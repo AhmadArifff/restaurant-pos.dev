@@ -941,6 +941,8 @@ function AdminStockPage({ successModal, setSuccessModal }) {
       </div>
 
       {/* ── BAHAN BAKU ── */}
+      {stockItems.length === 0 && summary.length === 0 && requests.length === 0 && <StockTutorialDemo />}
+
       {tab==='master' && (
         masterInitialLoading ? (
           <StockMasterSkeleton />
@@ -3230,7 +3232,6 @@ export default function StockPage() {
           </p>
         </div>
 
-        <StockTutorialDemo />
         {isAdmin ? <AdminStockPage successModal={successModal} setSuccessModal={setSuccessModal} /> : <KasirStockPage successModal={successModal} setSuccessModal={setSuccessModal} />}
       </div>
 

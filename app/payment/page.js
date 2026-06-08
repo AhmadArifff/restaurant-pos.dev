@@ -329,7 +329,7 @@ export default function PaymentManagementPage() {
                   </div>
                 </div>
               </div>
-              <PaymentTutorialDemo />
+              {methods.length === 0 && <PaymentTutorialDemo />}
               {loading && methods.length === 0 && (
                 <div className="rounded-3xl border border-slate-700 bg-slate-800 p-6 text-slate-400">
                   Memuat metode pembayaran...
@@ -529,7 +529,6 @@ export default function PaymentManagementPage() {
           <style>{`
             .payment-tutorial-demo { display: none; }
             html[data-tutorial-id="payment"] .payment-tutorial-demo { display: block; }
-            html[data-tutorial-id="payment"] [data-tour="payment-list"] > article[data-tour="payment-card"] { display: none; }
           `}</style>
         </div>
       </AdminLayout>
