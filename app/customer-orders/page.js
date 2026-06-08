@@ -504,8 +504,8 @@ export default function CustomerOrdersPage() {
   return (
     <AuthGuard>
       <AdminLayout>
-        <div className="mx-auto max-w-7xl space-y-6">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="mx-auto max-w-7xl space-y-6" data-tour="customer-orders-page">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between" data-tour="customer-orders-header">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.28em] text-orange-400">Customer Table Order</p>
               <h1 className="mt-2 text-3xl font-black text-white">Pesanan Meja dan QR Pelanggan</h1>
@@ -513,7 +513,7 @@ export default function CustomerOrdersPage() {
                 Pantau order pelanggan dari QR meja, approve proses dapur, dan kelola meja yang tampil di landing page.
               </p>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2" data-tour="customer-orders-status-filters">
               {statusFilters.map((item) => (
                 <button
                   key={item.value}
@@ -533,9 +533,11 @@ export default function CustomerOrdersPage() {
             </div>
           </div>
 
-          <div className="grid gap-3 lg:grid-cols-[minmax(260px,360px)_1fr]">
-            <DateRangePicker value={dateRange} onChange={setDateRange} />
-            <div className="rounded-2xl border border-slate-700 bg-slate-800 px-4 py-3">
+          <div className="grid gap-3 lg:grid-cols-[minmax(260px,360px)_1fr]" data-tour="customer-orders-date-search">
+            <div data-tour="customer-orders-date-filter">
+              <DateRangePicker value={dateRange} onChange={setDateRange} />
+            </div>
+            <div className="rounded-2xl border border-slate-700 bg-slate-800 px-4 py-3" data-tour="customer-orders-search">
               <label className="block text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
                 Cari Pesanan
               </label>
@@ -548,9 +550,9 @@ export default function CustomerOrdersPage() {
             </div>
           </div>
 
-          <div className="rounded-3xl border border-slate-700 bg-slate-800 p-4">
+          <div className="rounded-3xl border border-slate-700 bg-slate-800 p-4" data-tour="customer-orders-batch-panel">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3" data-tour="customer-orders-select-all">
                 <button
                   type="button"
                   onClick={toggleSelectAllVisible}
@@ -566,7 +568,7 @@ export default function CustomerOrdersPage() {
                     : 'Tanpa pilihan: tombol akan memproses semua pesanan yang cocok pada tampilan ini.'}
                 </p>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2" data-tour="customer-orders-batch-actions">
                 {batchStatusActions.map((action) => {
                   const sourceOrders = selectedOrders.length ? selectedOrders : visibleOrders;
                   const eligibleCount = sourceOrders.filter((order) => canApplyStatus(order, action.status)).length;
@@ -587,7 +589,7 @@ export default function CustomerOrdersPage() {
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" data-tour="customer-orders-stats">
             {[
               ['Total Order', stats.total],
               ['Order Aktif', stats.active],
@@ -613,7 +615,7 @@ export default function CustomerOrdersPage() {
           )}
 
           <div className="grid gap-6 xl:grid-cols-[1fr_390px]">
-            <section className="space-y-4">
+            <section className="space-y-4" data-tour="customer-orders-list">
               {loading && orders.length === 0 && <SectionSkeleton type="orders" />}
               {!loading && visibleOrders.length === 0 && (
                 <div className="rounded-3xl border border-dashed border-slate-700 bg-slate-800/50 p-10 text-center text-slate-400">
@@ -624,14 +626,15 @@ export default function CustomerOrdersPage() {
                 const discountComponents = getDiscountComponents(order);
                 const canSelectOrder = !['completed', 'cancelled'].includes(order.status);
                 return (
-                <div key={order.id} className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-start">
+                <div key={order.id} className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-start" data-tour="customer-order-row">
                 <motion.article
                   layout
                   className="rounded-3xl border border-slate-700 bg-slate-800 p-5 shadow-xl shadow-black/10"
+                  data-tour="customer-order-card"
                 >
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div>
-                      <div className="flex flex-wrap items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2" data-tour="customer-order-status-badges">
                         <span className="rounded-full bg-orange-500/15 px-3 py-1 text-xs font-black uppercase text-orange-300">
                           Meja {order.table_number}
                         </span>
@@ -657,7 +660,7 @@ export default function CustomerOrdersPage() {
                         {order.customer_name || 'Pelanggan meja'} {order.customer_phone ? `- ${order.customer_phone}` : ''}
                       </p>
                     </div>
-                    <div className="text-left lg:text-right">
+                    <div className="text-left lg:text-right" data-tour="customer-order-total">
                       <p className="text-xs text-slate-500">Total pesanan</p>
                       <strong className="text-2xl text-orange-400">{formatRp(order.final_total || order.subtotal)}</strong>
                       {discountComponents.length > 0 && (
@@ -673,7 +676,7 @@ export default function CustomerOrdersPage() {
                   </div>
 
                   <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_auto]">
-                    <div className="rounded-2xl bg-slate-900/60 p-3">
+                    <div className="rounded-2xl bg-slate-900/60 p-3" data-tour="customer-order-items">
                       {order.items?.map((item) => (
                         <div key={item.id} className="flex justify-between gap-3 border-b border-slate-700/60 py-2 text-sm last:border-0">
                           <span className="text-slate-300">{item.product_name} x{item.qty}</span>
@@ -681,7 +684,7 @@ export default function CustomerOrdersPage() {
                         </div>
                       ))}
                       {discountComponents.length > 0 && (
-                        <div className="mt-3 space-y-2 border-t border-slate-700/60 pt-3">
+                        <div className="mt-3 space-y-2 border-t border-slate-700/60 pt-3" data-tour="customer-order-discounts">
                           <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Diskon terpakai</p>
                           {discountComponents.map((component) => (
                             <div
@@ -721,7 +724,7 @@ export default function CustomerOrdersPage() {
                       )}
                       <p className="mt-3 text-xs italic text-slate-500">Catatan: {order.note || 'Tidak ada'}</p>
                       {order.payment_method && (
-                        <div className="mt-3 rounded-xl border border-sky-500/20 bg-sky-500/10 p-3 text-xs text-sky-100">
+                        <div className="mt-3 rounded-xl border border-sky-500/20 bg-sky-500/10 p-3 text-xs text-sky-100" data-tour="customer-order-payment">
                           <div className="flex flex-wrap items-center justify-between gap-2">
                             <span className="font-bold">Pembayaran: {order.payment_method.name || order.payment_method_key || 'Payment'}</span>
                             <span className={`rounded-full px-2 py-1 font-black uppercase ${
@@ -744,6 +747,7 @@ export default function CustomerOrdersPage() {
                                 order_code: order.order_code,
                                 url: resolveAssetUrl(order.payment_proof_url),
                               })}
+                              data-tour="customer-order-proof-action"
                               className="mt-2 inline-flex font-black text-sky-200 underline"
                             >
                               Lihat bukti pembayaran
@@ -770,7 +774,7 @@ export default function CustomerOrdersPage() {
                         </div>
                       )}
                     </div>
-                    <div className="flex flex-wrap gap-2 lg:w-44 lg:flex-col">
+                    <div className="flex flex-wrap gap-2 lg:w-44 lg:flex-col" data-tour="customer-order-status-actions">
                       {getStatusActions(order).map((action) => (
                         <button
                           key={action.status}
@@ -784,7 +788,7 @@ export default function CustomerOrdersPage() {
                     </div>
                   </div>
                 </motion.article>
-                  <label className={`flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-xs font-black transition lg:min-h-[112px] lg:w-20 lg:flex-col ${
+                  <label data-tour="customer-order-select" className={`flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-xs font-black transition lg:min-h-[112px] lg:w-20 lg:flex-col ${
                     !canSelectOrder
                       ? 'cursor-not-allowed border-slate-800 bg-slate-900/70 text-slate-600'
                       : selectedOrderIds.includes(Number(order.id))
@@ -806,8 +810,8 @@ export default function CustomerOrdersPage() {
             </section>
 
             {isAdmin && (
-              <aside className="space-y-5">
-                <div className="rounded-3xl border border-slate-700 bg-slate-800 p-5">
+              <aside className="space-y-5" data-tour="customer-orders-admin-sidebar">
+                <div className="rounded-3xl border border-slate-700 bg-slate-800 p-5" data-tour="customer-orders-table-form">
                   <h2 className="text-xl font-black text-white">{editingTable ? 'Edit Meja' : 'Tambah Meja QR'}</h2>
                   <form onSubmit={saveTable} className="mt-4 space-y-3">
                     <input
@@ -864,7 +868,7 @@ export default function CustomerOrdersPage() {
                   </form>
                 </div>
 
-                <div className="rounded-3xl border border-slate-700 bg-slate-800 p-5">
+                <div className="rounded-3xl border border-slate-700 bg-slate-800 p-5" data-tour="customer-orders-table-list">
                   <h2 className="text-xl font-black text-white">QR Meja</h2>
                   <div className="mt-4 grid grid-cols-2 gap-2">
                     {tables.map((table) => (
@@ -884,7 +888,7 @@ export default function CustomerOrdersPage() {
                   </div>
 
                   {selectedTable && (
-                    <div className="mt-5">
+                    <div className="mt-5" data-tour="customer-orders-qr-preview">
                       <QRCodeCard value={getOrderUrl(selectedTable.qr_token)} title={`Meja ${selectedTable.table_number}`} size={190} />
                       <div className="mt-3 flex gap-2">
                         <button onClick={() => editTable(selectedTable)} className="flex-1 rounded-xl bg-slate-700 px-3 py-2 text-sm font-bold text-white">Edit</button>
@@ -897,7 +901,7 @@ export default function CustomerOrdersPage() {
             )}
           </div>
           {proofModal && (
-            <div className="fixed inset-0 z-[90] grid place-items-center bg-black/75 p-4 backdrop-blur-sm" role="dialog" aria-modal="true">
+            <div className="fixed inset-0 z-[90] grid place-items-center bg-black/75 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" data-tour="customer-orders-proof-modal">
               <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl border border-slate-700 bg-slate-900 p-4 shadow-2xl shadow-black/50">
                 <div className="flex items-center justify-between gap-3">
                   <div>

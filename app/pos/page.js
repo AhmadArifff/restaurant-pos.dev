@@ -475,17 +475,20 @@ export default function PosPage() {
   return (
     <AuthGuard>
       <AdminLayout noPadding>
-        <div className="flex h-screen bg-slate-950 overflow-hidden">
+        <div className="flex h-screen bg-slate-950 overflow-hidden" data-tour="pos-layout">
 
           {/* ── MAIN PANEL ── */}
           <div className="flex-1 flex flex-col overflow-hidden min-w-0">
 
             {/* ── TOPBAR ── */}
-            <header className="bg-slate-900/95 backdrop-blur-sm border-b border-slate-800
-              px-4 sm:px-5 py-3 flex items-center gap-3 shrink-0 z-10 flex-wrap">
+            <header
+              className="bg-slate-900/95 backdrop-blur-sm border-b border-slate-800
+              px-4 sm:px-5 py-3 flex items-center gap-3 shrink-0 z-10 flex-wrap"
+              data-tour="pos-topbar"
+            >
 
               {/* Clock */}
-              <div className="flex flex-col items-center">
+              <div className="flex flex-col items-center" data-tour="pos-clock">
                 <span className="text-white font-mono font-bold text-base leading-none">{timeStr}</span>
                 <span className="text-slate-500 text-xs capitalize mt-0.5">{dateStr}</span>
               </div>
@@ -494,7 +497,7 @@ export default function PosPage() {
 
               {/* ── ADMIN: Pilih sumber stok ── */}
               {isAdmin && stockUsersList.length > 0 && (
-                <div className="hidden sm:flex items-center gap-2 flex-wrap">
+                <div className="hidden sm:flex items-center gap-2 flex-wrap" data-tour="pos-source-selector">
                   <span className="text-slate-500 text-xs shrink-0">Stok dari:</span>
                   {stockUsersList.map(u => {
                     const isSelected = selectedSourceUser?.user_id === u.user_id;
@@ -533,7 +536,7 @@ export default function PosPage() {
               )}
 
               {/* Search */}
-              <div className="relative hidden sm:flex items-center">
+              <div className="relative hidden sm:flex items-center" data-tour="pos-search">
                 <span className="absolute left-3 text-slate-500 pointer-events-none">
                   <SearchIcon />
                 </span>
@@ -545,7 +548,7 @@ export default function PosPage() {
               </div>
 
               {/* Kasir info */}
-              <div className="hidden sm:flex items-center gap-2 shrink-0">
+              <div className="hidden sm:flex items-center gap-2 shrink-0" data-tour="pos-user-info">
                 <div className="w-8 h-8 rounded-full bg-orange-500/20 border border-orange-500/30
                   flex items-center justify-center text-orange-400 text-xs font-bold">
                   {user?.name?.charAt(0)?.toUpperCase() || 'K'}
@@ -557,8 +560,11 @@ export default function PosPage() {
               </div>
 
               {/* Pendapatan cabang aktif */}
-              <div className="shrink-0 rounded-2xl border border-emerald-400/20
-                bg-emerald-400/10 px-3 py-2 shadow-lg shadow-emerald-950/20">
+              <div
+                className="shrink-0 rounded-2xl border border-emerald-400/20
+                bg-emerald-400/10 px-3 py-2 shadow-lg shadow-emerald-950/20"
+                data-tour="pos-today-revenue"
+              >
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-emerald-300 shadow-[0_0_12px_rgba(110,231,183,0.8)]" />
                   <span className="text-[10px] uppercase tracking-[0.18em] text-emerald-200/70">
@@ -577,6 +583,7 @@ export default function PosPage() {
 
               {/* Mobile cart */}
               <button onClick={() => setShowMobileCart(true)}
+                data-tour="pos-mobile-cart-button"
                 className="relative lg:hidden p-2 text-slate-400 hover:text-white
                   bg-slate-800 hover:bg-slate-700 rounded-xl border border-slate-700 transition-all shrink-0">
                 <CartIcon />
@@ -586,8 +593,11 @@ export default function PosPage() {
 
             {/* ── ADMIN MOBILE: source selector ── */}
             {isAdmin && stockUsersList.length > 0 && (
-              <div className="sm:hidden px-4 py-2 bg-slate-900 border-b border-slate-800
-                flex gap-2 overflow-x-auto scrollbar-hide items-center">
+              <div
+                className="sm:hidden px-4 py-2 bg-slate-900 border-b border-slate-800
+                flex gap-2 overflow-x-auto scrollbar-hide items-center"
+                data-tour="pos-mobile-source-selector"
+              >
                 <span className="text-slate-500 text-xs shrink-0">Stok:</span>
                 {stockUsersList.map(u => {
                   const isSelected = selectedSourceUser?.user_id === u.user_id;
@@ -621,7 +631,7 @@ export default function PosPage() {
             )}
 
             {/* ── MOBILE SEARCH ── */}
-            <div className="sm:hidden px-4 py-2.5 bg-slate-900 border-b border-slate-800">
+            <div className="sm:hidden px-4 py-2.5 bg-slate-900 border-b border-slate-800" data-tour="pos-mobile-search">
               <div className="relative flex items-center">
                 <span className="absolute left-3 text-slate-500 pointer-events-none">
                   <SearchIcon />
@@ -635,8 +645,11 @@ export default function PosPage() {
             </div>
 
             {/* ── CATEGORY FILTER ── */}
-            <div className="flex gap-2 px-4 sm:px-5 py-3 overflow-x-auto scrollbar-hide
-              bg-slate-900/50 border-b border-slate-800/50 shrink-0">
+            <div
+              className="flex gap-2 px-4 sm:px-5 py-3 overflow-x-auto scrollbar-hide
+              bg-slate-900/50 border-b border-slate-800/50 shrink-0"
+              data-tour="pos-category-filter"
+            >
               <button onClick={() => setActiveCategory('all')}
                 className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap
                   shrink-0 transition-all ${
@@ -660,9 +673,9 @@ export default function PosPage() {
             </div>
 
             {/* ── PRODUCT GRID ── */}
-            <div className="flex-1 overflow-y-auto px-4 sm:px-5 py-4">
+            <div className="flex-1 overflow-y-auto px-4 sm:px-5 py-4" data-tour="pos-product-section">
               {!loading && (
-                <div className="mb-3 flex flex-wrap items-center gap-2 text-xs">
+                <div className="mb-3 flex flex-wrap items-center gap-2 text-xs" data-tour="pos-product-count">
                 <p className="text-slate-600">
                   {filtered.length} menu tersedia
                   {search && ` · "${search}"`}
@@ -682,13 +695,14 @@ export default function PosPage() {
               )}
 
               {!loading && bundleHints.length > 0 && (
-                <div className="mb-4 grid gap-3 md:grid-cols-2">
+                <div className="mb-4 grid gap-3 md:grid-cols-2" data-tour="pos-bundle-hints">
                   {bundleHints.map((program) => {
                     const disabled = !program.complete && program.unavailable.length > 0;
                     return (
                       <button
                         key={program.id}
                         type="button"
+                        data-tour="pos-bundle-card"
                         onClick={() => !disabled && !program.complete && handleAddBundle(program)}
                         disabled={disabled}
                         className={`rounded-2xl border p-4 text-left transition ${
@@ -721,7 +735,7 @@ export default function PosPage() {
                 </div>
               )}
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3" data-tour="pos-product-grid">
                 {loading
                   ? [...Array(8)].map((_, i) => <ProductSkeleton key={i} />)
                   : filtered.length === 0
@@ -743,18 +757,19 @@ export default function PosPage() {
                         : null;
 
                       return (
-                        <ProductCard
-                          key={product.id}
-                          product={product}
-                          inCart={inCart}
-                          stock={stock}
-                          soldOut={soldOut}
-                          lowStock={lowStock}
-                          isAdmin={isAdmin}
-                          selectedSourceUser={selectedSourceUser}
-                          selectedUserStock={selectedUserStock}
-                          onAddItem={handleAddItem}
-                        />
+                        <div key={product.id} data-tour="pos-product-card" data-soldout={soldOut ? 'true' : 'false'}>
+                          <ProductCard
+                            product={product}
+                            inCart={inCart}
+                            stock={stock}
+                            soldOut={soldOut}
+                            lowStock={lowStock}
+                            isAdmin={isAdmin}
+                            selectedSourceUser={selectedSourceUser}
+                            selectedUserStock={selectedUserStock}
+                            onAddItem={handleAddItem}
+                          />
+                        </div>
                       );
                     })
                 }
@@ -764,7 +779,7 @@ export default function PosPage() {
 
             {/* ── MOBILE BOTTOM BAR ── */}
             {itemCount > 0 && (
-              <div className="lg:hidden shrink-0 bg-slate-900 border-t border-slate-800 px-4 py-3">
+              <div className="lg:hidden shrink-0 bg-slate-900 border-t border-slate-800 px-4 py-3" data-tour="pos-mobile-bottom-cart">
                 <button onClick={() => setShowMobileCart(true)}
                   className="w-full bg-orange-500 hover:bg-orange-400 text-white font-bold
                     rounded-2xl px-4 py-3.5 flex items-center justify-between
@@ -782,7 +797,7 @@ export default function PosPage() {
           </div>
 
           {/* ── DESKTOP CART ── */}
-          <div className="hidden lg:flex">
+          <div className="hidden lg:flex" data-tour="pos-desktop-cart">
             <Cart onCheckout={openPaymentModal} />
           </div>
 
@@ -791,8 +806,11 @@ export default function PosPage() {
             <>
               <div className="fixed inset-0 bg-black/70 z-40 lg:hidden backdrop-blur-sm"
                 onClick={() => setShowMobileCart(false)} />
-              <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-slate-900
-                rounded-t-3xl border-t border-slate-700 max-h-[85vh] flex flex-col animate-slide-up">
+              <div
+                className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-slate-900
+                rounded-t-3xl border-t border-slate-700 max-h-[85vh] flex flex-col animate-slide-up"
+                data-tour="pos-mobile-cart-drawer"
+              >
                 <div className="flex justify-center pt-3 pb-1 shrink-0">
                   <div className="w-10 h-1 bg-slate-700 rounded-full" />
                 </div>

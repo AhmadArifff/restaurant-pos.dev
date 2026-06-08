@@ -905,6 +905,261 @@ const TUTORIALS = [
     ],
   },
   {
+    id: 'pos',
+    title: 'Kasir',
+    route: '/pos',
+    roles: ['admin', 'kasir'],
+    description: 'Pelajari pencarian menu, sumber stok, kategori, kartu produk, keranjang, voucher, dan proses pembayaran kasir.',
+    steps: [
+      {
+        selector: '[data-tour="pos-topbar"]',
+        title: 'Kasir sebagai kumpulan komponen',
+        body: 'React components adalah building block utama aplikasi React: bagian kecil yang mandiri dan bisa dipakai ulang, mirip Lego. Di menu kasir ini, topbar, filter stok, pencarian, kartu produk, keranjang, dan modal pembayaran digabung menjadi alur transaksi.',
+        details: ['Topbar membaca waktu kerja dan kasir aktif.', 'Admin dapat memilih sumber stok kasir.', 'Pencarian membantu menemukan menu cepat.', 'Pendapatan hari ini memberi ringkasan transaksi cabang aktif.'],
+      },
+      {
+        selector: '[data-tour="pos-clock"]',
+        title: 'Jam Operasional',
+        body: 'Jam dan tanggal membantu kasir memastikan transaksi dicatat pada hari kerja yang benar.',
+        details: ['Jam berjalan realtime.', 'Tanggal mengikuti zona waktu lokal.', 'Informasi ini membantu mencocokkan struk dan audit harian.', 'Kasir tidak perlu input tanggal manual.'],
+      },
+      {
+        selector: '[data-tour="pos-source-selector"]',
+        roles: ['admin'],
+        title: 'Sumber Stok Kasir',
+        body: 'Admin bisa membuat transaksi atas nama kasir atau sumber stok tertentu.',
+        details: ['Chip aktif menunjukkan stok siapa yang sedang dipakai.', 'Jumlah porsi membantu memilih kasir yang masih punya ready stock.', 'Saat sumber stok diganti, keranjang dikosongkan agar stok tidak tercampur.', 'Kasir biasa memakai stok miliknya sendiri.'],
+      },
+      {
+        selector: '[data-tour="pos-search"]',
+        actions: ['pos-demo-search'],
+        title: 'Cari Menu',
+        body: 'Search mempercepat kasir menemukan menu saat pelanggan memesan banyak item.',
+        details: ['Bisa mencari nama produk.', 'Hasil produk langsung difilter.', 'Tutorial mengisi contoh kata kebab.', 'Kosongkan search untuk kembali menampilkan semua menu.'],
+      },
+      {
+        selector: '[data-tour="pos-today-revenue"]',
+        title: 'Pendapatan Hari Ini',
+        body: 'Kartu ini membaca omzet dan jumlah transaksi hari ini pada cabang aktif.',
+        details: ['Omzet dihitung dari transaksi yang sudah diproses.', 'Jumlah transaksi membantu membaca traffic hari ini.', 'Kartu ini refresh bersama data kasir.', 'Admin dan kasir dapat memantau performa cepat tanpa pindah dashboard.'],
+      },
+      {
+        selector: '[data-tour="pos-category-filter"]',
+        title: 'Filter Kategori',
+        body: 'Kategori memecah menu menjadi kelompok makanan dan minuman.',
+        details: ['Semua menampilkan seluruh produk.', 'Klik kategori untuk mempersempit grid.', 'Filter ini bekerja bersama search.', 'Kategori berasal dari data produk yang dikelola admin.'],
+      },
+      {
+        selector: '[data-tour="pos-product-count"]',
+        title: 'Jumlah Menu Tampil',
+        body: 'Bagian ini memberi konteks berapa menu yang sedang tersedia pada filter saat ini.',
+        details: ['Angka berubah mengikuti search dan kategori.', 'Jika admin memilih sumber stok, nama sumber ikut muncul.', 'Label sinkronisasi muncul saat data refresh.', 'Ini membantu membaca apakah filter terlalu sempit.'],
+      },
+      {
+        selector: '[data-tour="pos-bundle-hints"]',
+        title: 'Saran Paket Bundle',
+        body: 'Panel bundle memberi sinyal promo paket yang bisa diklaim dari menu kasir.',
+        details: ['Jika syarat belum lengkap, sistem menampilkan menu yang perlu ditambahkan.', 'Jika ada menu habis, bundle ditandai belum bisa diklaim.', 'Jika lengkap, diskon dicek otomatis di pembayaran.', 'Kasir bisa memakai panel ini untuk menawarkan upsell ke pelanggan.'],
+      },
+      {
+        selector: '[data-tour="pos-product-grid"]',
+        title: 'Grid Produk',
+        body: 'Grid produk adalah area utama kasir memilih menu.',
+        details: ['Produk diurutkan berdasarkan stok yang bisa dijual.', 'Kartu menampilkan gambar, kategori, harga, dan status stok.', 'Produk habis bisa diarahkan ke pengajuan stok.', 'Grid memakai skeleton saat data awal dimuat.'],
+      },
+      {
+        selector: '[data-tour="pos-product-card"]',
+        actions: ['pos-demo-add-first-product'],
+        title: 'Kartu Produk',
+        body: 'Satu kartu produk adalah komponen reusable untuk satu menu.',
+        details: ['Klik kartu produk untuk menambahkan ke keranjang jika stok tersedia.', 'Tutorial mencoba menambahkan produk pertama yang stoknya tersedia.', 'Badge dalam keranjang muncul saat produk sudah dipilih.', 'Stok rendah dan habis diberi warna berbeda.', 'Admin dapat melihat detail bahan saat kartu diperluas.'],
+      },
+      {
+        selector: '[data-tour="pos-cart"]',
+        title: 'Keranjang Pesanan',
+        body: 'Keranjang menyimpan daftar menu sebelum transaksi diproses.',
+        details: ['Item akan bertambah ketika produk diklik.', 'Qty bisa dinaikkan atau dikurangi sesuai batas stok.', 'Total berubah otomatis dari harga dan qty.', 'Keranjang dikosongkan setelah transaksi sukses.'],
+      },
+      {
+        selector: '[data-tour="pos-cart-items"]',
+        title: 'Item Keranjang',
+        body: 'Bagian item menunjukkan menu yang sedang dibeli pelanggan.',
+        details: ['Nama menu tampil per baris.', 'Harga mengikuti qty.', 'Maks porsi menjaga kasir tidak menjual melebihi stok.', 'Tombol minus dapat mengurangi qty atau menghapus item.'],
+      },
+      {
+        selector: '[data-tour="pos-cart-total"]',
+        title: 'Total Keranjang',
+        body: 'Total adalah subtotal sebelum pembayaran dan pengecekan voucher di modal bayar.',
+        details: ['Nilai berubah realtime.', 'Total ini akan menjadi dasar perhitungan diskon.', 'Voucher dan bundle dihitung di modal pembayaran.', 'Kasir bisa mengecek total sebelum lanjut bayar.'],
+      },
+      {
+        selector: '[data-tour="pos-cart-checkout"]',
+        title: 'Tombol Bayar',
+        body: 'Tombol Bayar membuka modal pembayaran jika keranjang berisi item.',
+        details: ['Tombol nonaktif saat keranjang kosong.', 'Saat diklik, kasir memilih metode bayar.', 'Modal pembayaran juga mengecek voucher dan bundle.', 'Transaksi baru disimpan setelah tombol Proses & Cetak Struk ditekan.'],
+      },
+      {
+        selector: '[data-tour="pos-payment-modal"]',
+        actions: ['pos-open-payment-modal'],
+        title: 'Modal Pembayaran',
+        body: 'Modal pembayaran muncul setelah kasir menekan Bayar. Jika belum ada item, step ini menjelaskan alurnya tanpa membuka transaksi.',
+        details: ['Modal menampilkan total tagihan.', 'Kasir dapat memilih meja pelanggan untuk QR status publik.', 'Voucher dan diskon dicek sebelum transaksi disimpan.', 'Metode bayar menentukan input yang diperlukan.'],
+      },
+      {
+        selector: '[data-tour="pos-payment-discount"]',
+        actions: ['pos-open-payment-modal'],
+        title: 'Voucher dan Diskon',
+        body: 'Bagian ini membaca nomor HP, kode voucher, reward review, dan bundle yang berlaku.',
+        details: ['Nomor HP menjadi batas klaim diskon.', 'Kode voucher bisa diisi manual.', 'Bundle aktif dicek dari item keranjang.', 'Preview menjelaskan scope potongan agar kasir tidak salah paham.'],
+      },
+      {
+        selector: '[data-tour="pos-payment-methods"]',
+        title: 'Metode Bayar',
+        body: 'Kasir memilih tunai, QRIS, atau transfer sesuai cara pelanggan membayar.',
+        details: ['Tunai membuka pecahan uang dan kembalian.', 'QRIS dan transfer memberi catatan konfirmasi manual.', 'Metode yang dipilih ikut tersimpan di transaksi.', 'Data ini tampil di riwayat POS.'],
+      },
+      {
+        selector: '[data-tour="pos-payment-actions"]',
+        title: 'Proses Transaksi',
+        body: 'Bagian bawah modal menentukan transaksi dibatalkan atau diproses.',
+        details: ['Batal menutup modal tanpa menyimpan.', 'Proses & Cetak Struk menyimpan transaksi ke backend.', 'Saat sukses, stok berkurang dan struk siap dicetak.', 'Jika gagal, modal pesan produksi menampilkan error ramah tanpa exception teknis.'],
+      },
+    ],
+  },
+  {
+    id: 'customer-orders',
+    title: 'Pesanan Meja',
+    route: '/customer-orders',
+    roles: ['admin', 'kasir'],
+    description: 'Pelajari filter order meja, batch approve, kartu pesanan, bukti bayar, review, dan QR meja pelanggan.',
+    steps: [
+      {
+        selector: '[data-tour="customer-orders-header"]',
+        title: 'Pesanan Meja sebagai kumpulan komponen',
+        body: 'React components adalah building block utama aplikasi React: bagian kecil yang mandiri dan bisa dipakai ulang, mirip Lego. Di menu pesanan meja ini, header, filter, batch action, kartu order, payment proof, dan QR meja digabung menjadi workflow pelayanan pelanggan.',
+        details: ['Halaman ini memantau order dari QR meja.', 'Default data berfokus pada pesanan hari ini agar load cepat.', 'Admin dan kasir bisa mengubah status sesuai alur dapur.', 'Admin juga mengelola QR meja di sidebar.'],
+      },
+      {
+        selector: '[data-tour="customer-orders-status-filters"]',
+        title: 'Filter Status Pesanan',
+        body: 'Chip status membantu tim fokus pada tahap order tertentu.',
+        details: ['Semua menampilkan seluruh status pada range tanggal.', 'Menunggu berarti order baru masuk.', 'Diterima, Disiapkan, dan Siap Diantar mengikuti proses dapur.', 'Selesai dan Dibatalkan menjadi status final.'],
+      },
+      {
+        selector: '[data-tour="customer-orders-date-filter"]',
+        title: 'Range Tanggal',
+        body: 'Kalender range memilih periode pesanan meja yang ingin dilihat.',
+        details: ['Klik tanggal pertama sebagai awal range.', 'Klik tanggal kedua sebagai akhir range.', 'Default hari ini menjaga performa tetap ringan.', 'Range panjang dipakai hanya saat audit atau pencarian histori.'],
+      },
+      {
+        selector: '[data-tour="customer-orders-search"]',
+        actions: ['customer-orders-demo-search'],
+        title: 'Cari Pesanan',
+        body: 'Search membantu menemukan order tertentu saat pesanan meja sedang banyak.',
+        details: ['Bisa cari kode order.', 'Bisa cari nama pelanggan.', 'Bisa cari nomor HP.', 'Bisa cari nomor meja. Tutorial mengisi contoh ORD.'],
+      },
+      {
+        selector: '[data-tour="customer-orders-batch-panel"]',
+        title: 'Panel Batch Status',
+        body: 'Panel batch mempercepat approve beberapa pesanan sekaligus.',
+        details: ['Jika ada checkbox dipilih, aksi hanya memproses pilihan itu.', 'Jika tidak ada pilihan, tombol memproses semua order yang eligible pada tampilan.', 'Setiap tombol menunjukkan jumlah order yang bisa diproses.', 'Selesai dan batal tidak bisa dipilih lagi.'],
+      },
+      {
+        selector: '[data-tour="customer-orders-select-all"]',
+        title: 'Pilih Semua Tampilan',
+        body: 'Tombol ini memilih semua pesanan yang masih bisa diproses pada tampilan saat ini.',
+        details: ['Pesanan completed dan cancelled tidak ikut dipilih.', 'Gunakan ini untuk approve semua order yang sedang tampil.', 'Klik lagi untuk membatalkan pilihan.', 'Jumlah pesanan terpilih langsung terlihat di panel.'],
+      },
+      {
+        selector: '[data-tour="customer-orders-batch-actions"]',
+        title: 'Aksi Batch',
+        body: 'Aksi batch menjalankan perubahan status banyak order dalam satu proses.',
+        details: ['Diterima memindahkan order baru ke tahap kasir menerima.', 'Disiapkan memberi sinyal dapur mulai membuat menu.', 'Siap Diantar memberi sinyal pesanan siap disajikan.', 'Selesai menutup order dan membuka alur review pelanggan.'],
+      },
+      {
+        selector: '[data-tour="customer-orders-stats"]',
+        title: 'Statistik Pesanan',
+        body: 'Kartu statistik memberi ringkasan order meja pada filter aktif.',
+        details: ['Total Order membaca jumlah order.', 'Order Aktif membaca order yang belum final.', 'Selesai membaca order completed.', 'Nilai Order menjumlahkan nilai final dari data yang tampil.'],
+      },
+      {
+        selector: '[data-tour="customer-orders-list"]',
+        title: 'Daftar Pesanan',
+        body: 'Daftar ini adalah pusat kerja untuk memantau pesanan pelanggan meja.',
+        details: ['Setiap kartu adalah satu order dari pelanggan.', 'Skeleton tampil saat data pertama kali dimuat.', 'Empty state tampil jika tidak ada order sesuai filter.', 'Data refresh ringan menjaga UI tetap smooth.'],
+      },
+      {
+        selector: '[data-tour="customer-order-card"]',
+        title: 'Kartu Order',
+        body: 'Kartu order merangkum meja, status, pelanggan, total, item, pembayaran, review, dan aksi status.',
+        details: ['Kode order adalah identitas utama pesanan.', 'Nama dan nomor HP membantu validasi pelanggan.', 'Badge status dan diskon mempercepat pembacaan.', 'Kartu tetap bisa dibaca walau order punya banyak item.'],
+      },
+      {
+        selector: '[data-tour="customer-order-status-badges"]',
+        title: 'Badge Status dan Diskon',
+        body: 'Badge memberi ringkasan visual di bagian atas kartu.',
+        details: ['Badge meja menunjukkan nomor meja.', 'Badge status menunjukkan tahap order.', 'Badge diskon menunjukkan paket bundle, kode voucher, atau reward review.', 'Review selesai tampil bila pelanggan sudah memberi ulasan.'],
+      },
+      {
+        selector: '[data-tour="customer-order-total"]',
+        title: 'Total dan Potongan',
+        body: 'Bagian total menampilkan nilai akhir dan rincian diskon yang dipakai.',
+        details: ['Total pesanan memakai final_total jika ada.', 'Setiap komponen diskon ditampilkan dengan nilai potongan.', 'Paket bundle, voucher, dan reward review dibedakan labelnya.', 'Informasi ini membantu kasir menjawab pertanyaan pelanggan.'],
+      },
+      {
+        selector: '[data-tour="customer-order-items"]',
+        title: 'Item Pesanan',
+        body: 'Item pesanan menunjukkan menu, qty, subtotal, catatan, rating menu, dan detail diskon.',
+        details: ['Setiap item menampilkan nama produk dan qty.', 'Subtotal item membantu cek ulang pesanan.', 'Diskon terpakai memiliki panel detail sendiri.', 'Rating menu tampil setelah pelanggan review.'],
+      },
+      {
+        selector: '[data-tour="customer-order-payment"]',
+        title: 'Pembayaran Pelanggan',
+        body: 'Panel pembayaran menunjukkan metode, status bukti, deadline, dan catatan pembayaran.',
+        details: ['Menunggu bukti berarti pelanggan belum upload.', 'Bukti dikirim berarti kasir/admin perlu verifikasi.', 'Terkonfirmasi berarti pembayaran sudah disetujui.', 'Deadline membantu membaca apakah pembayaran melewati batas waktu.'],
+      },
+      {
+        selector: '[data-tour="customer-order-status-actions"]',
+        title: 'Aksi Status per Order',
+        body: 'Tombol status di tiap kartu dipakai untuk memproses satu order secara manual.',
+        details: ['Aksi yang tidak eligible akan nonaktif.', 'Batalkan membuka alur pembatalan dan pengembalian stok jika berlaku.', 'Selesai menutup order agar tidak bisa dipilih lagi.', 'Gunakan batch action untuk banyak order sekaligus.'],
+      },
+      {
+        selector: '[data-tour="customer-order-select"]',
+        title: 'Checkbox Order',
+        body: 'Checkbox menentukan order mana yang masuk ke aksi batch.',
+        details: ['Pilih order yang ingin diproses bersama.', 'Order selesai dan dibatalkan diberi label Final.', 'Checkbox membantu approve sebagian, bukan semua.', 'Ini mengurangi kesalahan saat order sedang ramai.'],
+      },
+      {
+        selector: '[data-tour="customer-orders-table-form"]',
+        roles: ['admin'],
+        title: 'Form Meja QR',
+        body: 'Admin memakai form ini untuk menambah atau mengedit meja yang bisa dipakai pelanggan self order.',
+        details: ['Nomor meja wajib unik dan jelas.', 'Nama area membantu membedakan lokasi meja.', 'Kapasitas dan status membantu operasional.', 'Catatan meja memberi konteks tambahan.'],
+      },
+      {
+        selector: '[data-tour="customer-orders-table-list"]',
+        roles: ['admin'],
+        title: 'Daftar QR Meja',
+        body: 'Daftar ini menampilkan meja yang bisa dipilih untuk membuat QR self order.',
+        details: ['Klik meja untuk melihat QR publiknya.', 'Status aktif, maintenance, dan nonaktif menentukan ketersediaan meja.', 'Cabang meja ditampilkan agar tidak tertukar.', 'Meja aktif/session pelanggan lain tetap dikunci oleh backend.'],
+      },
+      {
+        selector: '[data-tour="customer-orders-qr-preview"]',
+        roles: ['admin'],
+        title: 'Preview QR Meja',
+        body: 'QR ini dipakai pelanggan membuka halaman order meja langsung dari tempat duduk.',
+        details: ['QR berisi token unik meja.', 'Edit memuat data meja ke form.', 'Nonaktif menonaktifkan meja dari daftar order.', 'Jangan mengganti QR saat meja sedang dipakai pelanggan.'],
+      },
+      {
+        selector: '[data-tour="customer-orders-proof-modal"]',
+        title: 'Modal Bukti Pembayaran',
+        body: 'Jika pelanggan upload bukti pembayaran, kasir atau admin membukanya dalam modal ini.',
+        details: ['Gambar bukti tampil langsung di modal.', 'PDF diberi tombol buka file.', 'Modal menjaga user tetap di halaman pesanan.', 'Verifikasi dilakukan dari status pembayaran/order, bukan dari tab baru.'],
+      },
+    ],
+  },
+  {
     id: 'pos-history',
     title: 'Riwayat POS',
     route: '/pos/history',
@@ -1394,6 +1649,50 @@ export default function FloatingTutorialButton() {
 
       if (action === 'pos-history-demo-search') {
         setInputValue(document.querySelector('[data-tour="pos-history-search"] input'), 'ORD');
+        const timer = window.setTimeout(() => runActions(index + 1, 0), 360);
+        actionTimers.push(timer);
+        return;
+      }
+
+      if (action === 'pos-demo-search') {
+        const searchInput = document.querySelector('[data-tour="pos-search"] input')
+          || document.querySelector('[data-tour="pos-mobile-search"] input');
+        setInputValue(searchInput, 'kebab');
+        const timer = window.setTimeout(() => runActions(index + 1, 0), 360);
+        actionTimers.push(timer);
+        return;
+      }
+
+      if (action === 'pos-demo-add-first-product') {
+        const availableCard = document.querySelector('[data-tour="pos-product-card"][data-soldout="false"] button');
+        if (!availableCard && attempt < 24) {
+          const timer = window.setTimeout(() => runActions(index, attempt + 1), 160);
+          actionTimers.push(timer);
+          return;
+        }
+        availableCard?.click();
+        const timer = window.setTimeout(() => runActions(index + 1, 0), 520);
+        actionTimers.push(timer);
+        return;
+      }
+
+      if (action === 'pos-open-payment-modal') {
+        if (document.querySelector('[data-tour="pos-payment-modal"]')) {
+          const timer = window.setTimeout(() => runActions(index + 1, 0), 220);
+          actionTimers.push(timer);
+          return;
+        }
+        const checkoutButton = document.querySelector('[data-tour="pos-cart-checkout"]');
+        if (checkoutButton && !checkoutButton.disabled) {
+          checkoutButton.click();
+        }
+        const timer = window.setTimeout(() => runActions(index + 1, 0), 520);
+        actionTimers.push(timer);
+        return;
+      }
+
+      if (action === 'customer-orders-demo-search') {
+        setInputValue(document.querySelector('[data-tour="customer-orders-search"] input'), 'ORD');
         const timer = window.setTimeout(() => runActions(index + 1, 0), 360);
         actionTimers.push(timer);
         return;
