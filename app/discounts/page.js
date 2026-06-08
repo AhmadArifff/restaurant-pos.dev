@@ -667,7 +667,6 @@ export default function DiscountsPage() {
                   </button>
                 ))}
               </div>
-              {programs.length === 0 && <DiscountsTutorialDemo />}
               <div data-tour="discount-program-list" className="discount-real-program-list mt-4 space-y-3">
                 {loading && programs.length === 0 && <p className="rounded-xl bg-slate-900 p-5 text-slate-400">Memuat data...</p>}
                 {!loading && programs.length === 0 && <p className="rounded-xl bg-slate-900 p-5 text-slate-400">Belum ada program diskon.</p>}
@@ -730,10 +729,6 @@ export default function DiscountsPage() {
             </section>
           </div>
         </div>
-        <style>{`
-          .discounts-tutorial-demo { display: none; }
-          html[data-tutorial-id="discounts"] .discounts-tutorial-demo { display: block; }
-        `}</style>
       </AdminLayout>
     </AuthGuard>
   );

@@ -935,7 +935,7 @@ const TUTORIALS = [
         actions: ['pos-demo-search'],
         title: 'Cari Menu',
         body: 'Search mempercepat kasir menemukan menu saat pelanggan memesan banyak item.',
-        details: ['Bisa mencari nama produk.', 'Hasil produk langsung difilter.', 'Tutorial mengisi contoh kata kebab.', 'Kosongkan search untuk kembali menampilkan semua menu.'],
+        details: ['Bisa mencari nama produk.', 'Hasil produk langsung difilter.', 'Tutorial menjaga filter tetap kosong agar semua menu real tetap terlihat.', 'Kosongkan search untuk kembali menampilkan semua menu.'],
       },
       {
         selector: '[data-tour="pos-today-revenue"]',
@@ -1676,7 +1676,7 @@ export default function FloatingTutorialButton() {
       if (action === 'pos-demo-search') {
         const searchInput = document.querySelector('[data-tour="pos-search"] input')
           || document.querySelector('[data-tour="pos-mobile-search"] input');
-        setInputValue(searchInput, 'kebab');
+        setInputValue(searchInput, '');
         const timer = window.setTimeout(() => runActions(index + 1, 0), 360);
         actionTimers.push(timer);
         return;
@@ -1685,6 +1685,12 @@ export default function FloatingTutorialButton() {
       if (action === 'pos-demo-add-first-product') {
         const availableCard = document.querySelector('[data-tour="pos-product-card"][data-soldout="false"] button');
         if (!availableCard && attempt < 24) {
+          if (attempt === 0) {
+            const searchInput = document.querySelector('[data-tour="pos-search"] input')
+              || document.querySelector('[data-tour="pos-mobile-search"] input');
+            setInputValue(searchInput, '');
+            document.querySelector('[data-tour="pos-category-filter"] button')?.click();
+          }
           const timer = window.setTimeout(() => runActions(index, attempt + 1), 160);
           actionTimers.push(timer);
           return;

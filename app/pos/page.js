@@ -759,7 +759,7 @@ export default function PosPage() {
               ))}
             </div>
 
-            {products.length === 0 && <PosTutorialDemo />}
+
 
             {/* ── PRODUCT GRID ── */}
             <div className="flex-1 overflow-y-auto px-4 sm:px-5 py-4" data-tour="pos-product-section">
@@ -963,8 +963,6 @@ export default function PosPage() {
             to   { transform: translateY(0); }
           }
           .animate-slide-up { animation: slide-up 0.3s cubic-bezier(0.32,0.72,0,1); }
-          .pos-tutorial-demo { display: none; }
-          html[data-tutorial-id="pos"] .pos-tutorial-demo { display: block; }
         `}</style>
       </AdminLayout>
     </AuthGuard>

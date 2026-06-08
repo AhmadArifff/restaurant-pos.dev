@@ -313,7 +313,6 @@ export default function ProductsPage() {
         </div>
 
         {/* Grid Produk */}
-        {products.length === 0 && <ProductsTutorialDemo />}
         {pageLoading && products.length === 0 ? (
           <CardSkeleton count={8} />
         ) : (
@@ -691,10 +690,6 @@ export default function ProductsPage() {
           </div>
         </div>
       )}
-      <style>{`
-        .products-tutorial-demo { display: none; }
-        html[data-tutorial-id="products"] .products-tutorial-demo { display: block; }
-      `}</style>
     </AdminLayout>
   );
 }

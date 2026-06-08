@@ -941,8 +941,6 @@ function AdminStockPage({ successModal, setSuccessModal }) {
       </div>
 
       {/* ── BAHAN BAKU ── */}
-      {stockItems.length === 0 && summary.length === 0 && requests.length === 0 && <StockTutorialDemo />}
-
       {tab==='master' && (
         masterInitialLoading ? (
           <StockMasterSkeleton />
@@ -3243,10 +3241,6 @@ export default function StockPage() {
         message={successModal.message}
         requestType={successModal.requestType}
       />
-      <style>{`
-        .stock-tutorial-demo { display: none; }
-        html[data-tutorial-id="stock"] .stock-tutorial-demo { display: block; }
-      `}</style>
     </AdminLayout>
   );
 }
