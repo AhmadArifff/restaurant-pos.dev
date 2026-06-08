@@ -844,6 +844,7 @@ export default function FloatingTutorialButton() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [activeTutorialId, setActiveTutorialId] = useState(null);
+  const [pendingTutorialId, setPendingTutorialId] = useState(null);
   const [stepIndex, setStepIndex] = useState(0);
   const [highlight, setHighlight] = useState(null);
   const [stepReady, setStepReady] = useState(false);
@@ -854,6 +855,7 @@ export default function FloatingTutorialButton() {
     TUTORIALS.filter((tutorial) => !tutorial.roles || tutorial.roles.includes(user?.role))
   ), [user?.role]);
   const activeTutorial = availableTutorials.find((item) => item.id === activeTutorialId);
+  const pendingTutorial = availableTutorials.find((item) => item.id === pendingTutorialId);
   const activeSteps = useMemo(() => (
     (activeTutorial?.steps || [])
       .filter((step) => !step.roles || step.roles.includes(user?.role))
@@ -870,6 +872,21 @@ export default function FloatingTutorialButton() {
     if (!activeTutorial || stepIndex < activeSteps.length) return;
     setStepIndex(Math.max(0, activeSteps.length - 1));
   }, [activeSteps.length, activeTutorial, stepIndex]);
+
+  useEffect(() => {
+    if (!pendingTutorial) return undefined;
+    if (pathname !== pendingTutorial.route) return undefined;
+
+    const timer = window.setTimeout(() => {
+      setActiveTutorialId(pendingTutorial.id);
+      setPendingTutorialId(null);
+      setStepIndex(0);
+      setHighlight(null);
+      setOpen(true);
+    }, 560);
+
+    return () => window.clearTimeout(timer);
+  }, [pathname, pendingTutorial]);
 
   useEffect(() => {
     if (!user) return;
@@ -1171,7 +1188,10 @@ export default function FloatingTutorialButton() {
   if (!user || availableTutorials.length === 0) return null;
 
   const getPanelStyle = () => {
-    const width = typeof window === 'undefined' ? 420 : Math.min(420, window.innerWidth - 32);
+    const isTutorialChooser = !activeTutorial;
+    const width = typeof window === 'undefined'
+      ? (isTutorialChooser ? 960 : 420)
+      : Math.min(isTutorialChooser ? 960 : 420, window.innerWidth - 32);
     if (activeTutorial && highlight && typeof window !== 'undefined') {
       const gap = 18;
       const preferredHeight = Math.min(560, window.innerHeight - 32);
@@ -1197,7 +1217,7 @@ export default function FloatingTutorialButton() {
       top: '50%',
       left: '50%',
       width: `${width}px`,
-      maxHeight: `${typeof window === 'undefined' ? 560 : Math.min(560, window.innerHeight - 32)}px`,
+      maxHeight: `${typeof window === 'undefined' ? 680 : Math.min(isTutorialChooser ? 720 : 560, window.innerHeight - 32)}px`,
       transform: 'translate(-50%, -50%)',
     };
   };
@@ -1242,19 +1262,25 @@ export default function FloatingTutorialButton() {
   };
 
   const startTutorial = (tutorial) => {
-    setActiveTutorialId(tutorial.id);
+    setActiveTutorialId(null);
+    setPendingTutorialId(tutorial.id);
     setStepIndex(0);
+    setHighlight(null);
     setOpen(true);
-    if (pathname !== tutorial.route) router.push(tutorial.route);
+    if (pathname !== tutorial.route) {
+      router.push(tutorial.route);
+    }
   };
 
   const closeTutorial = () => {
     setOpen(false);
     setHighlight(null);
+    setPendingTutorialId(null);
   };
 
   const finishTutorial = () => {
     setActiveTutorialId(null);
+    setPendingTutorialId(null);
     setStepIndex(0);
     setHighlight(null);
     setOpen(true);
@@ -1287,9 +1313,15 @@ export default function FloatingTutorialButton() {
         />
       )}
 
+      {open && !activeTutorial && (
+        <div className="fixed inset-0 z-[59] bg-slate-950/70 backdrop-blur-sm" />
+      )}
+
       {open && (
         <div
-          className="fixed z-[60] flex flex-col overflow-hidden rounded-3xl border border-amber-500/25 bg-slate-950 shadow-2xl shadow-black/50"
+          className={`fixed z-[60] flex flex-col overflow-hidden border border-amber-500/25 bg-slate-950 shadow-2xl shadow-black/50 ${
+            activeTutorial ? 'rounded-3xl' : 'rounded-[2rem]'
+          }`}
           style={getPanelStyle()}
         >
           <div className="border-b border-white/10 bg-gradient-to-br from-amber-500/18 to-slate-900 px-5 py-4">
@@ -1371,20 +1403,39 @@ export default function FloatingTutorialButton() {
               </div>
             </div>
           ) : (
-            <div className="p-5">
-              <p className="text-sm leading-6 text-slate-300">
-                Pilih halaman yang ingin dipandu. Setelah satu tutorial selesai, pilihan ini akan muncul lagi supaya Anda bisa lanjut ke menu lain.
-              </p>
-              <div className="mt-4 space-y-3">
+            <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-6">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.22em] text-amber-300">Pilih Tutorial</p>
+                  <h3 className="mt-2 text-2xl font-black text-white">Mau dipandu menu apa?</h3>
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
+                    Pilih halaman yang ingin dipandu. Sistem akan pindah halaman dulu, menunggu tampilan siap, lalu tutorial dimulai otomatis dari step pertama.
+                  </p>
+                </div>
+                {pendingTutorial && (
+                  <div className="rounded-2xl border border-sky-400/25 bg-sky-400/10 px-4 py-3 text-sm font-bold text-sky-100">
+                    Menyiapkan {pendingTutorial.title}...
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {availableTutorials.map((tutorial) => (
                   <button
                     key={tutorial.id}
                     type="button"
                     onClick={() => startTutorial(tutorial)}
-                    className="w-full rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-left transition hover:border-amber-400/50 hover:bg-amber-500/10"
+                    disabled={Boolean(pendingTutorialId)}
+                    className="group min-h-40 w-full rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.055] to-white/[0.015] p-5 text-left transition hover:-translate-y-0.5 hover:border-amber-400/60 hover:bg-amber-500/10 disabled:cursor-wait disabled:opacity-55"
                   >
-                    <span className="block text-base font-black text-white">{tutorial.title}</span>
-                    <span className="mt-1 block text-sm leading-5 text-slate-400">{tutorial.description}</span>
+                    <span className="inline-flex rounded-full bg-amber-400/12 px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em] text-amber-200">
+                      Tutorial
+                    </span>
+                    <span className="mt-4 block text-xl font-black text-white transition group-hover:text-amber-100">{tutorial.title}</span>
+                    <span className="mt-2 block text-sm leading-6 text-slate-400">{tutorial.description}</span>
+                    <span className="mt-5 inline-flex text-sm font-black text-amber-300">
+                      Mulai panduan
+                    </span>
                   </button>
                 ))}
               </div>
