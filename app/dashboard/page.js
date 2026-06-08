@@ -30,6 +30,31 @@ function hexToRgb(hex) {
   return `${r},${g},${b}`;
 }
 
+function normalizeDate(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function getDashboardMonthRange(year, month) {
+  return {
+    start: new Date(year, month - 1, 1),
+    end: new Date(year, month, 0),
+  };
+}
+
+function formatShortDate(date) {
+  return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function isSameDate(a, b) {
+  return a && b && normalizeDate(a).getTime() === normalizeDate(b).getTime();
+}
+
+function isWithinDateRange(day, start, end) {
+  if (!start || !end) return false;
+  const time = normalizeDate(day).getTime();
+  return time >= normalizeDate(start).getTime() && time <= normalizeDate(end).getTime();
+}
+
 // ── Filter Chips ──────────────────────────────────────────────
 function FilterChips({ items, active, onChange }) {
   return (
@@ -58,6 +83,160 @@ function FilterChips({ items, active, onChange }) {
           </button>
         );
       })}
+    </div>
+  );
+}
+
+function DashboardDateRangePicker({ value, years = [], onChange }) {
+  const [open, setOpen] = useState(false);
+  const [viewMonth, setViewMonth] = useState(value.start.getMonth());
+  const [viewYear, setViewYear] = useState(value.start.getFullYear());
+  const [draftStart, setDraftStart] = useState(value.start);
+  const [draftEnd, setDraftEnd] = useState(value.end);
+
+  useEffect(() => {
+    setViewMonth(value.start.getMonth());
+    setViewYear(value.start.getFullYear());
+    setDraftStart(value.start);
+    setDraftEnd(value.end);
+  }, [value.start, value.end]);
+
+  const monthTitle = new Date(viewYear, viewMonth, 1).toLocaleDateString('id-ID', {
+    month: 'long',
+    year: 'numeric',
+  });
+  const firstDay = new Date(viewYear, viewMonth, 1);
+  const offset = (firstDay.getDay() + 6) % 7;
+  const totalDays = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const cells = [
+    ...Array.from({ length: offset }, (_, i) => ({ key: `empty-${i}`, empty: true })),
+    ...Array.from({ length: totalDays }, (_, i) => ({
+      key: `day-${i + 1}`,
+      date: new Date(viewYear, viewMonth, i + 1),
+    })),
+  ];
+  const yearOptions = Array.from(new Set([...(years.length ? years : [new Date().getFullYear()]), viewYear]))
+    .sort((a, b) => b - a);
+
+  const moveMonth = (direction) => {
+    const next = new Date(viewYear, viewMonth + direction, 1);
+    setViewMonth(next.getMonth());
+    setViewYear(next.getFullYear());
+  };
+
+  const pickDate = (date) => {
+    const selected = normalizeDate(date);
+    if (!draftStart || draftEnd) {
+      setDraftStart(selected);
+      setDraftEnd(null);
+      return;
+    }
+
+    const start = selected.getTime() < normalizeDate(draftStart).getTime() ? selected : normalizeDate(draftStart);
+    const end = selected.getTime() < normalizeDate(draftStart).getTime() ? normalizeDate(draftStart) : selected;
+    setDraftStart(start);
+    setDraftEnd(end);
+    onChange({ start, end });
+    setOpen(false);
+  };
+
+  return (
+    <div className="relative w-full sm:w-auto">
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        className="flex w-full min-w-[260px] items-center justify-between gap-3 rounded-2xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-left text-white shadow-lg shadow-black/10 transition-all hover:border-sky-400/60 sm:w-auto"
+      >
+        <span>
+          <span className="block text-[10px] font-black uppercase tracking-[0.22em] text-sky-300">
+            Range Dashboard
+          </span>
+          <span className="mt-0.5 block text-sm font-bold">
+            {formatShortDate(value.start)} - {formatShortDate(value.end)}
+          </span>
+        </span>
+        <span className="rounded-xl bg-sky-500/15 px-2.5 py-1 text-xs font-black text-sky-200">
+          Kalender
+        </span>
+      </button>
+
+      {open && (
+        <div className="absolute right-0 z-50 mt-3 w-[min(92vw,380px)] rounded-3xl border border-slate-700 bg-slate-900 p-4 shadow-2xl shadow-black/40">
+          <div className="flex items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={() => moveMonth(-1)}
+              className="h-10 w-10 rounded-2xl border border-slate-700 text-lg font-black text-slate-200 transition hover:border-sky-400 hover:text-sky-200"
+              aria-label="Bulan sebelumnya"
+            >
+              {'<'}
+            </button>
+            <div className="min-w-0 text-center">
+              <p className="text-sm font-black text-white">{monthTitle}</p>
+              <p className="text-[11px] font-medium text-slate-400">
+                Klik tanggal awal, lalu klik tanggal akhir
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => moveMonth(1)}
+              className="h-10 w-10 rounded-2xl border border-slate-700 text-lg font-black text-slate-200 transition hover:border-sky-400 hover:text-sky-200"
+              aria-label="Bulan berikutnya"
+            >
+              {'>'}
+            </button>
+          </div>
+
+          <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-slate-800 bg-slate-950/60 px-3 py-2">
+            <span className="text-xs font-semibold text-slate-400">Tahun laporan</span>
+            <select
+              value={viewYear}
+              onChange={(e) => setViewYear(Number(e.target.value))}
+              className="rounded-xl border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm font-bold text-white outline-none"
+            >
+              {yearOptions.map(y => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="mt-4 grid grid-cols-7 gap-1 text-center text-[11px] font-black uppercase text-slate-500">
+            {['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'].map(day => (
+              <span key={day}>{day}</span>
+            ))}
+          </div>
+
+          <div className="mt-2 grid grid-cols-7 gap-1">
+            {cells.map(cell => {
+              if (cell.empty) return <span key={cell.key} className="h-10" />;
+              const activeStart = isSameDate(cell.date, draftStart);
+              const activeEnd = isSameDate(cell.date, draftEnd);
+              const inRange = isWithinDateRange(cell.date, draftStart, draftEnd);
+              return (
+                <button
+                  key={cell.key}
+                  type="button"
+                  onClick={() => pickDate(cell.date)}
+                  className={[
+                    'h-10 rounded-2xl text-sm font-bold transition-all',
+                    activeStart || activeEnd
+                      ? 'bg-sky-400 text-slate-950 shadow-lg shadow-sky-500/20'
+                      : inRange
+                        ? 'bg-sky-500/15 text-sky-100'
+                        : 'text-slate-300 hover:bg-slate-800',
+                  ].join(' ')}
+                >
+                  {cell.date.getDate()}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-sky-500/20 bg-sky-500/10 p-3 text-xs leading-5 text-sky-100">
+            Dashboard tetap memakai logic laporan bulanan yang sudah ada. Tanggal awal range menentukan bulan dan tahun data yang ditampilkan.
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -538,6 +717,10 @@ export default function DashboardPage() {
   const [tabYear,     setTabYear]     = useState('omzet');
   const [year,        setYear]        = useState(new Date().getFullYear());
   const [currentMonth, setCurrentMonth]= useState(new Date().getMonth() + 1); // 1-12
+  const [dateRange,   setDateRange]   = useState(() => getDashboardMonthRange(
+    new Date().getFullYear(),
+    new Date().getMonth() + 1
+  ));
   const [availYears,  setAvailYears]  = useState([]);
   const [loading,     setLoading]     = useState(true);
   const [refreshing,  setRefreshing]  = useState(false);
@@ -563,8 +746,10 @@ export default function DashboardPage() {
     getTransactionYears()
       .then(r => {
         const years = r.data.length ? r.data : [new Date().getFullYear()];
+        const selectedYear = years[0];
         setAvailYears(years);
-        setYear(years[0]);
+        setYear(selectedYear);
+        setDateRange(getDashboardMonthRange(selectedYear, currentMonth));
       })
       .catch(() => setAvailYears([new Date().getFullYear()]));
   }, []);
@@ -741,6 +926,12 @@ const filteredBestSelling = bestSelling.filter(p => {
     weekday:'long', day:'numeric', month:'long', year:'numeric'
   });
 
+  const handleDateRangeChange = ({ start, end }) => {
+    setDateRange({ start, end });
+    setCurrentMonth(start.getMonth() + 1);
+    setYear(start.getFullYear());
+  };
+
 
   return (
     <AdminLayout>
@@ -760,26 +951,11 @@ const filteredBestSelling = bestSelling.filter(p => {
                 Sinkronisasi dashboard...
               </span>
             )}
-            <select
-              value={currentMonth}
-              onChange={(e) => setCurrentMonth(Number(e.target.value))}
-              className="px-3 py-1.5 rounded-xl text-sm font-semibold bg-slate-800 text-white
-                border border-slate-700 hover:border-slate-500 transition-all cursor-pointer"
-            >
-              {MONTHS.map((m, i) => (
-                <option key={i} value={i + 1}>{m}</option>
-              ))}
-            </select>
-            <select
-              value={year}
-              onChange={(e) => setYear(Number(e.target.value))}
-              className="px-3 py-1.5 rounded-xl text-sm font-semibold bg-slate-800 text-white
-                border border-slate-700 hover:border-slate-500 transition-all cursor-pointer"
-            >
-              {availYears.map(y => (
-                <option key={y} value={y}>{y}</option>
-              ))}
-            </select>
+            <DashboardDateRangePicker
+              value={dateRange}
+              years={availYears}
+              onChange={handleDateRangeChange}
+            />
           </div>
         </div>
 
