@@ -810,7 +810,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                 className="bg-slate-700 border border-slate-600 text-white text-xs rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-orange-500/50">
                 {[2024, 2025, 2026, 2027].map(year => <option key={year} value={year}>{year}</option>)}
               </select>
-              <button onClick={() => setShowForm(true)}
+              <button data-tour-action="stock-open-master-modal" onClick={() => setShowForm(true)}
                 className="bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold
                   px-4 py-2 rounded-xl transition-all shadow-lg shadow-orange-500/25">
                 + Tambah Bahan
@@ -976,6 +976,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
             <SubTab data-tour-action="stock-subtab-out" active={mainTab==='out'}     onClick={() => setMainTab('out')}>📤 Pengeluaran</SubTab>
             {mainTab === 'in' && (
               <button
+                data-tour-action="stock-open-purchase-modal"
                 onClick={() => setShowPurchase(true)}
                 className="ml-auto px-4 py-2 rounded-xl text-xs font-semibold
                   bg-blue-500/20 text-blue-400 border border-blue-500/30 hover:bg-blue-500/30 transition-all">
@@ -1205,6 +1206,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                   </button>
                 </div>
               <button
+                  data-tour-action="stock-open-out-modal"
                   onClick={() => {
                     setOutMenuSelections([createEmptyRecipeSelection()]);
                     setOutItems([{ stock_item_id:'', qty:'', note:'' }]);
@@ -1522,7 +1524,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
           <div data-tour="stock-master-modal" className="bg-slate-800 rounded-2xl p-6 w-full max-w-md border border-slate-700 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-white font-bold text-lg">{editId?'Edit':'Tambah'} Bahan Baku</h2>
-              <button onClick={resetForm} className="text-slate-500 hover:text-white p-1 rounded-lg hover:bg-slate-700">✕</button>
+              <button data-tour-action="stock-close-master-modal" onClick={resetForm} className="text-slate-500 hover:text-white p-1 rounded-lg hover:bg-slate-700">✕</button>
             </div>
             {!editId && (
               <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 mb-4">
@@ -1578,7 +1580,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                 <h3 className="text-white font-bold">📥 Catat Pembelian Stok</h3>
                 <p className="text-slate-500 text-xs mt-0.5">Stok gudang akan bertambah otomatis</p>
               </div>
-              <button onClick={() => setShowPurchase(false)} className="text-slate-500 hover:text-white p-2 rounded-xl hover:bg-slate-700 transition-colors">✕</button>
+              <button data-tour-action="stock-close-purchase-modal" onClick={() => setShowPurchase(false)} className="text-slate-500 hover:text-white p-2 rounded-xl hover:bg-slate-700 transition-colors">✕</button>
             </div>
             <div className="p-5 space-y-3">
               {purchItems.map((item, i) => (
@@ -2501,7 +2503,7 @@ function KasirStockPage({ successModal, setSuccessModal }) {
                     🔍 Cari
                   </button>
                 </div>
-                <button onClick={() => {
+                <button data-tour-action="stock-open-out-modal" onClick={() => {
                   setOutMenuSelections([createEmptyRecipeSelection()]);
                   setOutItems([{ stock_item_id:'', qty:'', note:'' }]);
                   setShowOutForm(true);

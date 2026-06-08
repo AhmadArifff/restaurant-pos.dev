@@ -230,7 +230,7 @@ const TUTORIALS = [
       {
         selector: '[data-tour="stock-master-modal"]',
         roles: ['admin'],
-        actions: ['stock-tab-master'],
+        actions: ['stock-tab-master', 'stock-open-master-modal'],
         title: 'Modal Bahan Baku',
         body: 'Jika modal bahan baku sedang dibuka, bagian ini menjelaskan field yang harus diisi.',
         details: ['Nama Bahan wajib diisi sebagai identitas ingredient.', 'Satuan memilih unit perhitungan stok.', 'Min. Stok Alert menentukan batas status menipis.', 'Batal menutup form, Simpan atau Update menyimpan perubahan.'],
@@ -238,14 +238,14 @@ const TUTORIALS = [
       {
         selector: '[data-tour="stock-purchase-modal"]',
         roles: ['admin'],
-        actions: ['stock-tab-warehouse', 'stock-subtab-in'],
+        actions: ['stock-close-master-modal', 'stock-tab-warehouse', 'stock-subtab-in', 'stock-open-purchase-modal'],
         title: 'Modal Catat Pembelian',
         body: 'Jika modal pembelian sedang dibuka, form ini dipakai untuk memasukkan stok masuk.',
         details: ['Pilih Bahan Baku menentukan item yang bertambah.', 'Jumlah dan Harga/Satuan menghitung subtotal otomatis.', 'Tambah Bahan Lain membuat banyak baris pembelian sekaligus.', 'Total Pembelian merangkum semua item sebelum disimpan.'],
       },
       {
         selector: '[data-tour="stock-out-modal"]',
-        actions: ['stock-tab-warehouse', 'stock-subtab-out'],
+        actions: ['stock-close-purchase-modal', 'stock-tab-warehouse', 'stock-subtab-out', 'stock-open-out-modal'],
         title: 'Modal Pengeluaran atau Pengajuan',
         body: 'Jika modal pengeluaran sedang dibuka, form ini bisa menghitung bahan otomatis dari menu dan qty porsi.',
         details: ['Pilih satu atau beberapa menu lalu isi qty menu.', 'Ringkasan bahan terkunci dari resep produk dan tidak dipilih manual.', 'Qty divalidasi agar tidak melebihi stok yang bisa dibuat dari bahan tersedia.', 'Admin dapat memilih kasir, sedangkan kasir mengirim pengajuan atas namanya sendiri.'],
@@ -270,6 +270,7 @@ export default function FloatingTutorialButton() {
   const [activeTutorialId, setActiveTutorialId] = useState(null);
   const [stepIndex, setStepIndex] = useState(0);
   const [highlight, setHighlight] = useState(null);
+  const [stepReady, setStepReady] = useState(false);
   const [buttonPos, setButtonPos] = useState(null);
   const dragRef = useRef(null);
 
@@ -327,24 +328,20 @@ export default function FloatingTutorialButton() {
   useEffect(() => {
     if (!activeStep?.selector || !open) {
       setHighlight(null);
+      setStepReady(false);
       return undefined;
     }
 
     let cancelled = false;
+    let retryTimer = null;
     const actionTimers = [];
-    activeStep.actions?.forEach((action, index) => {
-      const timer = window.setTimeout(() => {
-        if (cancelled) return;
-        document.querySelector(`[data-tour-action="${action}"]`)?.click();
-      }, index * 220);
-      actionTimers.push(timer);
-    });
+    setStepReady(false);
 
     const updateHighlight = () => {
       const element = document.querySelector(activeStep.selector);
       if (!element) {
         setHighlight(null);
-        return;
+        return false;
       }
       element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
       window.setTimeout(() => {
@@ -356,20 +353,59 @@ export default function FloatingTutorialButton() {
           width: rect.width + 16,
           height: rect.height + 16,
         });
+        setStepReady(true);
       }, 280);
+      return true;
     };
 
-    updateHighlight();
-    const delayedHighlight = window.setTimeout(
-      updateHighlight,
-      activeStep.actions?.length ? activeStep.actions.length * 240 + 320 : 160
-    );
+    const pollTarget = (attempt = 0) => {
+      if (cancelled) return;
+      const found = updateHighlight();
+      if (!found && attempt < 32) {
+        retryTimer = window.setTimeout(() => pollTarget(attempt + 1), 180);
+        return;
+      }
+      if (!found) setStepReady(true);
+    };
+
+    const runActions = (index = 0, attempt = 0) => {
+      if (cancelled) return;
+      const actions = activeStep.actions || [];
+      if (index >= actions.length) {
+        retryTimer = window.setTimeout(() => pollTarget(), 220);
+        return;
+      }
+
+      const action = actions[index];
+      const trigger = document.querySelector(`[data-tour-action="${action}"]`);
+      if (trigger) {
+        trigger.click();
+        const timer = window.setTimeout(() => runActions(index + 1, 0), 340);
+        actionTimers.push(timer);
+        return;
+      }
+
+      if (action.startsWith('stock-close-')) {
+        runActions(index + 1, 0);
+        return;
+      }
+
+      if (attempt < 24) {
+        const timer = window.setTimeout(() => runActions(index, attempt + 1), 160);
+        actionTimers.push(timer);
+        return;
+      }
+
+      runActions(index + 1, 0);
+    };
+
+    runActions();
     window.addEventListener('resize', updateHighlight);
     window.addEventListener('scroll', updateHighlight, true);
     return () => {
       cancelled = true;
       actionTimers.forEach((timer) => window.clearTimeout(timer));
-      window.clearTimeout(delayedHighlight);
+      if (retryTimer) window.clearTimeout(retryTimer);
       window.removeEventListener('resize', updateHighlight);
       window.removeEventListener('scroll', updateHighlight, true);
     };
@@ -522,9 +558,16 @@ export default function FloatingTutorialButton() {
             <div className="flex min-h-0 flex-1 flex-col">
               <div className="min-h-0 flex-1 overflow-y-auto p-5 pb-3">
               <div className="mb-4 flex items-center justify-between gap-3">
-                <span className="rounded-full bg-amber-500/15 px-3 py-1 text-xs font-black text-amber-200">
-                  Step {stepIndex + 1}/{activeSteps.length}
-                </span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-full bg-amber-500/15 px-3 py-1 text-xs font-black text-amber-200">
+                    Step {stepIndex + 1}/{activeSteps.length}
+                  </span>
+                  {!stepReady && (
+                    <span className="rounded-full border border-sky-400/25 bg-sky-400/10 px-3 py-1 text-xs font-bold text-sky-200">
+                      Menyiapkan tampilan...
+                    </span>
+                  )}
+                </div>
                 <button
                   type="button"
                   onClick={finishTutorial}
@@ -562,7 +605,8 @@ export default function FloatingTutorialButton() {
                 <button
                   type="button"
                   onClick={goNext}
-                  className="flex-[1.4] rounded-2xl bg-amber-400 px-4 py-3 text-sm font-black text-slate-950 transition hover:bg-amber-300"
+                  disabled={!stepReady}
+                  className="flex-[1.4] rounded-2xl bg-amber-400 px-4 py-3 text-sm font-black text-slate-950 transition hover:bg-amber-300 disabled:cursor-wait disabled:opacity-55"
                 >
                   {stepIndex >= activeSteps.length - 1 ? 'Selesai' : 'Lanjut'}
                 </button>
