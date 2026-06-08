@@ -236,7 +236,7 @@ function RecipeMenuPicker({
   };
 
   return (
-    <div className="rounded-xl border border-orange-500/20 bg-orange-500/10 p-4 space-y-3">
+    <div data-tour="stock-recipe-picker" className="rounded-xl border border-orange-500/20 bg-orange-500/10 p-4 space-y-3">
       <div>
         <p className="text-orange-300 text-sm font-black">{title}</p>
         <p className="text-slate-400 text-xs mt-0.5">
@@ -255,7 +255,7 @@ function RecipeMenuPicker({
             : 999;
           return (
             <div key={index} className="grid grid-cols-1 sm:grid-cols-[1fr_120px_auto] gap-3">
-              <div>
+              <div data-tour="stock-recipe-menu-select">
                 <label className="text-slate-500 text-xs mb-1 block">Menu pesanan {index + 1}</label>
                 <select
                   value={selection.product_id}
@@ -270,7 +270,7 @@ function RecipeMenuPicker({
                   ))}
                 </select>
               </div>
-              <div>
+              <div data-tour="stock-recipe-menu-qty">
                 <label className="text-slate-500 text-xs mb-1 block">Qty menu</label>
                 <input
                   type="number"
@@ -302,6 +302,7 @@ function RecipeMenuPicker({
           );
         })}
         <button
+          data-tour="stock-recipe-add"
           type="button"
           onClick={addSelection}
           disabled={selectedIds.length >= recipeProducts.length}
@@ -311,7 +312,7 @@ function RecipeMenuPicker({
         </button>
       </div>
       {selectedIds.length > 0 && (
-        <p className="text-[11px] leading-5 text-slate-400">
+        <p data-tour="stock-recipe-note" className="text-[11px] leading-5 text-slate-400">
           Bahan baku dikunci dari resep produk. Ubah menu atau qty menu untuk menghitung ulang kebutuhan bahan.
         </p>
       )}
@@ -330,7 +331,7 @@ function ReadOnlyRecipeSummary({ rows = [], title = 'Ringkasan bahan resep' }) {
   }
 
   return (
-    <div className="rounded-xl border border-slate-600/40 bg-slate-700/40 p-4 space-y-3">
+    <div data-tour="stock-recipe-summary" className="rounded-xl border border-slate-600/40 bg-slate-700/40 p-4 space-y-3">
       <div>
         <p className="text-slate-200 text-sm font-black">{title}</p>
         <p className="text-slate-500 text-xs">Bahan tampil sebagai ringkasan, tidak bisa dipilih manual.</p>
@@ -1532,13 +1533,13 @@ function AdminStockPage({ successModal, setSuccessModal }) {
               </div>
             )}
             <div className="space-y-4">
-              <div>
+              <div data-tour="stock-master-name-field">
                 <label className="text-slate-400 text-sm block mb-1">Nama Bahan <span className="text-red-400">*</span></label>
                 <input value={formData.name} onChange={e => setFormData(p=>({...p,name:e.target.value}))}
                   placeholder="contoh: Slice Beef, Cup, Saus Sambal..."
                   className="w-full bg-slate-700 text-white rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-orange-500 border border-slate-600 placeholder:text-slate-500" />
               </div>
-              <div>
+              <div data-tour="stock-master-unit-field">
                 <label className="text-slate-400 text-sm block mb-1">Satuan <span className="text-red-400">*</span></label>
                 <select value={formData.unit} onChange={e => setFormData(p=>({...p,unit:e.target.value}))}
                   className="w-full bg-slate-700 text-white rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-orange-500 border border-slate-600">
@@ -1549,7 +1550,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                   ))}
                 </select>
               </div>
-              <div>
+              <div data-tour="stock-master-min-field">
                 <label className="text-slate-400 text-sm block mb-1">Min. Stok Alert <span className="text-slate-600 text-xs">(opsional)</span></label>
                 <div className="relative">
                   <input type="number" min="0" value={formData.min_stock}
@@ -1559,7 +1560,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                   <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 text-xs pointer-events-none">{formData.unit}</span>
                 </div>
               </div>
-              <div className="flex gap-3 pt-2">
+              <div data-tour="stock-master-actions-field" className="flex gap-3 pt-2">
                 <button onClick={resetForm} className="flex-1 bg-slate-700 hover:bg-slate-600 text-white rounded-xl py-3 text-sm font-semibold">Batal</button>
                 <button onClick={handleSaveMaster} disabled={formLoading||!formData.name.trim()}
                   className="flex-1 bg-orange-500 hover:bg-orange-400 disabled:opacity-50 text-white font-bold rounded-xl py-3 text-sm">
@@ -1584,7 +1585,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
             </div>
             <div className="p-5 space-y-3">
               {purchItems.map((item, i) => (
-                <div key={i} className="bg-slate-700/40 rounded-xl p-4 border border-slate-600/40">
+                <div key={i} data-tour="stock-purchase-item" className="bg-slate-700/40 rounded-xl p-4 border border-slate-600/40">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-slate-400 text-xs font-semibold uppercase tracking-wide">Item {i+1}</span>
                     {purchItems.length>1 && (
@@ -1593,7 +1594,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                     )}
                   </div>
                   <div className="space-y-3">
-                    <div>
+                    <div data-tour="stock-purchase-select-field">
                       <label className="text-slate-500 text-xs mb-1 block">Pilih Bahan Baku</label>
                       <select value={item.stock_item_id}
                         onChange={e => setPurchItems(p => p.map((x,j) => j===i?{...x,stock_item_id:e.target.value}:x))}
@@ -1602,7 +1603,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                         {stockItems.map(si => <option key={si.id} value={si.id}>{si.name} ({si.unit})</option>)}
                       </select>
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div data-tour="stock-purchase-qty-cost-field" className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="text-slate-500 text-xs mb-1 block">
                           Jumlah {item.stock_item_id ? `(${stockItems.find(s=>s.id==item.stock_item_id)?.unit||''})` : ''}
@@ -1619,7 +1620,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                       </div>
                     </div>
                     {Number(item.qty)>0 && Number(item.cost_per_unit)>0 && (
-                      <div className="bg-orange-500/10 rounded-lg px-3 py-2 flex justify-between">
+                      <div data-tour="stock-purchase-subtotal" className="bg-orange-500/10 rounded-lg px-3 py-2 flex justify-between">
                         <span className="text-slate-500 text-xs">Subtotal</span>
                         <span className="text-orange-400 text-xs font-bold">
                           Rp {(Number(item.qty)*Number(item.cost_per_unit)).toLocaleString('id-ID')}
@@ -1629,17 +1630,17 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                   </div>
                 </div>
               ))}
-              <button onClick={() => setPurchItems(p => [...p,{stock_item_id:'',qty:'',cost_per_unit:''}])}
+              <button data-tour="stock-purchase-add-item" onClick={() => setPurchItems(p => [...p,{stock_item_id:'',qty:'',cost_per_unit:''}])}
                 className="w-full py-2.5 rounded-xl border border-dashed border-slate-600 text-slate-500 hover:text-slate-300 hover:border-slate-500 text-sm transition-all">
                 + Tambah Bahan Lain
               </button>
-              <div>
+              <div data-tour="stock-purchase-note-field">
                 <label className="text-slate-500 text-xs mb-1 block">Catatan (opsional)</label>
                 <input value={purchNote} onChange={e => setPurchNote(e.target.value)}
                   placeholder="contoh: Pembelian dari pasar..."
                   className="w-full bg-slate-700 border border-slate-600 text-white text-sm rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-orange-500/50 placeholder:text-slate-600" />
               </div>
-              <div className="bg-slate-700/60 rounded-xl p-4 border border-slate-600/40 flex justify-between items-center">
+              <div data-tour="stock-purchase-total" className="bg-slate-700/60 rounded-xl p-4 border border-slate-600/40 flex justify-between items-center">
                 <div>
                   <p className="text-slate-400 text-xs">Total Pembelian</p>
                   <p className="text-slate-600 text-xs">{purchItems.filter(i=>i.stock_item_id).length} item</p>
@@ -1649,7 +1650,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                 </p>
               </div>
             </div>
-            <div className="flex gap-3 p-5 pt-0">
+            <div data-tour="stock-purchase-actions" className="flex gap-3 p-5 pt-0">
               <button onClick={() => setShowPurchase(false)}
                 className="flex-1 py-3 rounded-xl bg-slate-700 text-slate-300 hover:bg-slate-600 text-sm font-semibold">Batal</button>
               <button onClick={handlePurchase} disabled={purchLoading}
@@ -1759,7 +1760,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
 
             <div className="p-5 space-y-4">
               {/* ── Pilih kasir (hanya admin) ── */}
-              <div>
+              <div data-tour="stock-out-user-field">
                 <label className="text-slate-400 text-xs font-semibold block mb-1.5">
                   Kasir / Pengguna <span className="text-red-400">*</span>
                 </label>
@@ -1789,7 +1790,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
               {hasOutMenuSelection ? (
                 <ReadOnlyRecipeSummary rows={outRecipeRows} title={`Ringkasan bahan untuk ${outRecipeSelectionLabel || 'menu terpilih'}`} />
               ) : (
-              <div className="space-y-3">
+              <div data-tour="stock-out-manual-list" className="space-y-3">
                 {outItems.map((item, i) => {
                   const si      = summary.find(s => s.id == item.stock_item_id);
                   const maxStok = si ? Number(si.current_stock) : 0;
@@ -1801,7 +1802,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                   const nilaiOut = Number(item.qty) * harga;
 
                   return (
-                    <div key={i} className={`rounded-xl p-4 border transition-colors ${
+                    <div key={i} data-tour="stock-out-manual-item" className={`rounded-xl p-4 border transition-colors ${
                       isOver ? 'bg-red-500/5 border-red-500/30' : 'bg-slate-700/40 border-slate-600/40'
                     }`}>
                       <div className="flex items-center justify-between mb-3">
@@ -1818,7 +1819,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
 
                       <div className="space-y-3">
                         {/* Pilih bahan */}
-                        <div>
+                        <div data-tour="stock-out-manual-select">
                           <label className="text-slate-500 text-xs mb-1 block">Pilih Bahan Baku</label>
                           <select
                             value={item.stock_item_id}
@@ -1841,7 +1842,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
 
                         {/* Info stok tersedia */}
                         {si && (
-                          <div className="grid grid-cols-2 gap-2">
+                          <div data-tour="stock-out-stock-price-info" className="grid grid-cols-2 gap-2">
                             <div className="bg-slate-700/60 rounded-lg px-3 py-2 text-xs">
                               <p className="text-slate-500 mb-0.5">Stok Gudang</p>
                               <p className={`font-semibold ${maxStok <= 0 ? 'text-red-400' : 'text-white'}`}>
@@ -1861,7 +1862,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                         )}
 
                         {/* Input jumlah */}
-                        <div>
+                        <div data-tour="stock-out-manual-qty">
                           <label className="text-slate-500 text-xs mb-1 block">
                             Jumlah {si ? `(max ${fmtQty(maxStok)} ${si.unit})` : ''}
                           </label>
@@ -1887,7 +1888,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                         </div>
 
                         {/* Catatan */}
-                        <div>
+                        <div data-tour="stock-out-manual-note">
                           <label className="text-slate-500 text-xs mb-1 block">Catatan (opsional)</label>
                           <input
                             type="text" value={item.note || ''} placeholder="keterangan pengeluaran..."
@@ -1902,7 +1903,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
 
                         {/* Preview nilai item ini */}
                         {si && Number(item.qty) > 0 && (
-                          <div className={`rounded-lg px-3 py-2 flex justify-between text-xs ${
+                          <div data-tour="stock-out-item-preview" className={`rounded-lg px-3 py-2 flex justify-between text-xs ${
                             isOver ? 'bg-red-500/10 border border-red-500/20' : 'bg-orange-500/10 border border-orange-500/20'
                           }`}>
                             <span className="text-slate-500">
@@ -1923,6 +1924,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
               {/* Tambah bahan */}
               {!hasOutMenuSelection && (
               <button
+                data-tour="stock-out-add-item"
                 onClick={() => setOutItems(p => [...p, { stock_item_id:'', qty:'', note:'' }])}
                 className="w-full py-2.5 rounded-xl border border-dashed border-slate-600
                   text-slate-500 hover:text-slate-300 hover:border-slate-500 text-sm transition-all">
@@ -1931,7 +1933,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
               )}
 
               {/* Ringkasan total */}
-              <div className="bg-slate-700/50 rounded-xl p-4 border border-slate-600/40 space-y-2">
+              <div data-tour="stock-out-total" className="bg-slate-700/50 rounded-xl p-4 border border-slate-600/40 space-y-2">
                 {/* Per item */}
                 {outItems.filter(it => it.stock_item_id && Number(it.qty) > 0).map((it, i) => {
                   const s    = summary.find(st => st.id == it.stock_item_id);
@@ -1970,7 +1972,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
             </div>
 
             {/* Footer */}
-            <div className="flex gap-3 p-5 pt-0">
+            <div data-tour="stock-out-actions" className="flex gap-3 p-5 pt-0">
               <button
                 onClick={() => {
                    // Ganti pesan sukses setelah submit
@@ -2794,7 +2796,7 @@ function KasirStockPage({ successModal, setSuccessModal }) {
             </div>
 
             <div className="p-5 space-y-4">
-              <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 flex items-center gap-2.5">
+              <div data-tour="stock-out-user-info" className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 flex items-center gap-2.5">
                 <span className="text-blue-400 shrink-0">ℹ</span>
                 <p className="text-blue-400/80 text-xs">
                   Pengajuan akan dibuat atas nama <span className="font-semibold text-blue-400">{user?.name}</span> · Menunggu persetujuan admin
@@ -2812,7 +2814,7 @@ function KasirStockPage({ successModal, setSuccessModal }) {
               {hasOutMenuSelection ? (
                 <ReadOnlyRecipeSummary rows={outRecipeRows} title={`Ringkasan bahan untuk ${outRecipeSelectionLabel || 'menu terpilih'}`} />
               ) : (
-              <div className="space-y-3">
+              <div data-tour="stock-out-manual-list" className="space-y-3">
                 {outItems.map((item, i) => {
                   const si       = summary.find(s => s.id == item.stock_item_id);
                   const maxStok  = si ? Number(si.current_stock) : 0;
@@ -2821,7 +2823,7 @@ function KasirStockPage({ successModal, setSuccessModal }) {
                   const nilaiOut = Number(item.qty) * harga;
 
                   return (
-                    <div key={i} className={`rounded-xl p-4 border transition-colors ${
+                    <div key={i} data-tour="stock-out-manual-item" className={`rounded-xl p-4 border transition-colors ${
                       isOver ? 'bg-red-500/5 border-red-500/30' : 'bg-slate-700/40 border-slate-600/40'
                     }`}>
                       <div className="flex items-center justify-between mb-3">
@@ -2832,7 +2834,7 @@ function KasirStockPage({ successModal, setSuccessModal }) {
                         )}
                       </div>
                       <div className="space-y-3">
-                        <div>
+                        <div data-tour="stock-out-manual-select">
                           <label className="text-slate-500 text-xs mb-1 block">Pilih Bahan Baku</label>
                           <select value={item.stock_item_id}
                             onChange={e => setOutItems(p => p.map((x, j) =>
@@ -2850,7 +2852,7 @@ function KasirStockPage({ successModal, setSuccessModal }) {
                         </div>
 
                         {si && (
-                          <div className="grid grid-cols-2 gap-2">
+                          <div data-tour="stock-out-stock-price-info" className="grid grid-cols-2 gap-2">
                             <div className="bg-slate-700/60 rounded-lg px-3 py-2 text-xs">
                               <p className="text-slate-500 mb-0.5">Stok Gudang</p>
                               <p className={`font-semibold ${maxStok <= 0 ? 'text-red-400' : 'text-white'}`}>
@@ -2866,7 +2868,7 @@ function KasirStockPage({ successModal, setSuccessModal }) {
                           </div>
                         )}
 
-                        <div>
+                        <div data-tour="stock-out-manual-qty">
                           <label className="text-slate-500 text-xs mb-1 block">
                             Jumlah yang diajukan {si ? `(${si.unit})` : ''}
                           </label>
@@ -2885,7 +2887,7 @@ function KasirStockPage({ successModal, setSuccessModal }) {
                           )}
                         </div>
 
-                        <div>
+                        <div data-tour="stock-out-manual-note">
                           <label className="text-slate-500 text-xs mb-1 block">Catatan (opsional)</label>
                           <input type="text" value={item.note || ''} placeholder="keterangan pengeluaran..."
                             onChange={e => setOutItems(p => p.map((x, j) =>
@@ -2897,7 +2899,7 @@ function KasirStockPage({ successModal, setSuccessModal }) {
                         </div>
 
                         {si && Number(item.qty) > 0 && (
-                          <div className={`rounded-lg px-3 py-2 flex justify-between text-xs ${
+                          <div data-tour="stock-out-item-preview" className={`rounded-lg px-3 py-2 flex justify-between text-xs ${
                             isOver ? 'bg-red-500/10 border border-red-500/20' : 'bg-orange-500/10 border border-orange-500/20'
                           }`}>
                             <span className="text-slate-500">{item.qty} × Rp {harga.toLocaleString('id-ID')}</span>
@@ -2914,14 +2916,14 @@ function KasirStockPage({ successModal, setSuccessModal }) {
               )}
 
               {!hasOutMenuSelection && (
-              <button onClick={() => setOutItems(p => [...p, { stock_item_id:'', qty:'', note:'' }])}
+              <button data-tour="stock-out-add-item" onClick={() => setOutItems(p => [...p, { stock_item_id:'', qty:'', note:'' }])}
                 className="w-full py-2.5 rounded-xl border border-dashed border-slate-600
                   text-slate-500 hover:text-slate-300 hover:border-slate-500 text-sm transition-all">
                 + Tambah Bahan Lain
               </button>
               )}
 
-              <div className="bg-slate-700/50 rounded-xl p-4 border border-slate-600/40 space-y-2">
+              <div data-tour="stock-out-total" className="bg-slate-700/50 rounded-xl p-4 border border-slate-600/40 space-y-2">
                 {outItems.filter(it => it.stock_item_id && Number(it.qty) > 0).map((it, i) => {
                   const s    = summary.find(st => st.id == it.stock_item_id);
                   const h    = Number(s?.price_per_unit || 0);
@@ -2956,7 +2958,7 @@ function KasirStockPage({ successModal, setSuccessModal }) {
               </div>
             </div>
 
-            <div className="flex gap-3 p-5 pt-0">
+            <div data-tour="stock-out-actions" className="flex gap-3 p-5 pt-0">
               <button onClick={() => {
                 setShowOutForm(false);
                 setOutItems([{ stock_item_id:'', qty:'', note:'' }]);

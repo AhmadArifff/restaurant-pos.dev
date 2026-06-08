@@ -231,24 +231,221 @@ const TUTORIALS = [
         selector: '[data-tour="stock-master-modal"]',
         roles: ['admin'],
         actions: ['stock-tab-master', 'stock-open-master-modal'],
-        title: 'Modal Bahan Baku',
-        body: 'Jika modal bahan baku sedang dibuka, bagian ini menjelaskan field yang harus diisi.',
-        details: ['Nama Bahan wajib diisi sebagai identitas ingredient.', 'Satuan memilih unit perhitungan stok.', 'Min. Stok Alert menentukan batas status menipis.', 'Batal menutup form, Simpan atau Update menyimpan perubahan.'],
+        title: 'Buka Form Bahan Baku',
+        body: 'Step ini membuka modal tambah atau edit bahan baku. Modal ini dipakai untuk mendaftarkan ingredient dasar yang nanti dipakai resep produk.',
+        details: ['Form ini hanya mengatur master bahan.', 'Penambahan saldo stok tetap dilakukan lewat Catat Pembelian.', 'Tombol X atau Batal menutup modal tanpa menyimpan.', 'Simpan aktif ketika field wajib sudah valid.'],
+      },
+      {
+        selector: '[data-tour="stock-master-name-field"]',
+        roles: ['admin'],
+        title: 'Nama Bahan',
+        body: 'Field ini adalah nama ingredient yang akan dipakai di tabel stok dan resep produk.',
+        details: ['Wajib diisi.', 'Gunakan nama bahan yang mudah dikenali tim dapur.', 'Contoh: Daging Cincang Bumbu, Saus Tahini, Cup Minuman.', 'Nama ini akan muncul di stok gudang, produk, dan pengajuan.'],
+      },
+      {
+        selector: '[data-tour="stock-master-unit-field"]',
+        roles: ['admin'],
+        title: 'Satuan Bahan',
+        body: 'Dropdown satuan menentukan cara sistem menghitung qty bahan.',
+        details: ['Pilih gram, ml, pcs, porsi, atau satuan lain sesuai bahan.', 'Satuan ini ikut tampil di saldo, pemasukan, pengeluaran, dan resep.', 'Satuan yang salah akan membuat perhitungan HPP dan stok sulit dibaca.', 'Ubah satuan dengan hati-hati jika bahan sudah punya histori.'],
+      },
+      {
+        selector: '[data-tour="stock-master-min-field"]',
+        roles: ['admin'],
+        title: 'Minimal Stok Alert',
+        body: 'Field ini menjadi batas stok menipis untuk bahan tersebut.',
+        details: ['Opsional, tapi disarankan diisi.', 'Jika saldo stok sama atau di bawah batas ini, status menjadi Menipis.', 'Jika stok 0, status menjadi Habis.', 'Nilai ini membantu dashboard dan tabel stok memberi peringatan lebih cepat.'],
+      },
+      {
+        selector: '[data-tour="stock-master-actions-field"]',
+        roles: ['admin'],
+        title: 'Aksi Simpan Bahan',
+        body: 'Bagian bawah modal menentukan apakah perubahan dibatalkan atau disimpan.',
+        details: ['Batal menutup modal dan membuang perubahan form.', 'Simpan membuat bahan baru.', 'Update menyimpan perubahan saat mode edit.', 'Saat proses berjalan, tombol menampilkan status menyimpan.'],
       },
       {
         selector: '[data-tour="stock-purchase-modal"]',
         roles: ['admin'],
         actions: ['stock-close-master-modal', 'stock-tab-warehouse', 'stock-subtab-in', 'stock-open-purchase-modal'],
-        title: 'Modal Catat Pembelian',
-        body: 'Jika modal pembelian sedang dibuka, form ini dipakai untuk memasukkan stok masuk.',
-        details: ['Pilih Bahan Baku menentukan item yang bertambah.', 'Jumlah dan Harga/Satuan menghitung subtotal otomatis.', 'Tambah Bahan Lain membuat banyak baris pembelian sekaligus.', 'Total Pembelian merangkum semua item sebelum disimpan.'],
+        title: 'Buka Form Catat Pembelian',
+        body: 'Step ini membuka modal pembelian stok. Alur ini dipakai saat gudang menerima bahan baru dari supplier atau pembelian manual.',
+        details: ['Setiap item pembelian menambah saldo stok gudang.', 'Harga per satuan menjadi dasar perhitungan biaya rata-rata.', 'Satu modal bisa menyimpan beberapa bahan sekaligus.', 'Data pembelian akan muncul di tab Pemasukan.'],
+      },
+      {
+        selector: '[data-tour="stock-purchase-item"]',
+        roles: ['admin'],
+        title: 'Item Pembelian',
+        body: 'Satu kartu item mewakili satu bahan yang masuk ke gudang.',
+        details: ['Label Item 1, Item 2, dan seterusnya membantu membedakan baris.', 'Jika ada lebih dari satu item, tombol Hapus menghapus baris tersebut.', 'Setiap item wajib memilih bahan, jumlah, dan harga satuan.', 'Isi semua baris sebelum klik Simpan Pembelian.'],
+      },
+      {
+        selector: '[data-tour="stock-purchase-select-field"]',
+        roles: ['admin'],
+        title: 'Pilih Bahan Pembelian',
+        body: 'Dropdown ini memilih bahan baku yang stoknya akan bertambah.',
+        details: ['Daftar bahan berasal dari Master Bahan Baku.', 'Pilih satu bahan per baris item.', 'Nama dan satuan bahan akan menentukan label jumlah.', 'Jika bahan belum ada, tambahkan dulu di tab Bahan Baku.'],
+      },
+      {
+        selector: '[data-tour="stock-purchase-qty-cost-field"]',
+        roles: ['admin'],
+        title: 'Jumlah dan Harga Pembelian',
+        body: 'Dua input ini menentukan berapa stok yang masuk dan berapa harga satuannya.',
+        details: ['Jumlah memakai satuan bahan yang dipilih.', 'Harga/Satuan diisi dalam Rupiah.', 'Sistem menghitung subtotal dari jumlah dikali harga.', 'Nilai ini mempengaruhi average cost bahan.'],
+      },
+      {
+        selector: '[data-tour="stock-purchase-subtotal"]',
+        roles: ['admin'],
+        title: 'Subtotal Item',
+        body: 'Subtotal muncul otomatis setelah jumlah dan harga diisi.',
+        details: ['Subtotal = jumlah x harga per satuan.', 'Gunakan ini untuk cek cepat apakah input pembelian sudah benar.', 'Jika jumlah atau harga kosong, subtotal belum muncul.', 'Subtotal setiap item digabung ke Total Pembelian.'],
+      },
+      {
+        selector: '[data-tour="stock-purchase-add-item"]',
+        roles: ['admin'],
+        title: 'Tambah Bahan Lain',
+        body: 'Tombol ini menambah baris item pembelian baru.',
+        details: ['Dipakai saat satu nota pembelian berisi banyak bahan.', 'Setiap baris tetap punya bahan, jumlah, dan harga sendiri.', 'Baris tambahan bisa dihapus jika tidak diperlukan.', 'Ini membuat pencatatan supplier lebih cepat.'],
+      },
+      {
+        selector: '[data-tour="stock-purchase-note-field"]',
+        roles: ['admin'],
+        title: 'Catatan Pembelian',
+        body: 'Catatan opsional dipakai untuk konteks pembelian.',
+        details: ['Contoh: nama supplier, nomor nota, atau lokasi pembelian.', 'Catatan tampil di histori pemasukan.', 'Tidak wajib, tapi berguna untuk audit.', 'Jangan isi data sensitif yang tidak perlu.'],
+      },
+      {
+        selector: '[data-tour="stock-purchase-total"]',
+        roles: ['admin'],
+        title: 'Total Pembelian',
+        body: 'Kartu ini merangkum semua item pembelian sebelum disimpan.',
+        details: ['Jumlah item membaca baris bahan yang dipilih.', 'Nominal total menjumlahkan semua subtotal.', 'Gunakan total ini untuk cocokkan dengan nota pembelian.', 'Jika total belum sesuai, cek kembali jumlah dan harga setiap item.'],
+      },
+      {
+        selector: '[data-tour="stock-purchase-actions"]',
+        roles: ['admin'],
+        title: 'Aksi Simpan Pembelian',
+        body: 'Bagian ini menyelesaikan proses pencatatan stok masuk.',
+        details: ['Batal menutup modal tanpa menyimpan.', 'Simpan Pembelian menambah stok gudang.', 'Saat loading, tombol menampilkan status menyimpan.', 'Setelah sukses, saldo dan histori pemasukan diperbarui.'],
       },
       {
         selector: '[data-tour="stock-out-modal"]',
         actions: ['stock-close-purchase-modal', 'stock-tab-warehouse', 'stock-subtab-out', 'stock-open-out-modal'],
-        title: 'Modal Pengeluaran atau Pengajuan',
-        body: 'Jika modal pengeluaran sedang dibuka, form ini bisa menghitung bahan otomatis dari menu dan qty porsi.',
-        details: ['Pilih satu atau beberapa menu lalu isi qty menu.', 'Ringkasan bahan terkunci dari resep produk dan tidak dipilih manual.', 'Qty divalidasi agar tidak melebihi stok yang bisa dibuat dari bahan tersedia.', 'Admin dapat memilih kasir, sedangkan kasir mengirim pengajuan atas namanya sendiri.'],
+        title: 'Buka Form Pengeluaran atau Pengajuan',
+        body: 'Step ini membuka modal pengeluaran stok. Admin memakainya untuk mencatat pengeluaran ke kasir, sedangkan kasir memakainya untuk mengajukan stok cabang.',
+        details: ['Form bisa memakai resep menu otomatis.', 'Form juga bisa memakai bahan manual jika tidak memilih menu.', 'Qty divalidasi terhadap stok bahan yang tersedia.', 'Hasil akhirnya masuk ke pengeluaran atau pengajuan sesuai role.'],
+      },
+      {
+        selector: '[data-tour="stock-out-user-field"]',
+        roles: ['admin'],
+        title: 'Pilih Kasir atau Pengguna',
+        body: 'Admin memilih kasir yang menerima atau terkait dengan pengeluaran stok.',
+        details: ['Wajib dipilih untuk pengeluaran admin.', 'Nama kasir akan muncul sebagai konteks stok keluar.', 'Ini membantu audit siapa yang memakai stok.', 'Kasir tidak melihat field ini karena sistem memakai user login.'],
+      },
+      {
+        selector: '[data-tour="stock-out-user-info"]',
+        roles: ['kasir'],
+        title: 'Informasi Pengaju',
+        body: 'Untuk kasir, sistem otomatis membuat pengajuan atas nama user yang sedang login.',
+        details: ['Kasir tidak perlu memilih user.', 'Status pengajuan menunggu persetujuan admin.', 'Nama kasir menjadi sumber audit pengajuan.', 'Setelah dikirim, data tampil di tab Pengajuan Saya.'],
+      },
+      {
+        selector: '[data-tour="stock-recipe-picker"]',
+        title: 'Pilih Menu dari Resep',
+        body: 'Bagian ini adalah mode otomatis. User memilih menu dan qty porsi, lalu sistem menghitung bahan yang dibutuhkan berdasarkan resep produk.',
+        details: ['Bisa memilih satu atau beberapa menu.', 'Cocok untuk membuat stok menu berdasarkan bahan resep.', 'Jika tidak memilih menu, user bisa pakai input bahan manual.', 'Mode resep membantu mengurangi salah hitung ingredient.'],
+      },
+      {
+        selector: '[data-tour="stock-recipe-menu-select"]',
+        title: 'Dropdown Menu Pesanan',
+        body: 'Dropdown ini memilih produk/menu yang resepnya akan dihitung.',
+        details: ['Daftar menu berasal dari data produk yang punya bahan resep.', 'Angka bahan menunjukkan jumlah ingredient pada menu tersebut.', 'Menu yang sudah dipilih tidak bisa dipilih ulang di baris lain.', 'Pilih Manual jika ingin input bahan satu per satu.'],
+      },
+      {
+        selector: '[data-tour="stock-recipe-menu-qty"]',
+        title: 'Qty Menu',
+        body: 'Input qty menentukan berapa porsi menu yang ingin dibuat atau diajukan.',
+        details: ['Sistem mengalikan semua bahan resep dengan qty menu.', 'Qty otomatis dibatasi oleh stok bahan yang tersedia.', 'Teks maksimal porsi membantu user tidak over stok.', 'Jika bahan tidak cukup, sistem memberi informasi bahwa stok belum cukup.'],
+      },
+      {
+        selector: '[data-tour="stock-recipe-add"]',
+        title: 'Tambah Menu',
+        body: 'Tombol ini menambah baris menu lain dalam satu pengeluaran atau pengajuan.',
+        details: ['Dipakai saat ingin membuat beberapa menu sekaligus.', 'Setiap menu punya qty sendiri.', 'Sistem akan menggabungkan bahan yang sama dari beberapa menu.', 'Tombol nonaktif jika semua menu resep sudah dipilih.'],
+      },
+      {
+        selector: '[data-tour="stock-recipe-note"]',
+        actions: ['stock-demo-recipe-first'],
+        title: 'Catatan Resep Terkunci',
+        body: 'Informasi ini menegaskan bahwa bahan baku mengikuti resep produk.',
+        details: ['User tidak mengubah bahan satu per satu saat mode menu dipakai.', 'Ubah menu atau qty untuk menghitung ulang bahan.', 'Ini menjaga konsistensi HPP dan stok.', 'Jika resep salah, perbaiki dari data produk.'],
+      },
+      {
+        selector: '[data-tour="stock-recipe-summary"]',
+        actions: ['stock-demo-recipe-first'],
+        title: 'Ringkasan Bahan Resep',
+        body: 'Ringkasan ini menunjukkan bahan apa saja yang otomatis dibutuhkan dari menu dan qty yang dipilih.',
+        details: ['Setiap baris menampilkan nama bahan, qty, stok gudang, harga satuan, dan nilai.', 'Bahan yang sama dari beberapa menu digabung.', 'Bagian ini hanya preview dan tidak bisa dipilih manual.', 'Total nilai di bawah membaca estimasi biaya bahan.'],
+      },
+      {
+        selector: '[data-tour="stock-out-manual-list"]',
+        actions: ['stock-demo-recipe-clear'],
+        title: 'Mode Bahan Manual',
+        body: 'Jika user tidak memilih menu, form menampilkan item bahan manual.',
+        details: ['Dipakai untuk pengeluaran bahan yang tidak berasal dari resep menu.', 'Setiap item wajib memilih bahan dan qty.', 'Mode ini tetap menghitung nilai pengeluaran dari harga bahan.', 'Bisa menambah banyak bahan dalam satu submit.'],
+      },
+      {
+        selector: '[data-tour="stock-out-manual-select"]',
+        actions: ['stock-demo-recipe-clear'],
+        title: 'Pilih Bahan Manual',
+        body: 'Dropdown ini memilih bahan baku yang akan dikeluarkan atau diajukan.',
+        details: ['Admin melihat bahan dengan stok tersedia.', 'Kasir melihat bahan dari saldo gudang yang bisa diajukan.', 'Setelah bahan dipilih, sistem menampilkan stok dan harga.', 'Jika bahan tidak ada, cek master bahan dan saldo stok.'],
+      },
+      {
+        selector: '[data-tour="stock-out-stock-price-info"]',
+        actions: ['stock-demo-manual-first'],
+        title: 'Info Stok dan Harga',
+        body: 'Kartu kecil ini memberi konteks stok gudang dan harga satuan bahan.',
+        details: ['Stok Gudang menunjukkan sisa bahan saat ini.', 'Harga per satuan menjadi dasar nilai pengeluaran atau pengajuan.', 'Jika harga belum ada, bahan perlu riwayat pembelian.', 'Info ini membantu user mengisi qty yang realistis.'],
+      },
+      {
+        selector: '[data-tour="stock-out-manual-qty"]',
+        actions: ['stock-demo-manual-first'],
+        title: 'Qty Bahan Manual',
+        body: 'Input qty menentukan jumlah bahan yang ingin dikeluarkan atau diajukan.',
+        details: ['Qty wajib lebih dari 0.', 'Admin tidak boleh melebihi stok gudang.', 'Validasi memberi peringatan jika over stok.', 'Kasir juga memakai qty ini sebagai jumlah yang diminta ke admin.'],
+      },
+      {
+        selector: '[data-tour="stock-out-manual-note"]',
+        actions: ['stock-demo-manual-first'],
+        title: 'Catatan Item',
+        body: 'Catatan item menjelaskan alasan penggunaan bahan.',
+        details: ['Contoh: stok untuk Adana Kebab Platter.', 'Catatan membantu admin memahami pengajuan kasir.', 'Catatan juga berguna untuk audit pengeluaran.', 'Field ini opsional.'],
+      },
+      {
+        selector: '[data-tour="stock-out-item-preview"]',
+        actions: ['stock-demo-manual-first'],
+        title: 'Preview Nilai Item',
+        body: 'Preview ini menghitung nilai satu item bahan.',
+        details: ['Rumusnya qty dikali harga satuan.', 'Jika over stok, preview berubah menjadi peringatan.', 'Nilai valid akan masuk ke total pengeluaran atau pengajuan.', 'Gunakan preview untuk cek sebelum submit.'],
+      },
+      {
+        selector: '[data-tour="stock-out-add-item"]',
+        title: 'Tambah Bahan Lain',
+        body: 'Tombol ini menambah baris bahan manual.',
+        details: ['Dipakai saat satu pengeluaran memakai banyak bahan.', 'Setiap baris bisa dihapus jika tidak diperlukan.', 'Tombol ini tersembunyi saat mode resep menu aktif.', 'Mode resep sudah menghitung semua bahan dari menu otomatis.'],
+      },
+      {
+        selector: '[data-tour="stock-out-total"]',
+        actions: ['stock-demo-manual-first'],
+        title: 'Total Nilai',
+        body: 'Kartu total merangkum seluruh bahan yang akan dikirim.',
+        details: ['Menampilkan jumlah item valid.', 'Menampilkan total nilai Rupiah.', 'Item yang over stok tidak ikut dihitung sebagai valid.', 'Gunakan total untuk memastikan pengeluaran atau pengajuan sudah masuk akal.'],
+      },
+      {
+        selector: '[data-tour="stock-out-actions"]',
+        title: 'Aksi Submit Form',
+        body: 'Bagian akhir form menentukan apakah user membatalkan atau mengirim data.',
+        details: ['Batal menutup modal dan mengosongkan draft form.', 'Admin memakai Simpan Pengeluaran.', 'Kasir memakai Kirim Pengajuan.', 'Setelah sukses, sistem menampilkan modal konfirmasi dan memuat ulang data terkait.'],
       },
     ],
   },
@@ -377,6 +574,62 @@ export default function FloatingTutorialButton() {
       }
 
       const action = actions[index];
+      if (action === 'stock-demo-recipe-first' || action === 'stock-demo-recipe-clear') {
+        const select = document.querySelector('[data-tour="stock-recipe-menu-select"] select');
+        if (!select && attempt < 24) {
+          const timer = window.setTimeout(() => runActions(index, attempt + 1), 160);
+          actionTimers.push(timer);
+          return;
+        }
+
+        if (select) {
+          const nextValue = action === 'stock-demo-recipe-clear'
+            ? ''
+            : Array.from(select.options).find((option) => option.value)?.value || '';
+          if (select.value !== nextValue) {
+            const setter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value')?.set;
+            setter?.call(select, nextValue);
+            select.dispatchEvent(new Event('input', { bubbles: true }));
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        }
+
+        const timer = window.setTimeout(() => runActions(index + 1, 0), 520);
+        actionTimers.push(timer);
+        return;
+      }
+
+      if (action === 'stock-demo-manual-first') {
+        const select = document.querySelector('[data-tour="stock-out-manual-select"] select');
+        if (!select && attempt < 24) {
+          const timer = window.setTimeout(() => runActions(index, attempt + 1), 160);
+          actionTimers.push(timer);
+          return;
+        }
+
+        if (select) {
+          const nextValue = Array.from(select.options).find((option) => option.value)?.value || '';
+          if (nextValue && select.value !== nextValue) {
+            const selectSetter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value')?.set;
+            selectSetter?.call(select, nextValue);
+            select.dispatchEvent(new Event('input', { bubbles: true }));
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        }
+
+        const qtyInput = document.querySelector('[data-tour="stock-out-manual-qty"] input');
+        if (qtyInput && qtyInput.value !== '1') {
+          const inputSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+          inputSetter?.call(qtyInput, '1');
+          qtyInput.dispatchEvent(new Event('input', { bubbles: true }));
+          qtyInput.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        const timer = window.setTimeout(() => runActions(index + 1, 0), 520);
+        actionTimers.push(timer);
+        return;
+      }
+
       const trigger = document.querySelector(`[data-tour-action="${action}"]`);
       if (trigger) {
         trigger.click();
