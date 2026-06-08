@@ -222,29 +222,30 @@ export default function ProductsPage() {
   return (
     <AdminLayout>
       <div className="max-w-5xl mx-auto space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div data-tour="product-header" className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-white text-2xl font-bold">Produk</h1>
             <p className="text-slate-400 text-sm mt-1">{products.length} produk terdaftar</p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div data-tour="product-actions" className="flex flex-wrap items-center gap-2">
             {refreshing && (
               <span className="rounded-full border border-sky-500/25 bg-sky-500/10 px-3 py-1.5 text-xs font-bold text-sky-200">
                 Sinkronisasi produk...
               </span>
             )}
-            <button onClick={openAdd}
+            <button onClick={openAdd} data-tour="product-add-action" data-tour-action="product-open-form"
               className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-5 py-2.5 rounded-xl transition-colors">
               + Tambah Produk
             </button>
           </div>
         </div>
 
-        <div className="grid gap-3 md:grid-cols-[1fr_240px]">
-          <input value={search} onChange={e => setSearch(e.target.value)}
+        <div data-tour="product-filters" className="grid gap-3 md:grid-cols-[1fr_240px]">
+          <input data-tour="product-search" value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Cari produk..."
             className="w-full bg-slate-800 text-white rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-orange-500 border border-slate-700"/>
           <select
+            data-tour="product-category-filter"
             value={categoryFilter}
             onChange={e => setCategoryFilter(e.target.value)}
             className="w-full bg-slate-800 text-white rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-orange-500 border border-slate-700"
@@ -262,18 +263,18 @@ export default function ProductsPage() {
         {pageLoading && products.length === 0 ? (
           <CardSkeleton count={8} />
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div data-tour="product-grid" className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {filtered.map(p => (
-            <div key={p.id} className="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden">
+            <div key={p.id} data-tour="product-card" className="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden">
               {/* Gambar */}
-              <div className="w-full h-32 bg-slate-700 flex items-center justify-center overflow-hidden">
+              <div data-tour="product-card-image" className="w-full h-32 bg-slate-700 flex items-center justify-center overflow-hidden">
                 {p.image_url
                   ? <img src={resolveAssetUrl(p.image_url)} alt={p.name}
                       className="w-full h-full object-cover"/>
                   : <span className="text-4xl">🌯</span>
                 }
               </div>
-              <div className="p-3">
+              <div data-tour="product-card-info" className="p-3">
                 <p className="text-white font-semibold text-sm truncate">{p.name}</p>
                 <p className="text-orange-400 font-bold text-sm mt-0.5">
                   Rp {Number(p.price).toLocaleString('id-ID')}
@@ -303,7 +304,7 @@ export default function ProductsPage() {
                   </span>
                 </div> */}
                 {/* Di card produk, ganti bagian stok */}
-                <div className="mt-2">
+                <div data-tour="product-card-stock" className="mt-2">
                   {user?.role === 'kasir' ? (
                     <div className="flex flex-col gap-0.5">
                       <span className={`text-xs font-bold ${
@@ -363,7 +364,7 @@ export default function ProductsPage() {
                   )}
                 </div>
 
-                <div className="flex gap-2 mt-3">
+                <div data-tour="product-card-actions" className="flex gap-2 mt-3">
                   <button onClick={() => openEdit(p)}
                     className="flex-1 bg-slate-700 hover:bg-slate-600 text-blue-400 text-xs font-medium py-1.5 rounded-lg transition-colors">
                     Edit
@@ -383,14 +384,14 @@ export default function ProductsPage() {
       {/* Modal Tambah/Edit Produk */}
       {modal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="bg-slate-800 rounded-2xl p-6 w-full max-w-lg border border-slate-700 my-4">
+          <div data-tour="product-modal" className="bg-slate-800 rounded-2xl p-6 w-full max-w-lg border border-slate-700 my-4">
             <h2 className="text-white font-bold text-xl mb-5">
               {editing ? 'Edit Produk' : 'Tambah Produk'}
             </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
 
               {/* Upload Gambar */}
-              <div className="rounded-2xl border border-slate-700 bg-slate-900/45 p-3">
+              <div data-tour="product-image-field" className="rounded-2xl border border-slate-700 bg-slate-900/45 p-3">
                 <label className="text-slate-300 text-sm font-semibold">Gambar Produk</label>
                 <div className="mt-3 grid gap-3 sm:grid-cols-[160px_1fr]">
                   <button
@@ -408,7 +409,7 @@ export default function ProductsPage() {
                   }
                   </button>
                   <div className="space-y-2">
-                    <div>
+                    <div data-tour="product-image-url-field">
                       <label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                         URL asset online / embed
                       </label>
@@ -433,7 +434,7 @@ export default function ProductsPage() {
                         File dipilih: {imageFile.name}
                       </p>
                     )}
-                    <div className="flex flex-wrap gap-2">
+                    <div data-tour="product-image-actions" className="flex flex-wrap gap-2">
                       <button
                         type="button"
                         onClick={() => fileRef.current?.click()}
@@ -458,15 +459,15 @@ export default function ProductsPage() {
               </div>
 
               {/* Nama & Harga */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
+              <div data-tour="product-basic-fields" className="grid grid-cols-2 gap-3">
+                <div data-tour="product-name-field">
                   <label className="text-slate-400 text-sm">Nama Produk</label>
                   <input value={form.name}
                     onChange={e => setForm({...form, name: e.target.value})}
                     required placeholder="Kebab Original"
                     className="w-full mt-1 bg-slate-700 text-white rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-orange-500"/>
                 </div>
-                <div>
+                <div data-tour="product-price-field">
                   <label className="text-slate-400 text-sm">Harga (Rp)</label>
                   <input type="number" value={form.price}
                     onChange={e => setForm({...form, price: e.target.value})}
@@ -476,7 +477,7 @@ export default function ProductsPage() {
               </div>
 
               {/* Kategori */}
-              <div>
+              <div data-tour="product-category-field">
                 <label className="text-slate-400 text-sm">Kategori</label>
                 <select value={form.category_id}
                   onChange={e => setForm({...form, category_id: e.target.value})}
@@ -489,10 +490,10 @@ export default function ProductsPage() {
               </div>
 
               {/* Ingredients / Resep */}
-              <div>
+              <div data-tour="product-recipe-section">
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-slate-400 text-sm">Bahan Baku (Resep)</label>
-                  <button type="button" onClick={addIngredient}
+                  <button type="button" onClick={addIngredient} data-tour="product-add-ingredient" data-tour-action="product-add-ingredient"
                     className="text-orange-400 hover:text-orange-300 text-sm transition-colors">
                     + Tambah Bahan
                   </button>
@@ -503,10 +504,11 @@ export default function ProductsPage() {
                     const selectedStock = stockItems.find(s => s.id == ing.stock_item_id);
 
                     return (
-                      <div key={idx} className="flex gap-2 items-center">
+                      <div key={idx} data-tour="product-ingredient-row" className="flex gap-2 items-center">
 
                         {/* Pilih bahan */}
                         <select
+                          data-tour="product-ingredient-select"
                           value={ing.stock_item_id}
                           onChange={e => updateIngredient(idx, 'stock_item_id', e.target.value)}
                           className="flex-1 bg-slate-700 text-white rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-orange-500"
@@ -521,6 +523,7 @@ export default function ProductsPage() {
 
                         {/* Input qty — pakai desimal step 0.01 */}
                         <input
+                          data-tour="product-ingredient-qty"
                           type="number"
                           min="0.01"
                           step="0.01"
@@ -551,7 +554,7 @@ export default function ProductsPage() {
                   )} */}
                   {/* Preview HPP & Validasi Harga */}
                   {form.ingredients.length > 0 && (
-                    <div className={`rounded-xl p-4 border ${
+                    <div data-tour="product-hpp-preview" className={`rounded-xl p-4 border ${
                       hargaValid
                         ? 'bg-blue-500/10 border-blue-500/30'
                         : 'bg-red-500/10 border-red-500/30'
@@ -611,7 +614,7 @@ export default function ProductsPage() {
                 </div>
               </div>
 
-              <div className="flex gap-3 pt-2">
+              <div data-tour="product-form-actions" className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setModal(false)}
                   className="flex-1 bg-slate-700 hover:bg-slate-600 text-white rounded-xl py-3 transition-colors">
                   Batal
@@ -621,6 +624,7 @@ export default function ProductsPage() {
                   {loading ? 'Menyimpan...' : 'Simpan'}
                 </button> */}
                 <button
+                  data-tour="product-save-button"
                   type="submit"
                   disabled={loading || !hargaValid}
                   title={!hargaValid ? `Harga minimal Rp ${Math.round(hpp).toLocaleString('id-ID')}` : ''}

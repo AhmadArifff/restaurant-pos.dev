@@ -484,6 +484,287 @@ const TUTORIALS = [
       },
     ],
   },
+  {
+    id: 'products',
+    title: 'Produk',
+    route: '/products',
+    roles: ['admin', 'kasir'],
+    description: 'Pelajari daftar menu, filter kategori, kartu stok, form gambar, kategori, resep, HPP, dan simpan produk.',
+    steps: [
+      {
+        selector: '[data-tour="product-header"]',
+        title: 'Menu Produk sebagai kumpulan komponen',
+        body: 'React components adalah building block utama aplikasi React: bagian kecil yang mandiri dan bisa dipakai ulang, mirip Lego. Di menu produk ini, header, filter, kartu produk, modal form, upload gambar, resep, dan preview HPP digabung menjadi workflow pengelolaan menu.',
+        details: ['Judul menunjukkan total produk terdaftar.', 'Sinkronisasi produk muncul saat data sedang refresh.', 'Tombol Tambah Produk membuka modal input menu baru.', 'Role tetap mengikuti akses halaman yang sedang login.'],
+      },
+      {
+        selector: '[data-tour="product-actions"]',
+        title: 'Aksi Produk',
+        body: 'Bagian ini berisi status refresh dan aksi utama untuk membuat produk.',
+        details: ['Sinkronisasi produk tidak menutup halaman saat data di-refresh.', 'Tambah Produk membuka form kosong.', 'Form produk menyimpan data ke backend dan database.', 'Gunakan aksi ini setelah master bahan dan kategori sudah tersedia.'],
+      },
+      {
+        selector: '[data-tour="product-filters"]',
+        title: 'Filter dan Cari Produk',
+        body: 'Filter membantu mencari produk ketika daftar menu sudah banyak.',
+        details: ['Kolom pencarian membaca nama produk.', 'Dropdown kategori membatasi daftar pada kategori tertentu.', 'Filter tidak mengubah data database, hanya tampilan daftar.', 'Gunakan ini sebelum edit agar produk cepat ditemukan.'],
+      },
+      {
+        selector: '[data-tour="product-grid"]',
+        title: 'Grid Produk',
+        body: 'Grid ini menampilkan semua produk yang lolos filter.',
+        details: ['Layout responsif mengikuti ukuran layar.', 'Saat data awal belum siap, skeleton loader tampil lebih dulu.', 'Setiap kartu membawa gambar, harga, kategori, resep, stok, dan aksi.', 'Data stok membantu membaca apakah menu siap dijual.'],
+      },
+      {
+        selector: '[data-tour="product-card"]',
+        title: 'Kartu Produk',
+        body: 'Kartu produk adalah ringkasan satu menu siap jual.',
+        details: ['Gambar membantu kasir dan pelanggan mengenali menu.', 'Nama dan harga menjadi data utama transaksi.', 'Kategori menghubungkan produk dengan filter dan landing page.', 'Badge resep memberi gambaran bahan baku yang dipakai.'],
+      },
+      {
+        selector: '[data-tour="product-card-stock"]',
+        title: 'Estimasi Stok Produk',
+        body: 'Bagian stok membaca berapa porsi menu yang bisa dibuat dari bahan resep.',
+        details: ['Admin melihat akumulasi stok dari kasir bila datanya tersedia.', 'Kasir melihat stok yang tersedia untuk dirinya.', 'Status habis atau menipis membantu keputusan ajukan stok.', 'Angka stok berasal dari bahan baku, bukan input manual produk.'],
+      },
+      {
+        selector: '[data-tour="product-card-actions"]',
+        title: 'Edit dan Hapus Produk',
+        body: 'Aksi kartu dipakai untuk memperbarui atau menghapus menu.',
+        details: ['Edit membuka modal dengan data produk yang sudah ada.', 'Hapus memakai konfirmasi modal agar tidak salah hapus.', 'Aksi ini tidak mengubah transaksi lama yang sudah tercatat.', 'Perubahan produk memengaruhi menu pelanggan dan kasir setelah refresh.'],
+      },
+      {
+        selector: '[data-tour="product-modal"]',
+        actions: ['product-open-form'],
+        title: 'Buka Form Produk',
+        body: 'Step ini membuka modal tambah produk. Form ini adalah tempat menggabungkan data gambar, harga, kategori, dan resep bahan baku.',
+        details: ['Modal bisa dipakai untuk tambah atau edit produk.', 'Batal menutup modal tanpa menyimpan.', 'Submit menyimpan produk ke database.', 'Tutorial berikutnya akan mengisi contoh data agar alurnya jelas.'],
+      },
+      {
+        selector: '[data-tour="product-image-field"]',
+        actions: ['product-demo-basic-fill'],
+        title: 'Gambar Produk',
+        body: 'Bagian gambar menentukan visual produk di admin, kasir, order pelanggan, dan landing page jika data dipakai di sana.',
+        details: ['Bisa upload file gambar valid.', 'Bisa pakai URL asset online atau embed.', 'Preview berubah otomatis setelah file atau URL diisi.', 'Validasi file mencegah ekstensi gambar yang tidak didukung.'],
+      },
+      {
+        selector: '[data-tour="product-image-url-field"]',
+        actions: ['product-demo-basic-fill'],
+        title: 'URL Asset Online',
+        body: 'Input ini cocok untuk gambar produk yang berasal dari link online.',
+        details: ['Tutorial mengisi contoh URL gambar online.', 'Jika upload file dipakai, URL akan dikosongkan.', 'URL online tidak perlu disimpan ke bucket Supabase.', 'Gunakan gambar yang jelas agar tampilan menu tidak kosong.'],
+      },
+      {
+        selector: '[data-tour="product-basic-fields"]',
+        actions: ['product-demo-basic-fill'],
+        title: 'Nama dan Harga Produk',
+        body: 'Nama dan harga adalah data dasar yang dipakai transaksi.',
+        details: ['Nama produk wajib diisi.', 'Harga wajib angka dan menjadi harga jual.', 'Harga akan divalidasi terhadap estimasi HPP.', 'Tutorial mengisi harga tinggi agar valid saat bahan demo dipilih.'],
+      },
+      {
+        selector: '[data-tour="product-category-field"]',
+        actions: ['product-demo-basic-fill'],
+        title: 'Kategori Produk',
+        body: 'Kategori mengelompokkan produk untuk filter admin, kasir, order pelanggan, dan landing page.',
+        details: ['Dropdown berasal dari data kategori.', 'Pilih kategori yang paling sesuai dengan menu.', 'Jika kategori kosong, produk tetap tersimpan tapi filter/landing page bisa kurang rapi.', 'Kategori membantu customer scan menu lebih cepat.'],
+      },
+      {
+        selector: '[data-tour="product-recipe-section"]',
+        title: 'Bahan Baku Resep',
+        body: 'Resep menghubungkan produk dengan bahan baku. Satu menu bisa memakai beberapa ingredient atau condiment.',
+        details: ['Resep dipakai untuk hitung HPP.', 'Resep juga dipakai untuk estimasi stok porsi.', 'Qty bahan mengikuti satuan master bahan.', 'Jika resep salah, stok dan biaya produksi ikut salah.'],
+      },
+      {
+        selector: '[data-tour="product-add-ingredient"]',
+        title: 'Tambah Bahan Resep',
+        body: 'Tombol ini menambah baris bahan ke resep produk.',
+        details: ['Gunakan untuk memasukkan semua bahan yang dibutuhkan menu.', 'Setiap baris memilih satu bahan dan qty.', 'Bahan yang sama sebaiknya tidak dobel agar HPP bersih.', 'Tutorial akan menambah satu baris bahan demo.'],
+      },
+      {
+        selector: '[data-tour="product-ingredient-row"]',
+        actions: ['product-add-ingredient'],
+        title: 'Baris Bahan',
+        body: 'Baris ini adalah satu komponen resep: bahan, qty, satuan, dan tombol hapus.',
+        details: ['Select memilih bahan baku dari master stok.', 'Input qty menentukan jumlah bahan per satu produk.', 'Satuan tampil otomatis dari bahan yang dipilih.', 'Tombol X menghapus baris dari resep.'],
+      },
+      {
+        selector: '[data-tour="product-ingredient-select"]',
+        actions: ['product-demo-ingredient-fill'],
+        title: 'Pilih Bahan',
+        body: 'Dropdown bahan mengambil data master bahan baku.',
+        details: ['Tutorial memilih bahan pertama yang tersedia.', 'Bahan harus sudah dibuat di menu Stok.', 'Nama bahan akan muncul di badge produk dan ringkasan HPP.', 'Pilih bahan yang benar-benar dipakai membuat menu.'],
+      },
+      {
+        selector: '[data-tour="product-ingredient-qty"]',
+        actions: ['product-demo-ingredient-fill'],
+        title: 'Qty Resep',
+        body: 'Qty adalah kebutuhan bahan untuk membuat satu porsi produk.',
+        details: ['Qty bisa desimal untuk gram atau ml.', 'Qty harus lebih dari 0.', 'Nilai ini dipakai untuk menghitung HPP dan stok bisa dibuat.', 'Jika qty terlalu besar, stok produk terlihat cepat habis.'],
+      },
+      {
+        selector: '[data-tour="product-hpp-preview"]',
+        actions: ['product-demo-ingredient-fill'],
+        title: 'Estimasi HPP',
+        body: 'Preview HPP menghitung biaya produksi dari bahan yang dipilih.',
+        details: ['Setiap bahan dihitung qty dikali harga rata-rata.', 'Total HPP dibandingkan dengan harga jual.', 'Margin menunjukkan selisih harga jual dan biaya produksi.', 'Simpan produk dinonaktifkan jika harga jual di bawah HPP.'],
+      },
+      {
+        selector: '[data-tour="product-form-actions"]',
+        actions: ['product-demo-basic-fill', 'product-demo-ingredient-fill'],
+        title: 'Aksi Form Produk',
+        body: 'Bagian bawah form menentukan apakah draft dibatalkan atau disimpan.',
+        details: ['Batal menutup modal tanpa mengirim data.', 'Simpan mengirim produk ke backend.', 'Jika sedang edit, tombol menyimpan perubahan produk.', 'Pastikan gambar, kategori, dan resep sudah benar sebelum simpan.'],
+      },
+      {
+        selector: '[data-tour="product-save-button"]',
+        actions: ['product-demo-basic-fill', 'product-demo-ingredient-fill'],
+        title: 'Simpan Produk ke Database',
+        body: 'Tombol ini menjalankan submit asli. Jika user klik Simpan, data produk, gambar atau URL, kategori, dan resep dikirim ke backend lalu disimpan di Supabase.',
+        details: ['Tutorial hanya menyiapkan contoh input.', 'Klik Simpan hanya jika ingin membuat produk demo.', 'Setelah sukses, daftar produk akan refresh.', 'Jika batal, data demo tidak masuk database.'],
+      },
+    ],
+  },
+  {
+    id: 'payment',
+    title: 'Payment',
+    route: '/payment',
+    roles: ['admin'],
+    description: 'Pelajari metode QRIS dan transfer manual, preview kartu, instruksi, timer pembayaran, upload QRIS, status, edit, nonaktif, dan hapus.',
+    steps: [
+      {
+        selector: '[data-tour="payment-header"]',
+        title: 'Menu Payment sebagai kumpulan komponen',
+        body: 'React components adalah building block utama aplikasi React: bagian kecil yang mandiri dan bisa dipakai ulang, mirip Lego. Di menu payment ini, header, statistik, alur pelanggan, kartu metode, preview payment card, dan form input digabung menjadi sistem pembayaran manual.',
+        details: ['Admin mengatur QRIS dan transfer tanpa payment gateway.', 'Metode aktif akan tampil di halaman order pelanggan.', 'Timer pembayaran berasal dari field batas waktu.', 'Status metode menentukan apakah bisa dipilih pelanggan.'],
+      },
+      {
+        selector: '[data-tour="payment-stats"]',
+        title: 'Statistik Payment',
+        body: 'Kartu statistik membaca kondisi metode pembayaran.',
+        details: ['Aktif menunjukkan metode yang bisa dipakai pelanggan.', 'Total menunjukkan seluruh metode termasuk nonaktif.', 'Sinkronisasi payment tampil saat data sedang refresh.', 'Ringkasan ini membantu admin cepat melihat konfigurasi.'],
+      },
+      {
+        selector: '[data-tour="payment-flow"]',
+        title: 'Alur Pembayaran Pelanggan',
+        body: 'Panel ini menjelaskan flow manual QRIS dan transfer agar admin memahami dampaknya ke halaman order.',
+        details: ['QRIS menampilkan QR statis, nominal, timer, dan upload bukti.', 'Transfer menampilkan kartu rekening, copy rekening, copy nominal, dan upload bukti.', 'Setelah bukti dikirim, pelanggan menunggu verifikasi admin atau kasir.', 'Tidak ada payment gateway, jadi verifikasi tetap manual.'],
+      },
+      {
+        selector: '[data-tour="payment-list"]',
+        title: 'Daftar Metode Pembayaran',
+        body: 'Daftar ini menampilkan semua metode yang sudah dibuat.',
+        details: ['Metode tampil sebagai kartu per item.', 'Status aktif/nonaktif mudah terlihat.', 'Instruksi pembayaran tampil agar bisa dicek sebelum dipakai pelanggan.', 'Jika daftar kosong, buat metode baru dari form kanan.'],
+      },
+      {
+        selector: '[data-tour="payment-card"]',
+        title: 'Kartu Data Payment',
+        body: 'Kartu ini adalah ringkasan konfigurasi satu metode pembayaran.',
+        details: ['Badge tipe membedakan QRIS dan transfer.', 'Badge status menunjukkan aktif atau nonaktif.', 'Batas waktu ditampilkan dalam menit.', 'Provider, nomor, dan a/n penerima harus jelas agar pelanggan tidak salah bayar.'],
+      },
+      {
+        selector: '[data-tour="payment-card-preview"]',
+        title: 'Preview Kartu Pelanggan',
+        body: 'Preview menunjukkan bagaimana metode terlihat di halaman order.',
+        details: ['QRIS tampil seperti scan payment card.', 'Transfer tampil seperti kartu rekening.', 'Desain preview membantu admin menilai tampilan sebelum pelanggan melihatnya.', 'QR hanya tampil jika gambar QRIS sudah tersedia.'],
+      },
+      {
+        selector: '[data-tour="payment-card-actions"]',
+        title: 'Aksi Metode Payment',
+        body: 'Aksi kartu dipakai untuk mengelola metode yang sudah ada.',
+        details: ['Edit memuat data ke form kanan.', 'Nonaktif menyembunyikan metode dari pilihan pelanggan.', 'Hapus menghapus permanen dengan konfirmasi modal.', 'Aksi ini tidak mengubah bukti pembayaran transaksi yang sudah masuk.'],
+      },
+      {
+        selector: '[data-tour="payment-form"]',
+        title: 'Form Payment',
+        body: 'Form ini membuat atau mengedit metode pembayaran.',
+        details: ['Mode Tambah membuat metode baru.', 'Mode Edit memperbarui metode yang dipilih.', 'Preview di atas form berubah mengikuti input.', 'Setiap perubahan baru tersimpan setelah tombol Simpan atau Update diklik.'],
+      },
+      {
+        selector: '[data-tour="payment-preview-card"]',
+        actions: ['payment-demo-qris-fill'],
+        title: 'Live Preview Payment Card',
+        body: 'Kartu preview bergerak mengikuti input form, sehingga admin bisa melihat hasil sebelum disimpan.',
+        details: ['Nama, provider, rekening, dan QR preview berasal dari form.', 'QRIS memakai tampilan scan QR.', 'Transfer memakai tampilan rekening.', 'Preview ini membantu menjaga tampilan profesional di halaman order.'],
+      },
+      {
+        selector: '[data-tour="payment-type-status-field"]',
+        actions: ['payment-demo-qris-fill'],
+        title: 'Tipe dan Status',
+        body: 'Dropdown tipe menentukan alur pembayaran, sedangkan status menentukan ketersediaan metode.',
+        details: ['QRIS menampilkan upload gambar QR.', 'Transfer menampilkan kartu rekening tanpa upload QR.', 'Aktif membuat metode bisa dipilih pelanggan.', 'Nonaktif menyimpan data tapi tidak ditawarkan ke pelanggan.'],
+      },
+      {
+        selector: '[data-tour="payment-name-field"]',
+        actions: ['payment-demo-qris-fill'],
+        title: 'Nama Metode',
+        body: 'Nama metode adalah label yang dibaca admin dan pelanggan.',
+        details: ['Contoh: QRIS, QRIS BCA, Transfer Bank.', 'Gunakan nama singkat dan jelas.', 'Nama tampil di daftar payment dan halaman order.', 'Tutorial mengisi contoh QRIS Tutorial.'],
+      },
+      {
+        selector: '[data-tour="payment-key-field"]',
+        actions: ['payment-demo-qris-fill'],
+        title: 'Kode Metode',
+        body: 'Kode metode adalah identifier internal untuk membedakan payment method.',
+        details: ['Gunakan huruf kecil dan tanda hubung bila perlu.', 'Kode sebaiknya unik.', 'Kode membantu backend membaca metode secara stabil.', 'Kosong boleh, tapi disarankan diisi.'],
+      },
+      {
+        selector: '[data-tour="payment-provider-field"]',
+        actions: ['payment-demo-qris-fill'],
+        title: 'Provider atau Bank',
+        body: 'Provider menjelaskan jaringan pembayaran atau bank tujuan.',
+        details: ['Untuk QRIS bisa diisi QRIS, GoPay, atau penyedia QR.', 'Untuk transfer bisa diisi nama bank.', 'Provider tampil pada kartu payment.', 'Isi yang jelas mengurangi kebingungan pelanggan.'],
+      },
+      {
+        selector: '[data-tour="payment-account-fields"]',
+        actions: ['payment-demo-qris-fill'],
+        title: 'Nama Penerima dan Nomor Akun',
+        body: 'Field ini menjadi tujuan pembayaran pelanggan.',
+        details: ['Nama penerima tampil sebagai a/n.', 'Nomor akun bisa nomor QRIS, rekening, atau identitas pembayaran.', 'Di halaman order pelanggan bisa copy nomor akun.', 'Pastikan tidak ada typo sebelum menyimpan.'],
+      },
+      {
+        selector: '[data-tour="payment-timeout-sort-fields"]',
+        actions: ['payment-demo-qris-fill'],
+        title: 'Batas Waktu dan Urutan',
+        body: 'Batas waktu menentukan countdown pembayaran, sedangkan urutan menentukan prioritas tampil.',
+        details: ['Timeout 15 berarti pelanggan punya 15 menit membayar.', 'Jika waktu habis, sistem bisa membatalkan pesanan sesuai logic order.', 'Sort order membantu metode utama tampil lebih atas.', 'Gunakan angka kecil untuk metode prioritas.'],
+      },
+      {
+        selector: '[data-tour="payment-instructions-field"]',
+        actions: ['payment-demo-qris-fill'],
+        title: 'Instruksi Pembayaran',
+        body: 'Instruksi ini tampil ke pelanggan sebagai tata cara bayar.',
+        details: ['QRIS: scan QR, bayar nominal tepat, upload bukti.', 'Transfer: copy rekening, transfer nominal tepat, upload struk.', 'Tulis singkat dan tidak ambigu.', 'Instruksi yang jelas mengurangi pertanyaan ke kasir.'],
+      },
+      {
+        selector: '[data-tour="payment-qris-upload"]',
+        actions: ['payment-demo-qris-fill'],
+        title: 'Upload QRIS',
+        body: 'Bagian ini hanya muncul untuk tipe QRIS.',
+        details: ['Upload gambar QR toko yang valid.', 'File divalidasi sebagai gambar.', 'Preview kartu berubah setelah QR dipilih.', 'Jika tidak ada QR, pelanggan tidak punya gambar untuk discan.'],
+      },
+      {
+        selector: '[data-tour="payment-transfer-note"]',
+        actions: ['payment-demo-transfer-fill'],
+        title: 'Mode Transfer Bank',
+        body: 'Saat tipe diganti ke Transfer, form QR hilang dan pelanggan hanya melihat kartu rekening.',
+        details: ['Transfer tidak memakai upload gambar.', 'Pelanggan mendapat tombol copy rekening dan copy nominal.', 'Pelanggan tetap upload struk pembayaran.', 'Tutorial mengganti form ke contoh transfer untuk menunjukkan perbedaannya.'],
+      },
+      {
+        selector: '[data-tour="payment-form-actions"]',
+        actions: ['payment-demo-transfer-fill'],
+        title: 'Aksi Form Payment',
+        body: 'Bagian bawah form menentukan apakah metode payment disimpan atau batal edit.',
+        details: ['Simpan membuat payment baru.', 'Update menyimpan perubahan saat edit.', 'Batal muncul saat mode edit.', 'Setelah sukses, daftar payment refresh tanpa pindah halaman.'],
+      },
+      {
+        selector: '[data-tour="payment-save-button"]',
+        actions: ['payment-demo-transfer-fill'],
+        title: 'Simpan Payment ke Database',
+        body: 'Tombol ini menjalankan submit asli. Jika user klik Simpan, metode payment dikirim ke backend lalu disimpan di Supabase.',
+        details: ['Tutorial hanya menyiapkan contoh input.', 'Klik Simpan hanya jika ingin membuat payment demo.', 'Metode aktif akan muncul pada halaman order pelanggan.', 'Jika batal atau tidak klik Simpan, contoh input tidak masuk database.'],
+      },
+    ],
+  },
 ];
 
 function getStorageKey(user) {
@@ -662,7 +943,11 @@ export default function FloatingTutorialButton() {
 
     const setInputValue = (element, value) => {
       if (!element) return;
-      const proto = element.tagName === 'SELECT' ? window.HTMLSelectElement.prototype : window.HTMLInputElement.prototype;
+      const proto = element.tagName === 'SELECT'
+        ? window.HTMLSelectElement.prototype
+        : element.tagName === 'TEXTAREA'
+          ? window.HTMLTextAreaElement.prototype
+          : window.HTMLInputElement.prototype;
       const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
       setter?.call(element, value);
       element.dispatchEvent(new Event('input', { bubbles: true }));
@@ -688,6 +973,84 @@ export default function FloatingTutorialButton() {
       }
 
       const action = actions[index];
+      if (action === 'product-demo-basic-fill') {
+        const suffix = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).replace(/\D/g, '');
+        setInputValue(document.querySelector('[data-tour="product-name-field"] input'), `Produk Tutorial ${suffix}`);
+        setInputValue(document.querySelector('[data-tour="product-price-field"] input'), '999999');
+        setInputValue(
+          document.querySelector('[data-tour="product-image-url-field"] input'),
+          'https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=900&q=80'
+        );
+        const categorySelect = document.querySelector('[data-tour="product-category-field"] select');
+        const firstCategoryValue = categorySelect
+          ? Array.from(categorySelect.options).find((option) => option.value)?.value || ''
+          : '';
+        if (firstCategoryValue) setInputValue(categorySelect, firstCategoryValue);
+        const timer = window.setTimeout(() => runActions(index + 1, 0), 520);
+        actionTimers.push(timer);
+        return;
+      }
+
+      if (action === 'product-add-ingredient') {
+        const ingredientRow = document.querySelector('[data-tour="product-ingredient-row"]');
+        const addIngredientButton = document.querySelector('[data-tour-action="product-add-ingredient"]');
+        if (!ingredientRow && addIngredientButton) {
+          addIngredientButton.click();
+        }
+        const timer = window.setTimeout(() => runActions(index + 1, 0), 420);
+        actionTimers.push(timer);
+        return;
+      }
+
+      if (action === 'product-demo-ingredient-fill') {
+        let ingredientRow = document.querySelector('[data-tour="product-ingredient-row"]');
+        const addIngredientButton = document.querySelector('[data-tour-action="product-add-ingredient"]');
+        if (!ingredientRow && addIngredientButton) {
+          addIngredientButton.click();
+          const timer = window.setTimeout(() => runActions(index, attempt), 360);
+          actionTimers.push(timer);
+          return;
+        }
+
+        ingredientRow = document.querySelector('[data-tour="product-ingredient-row"]');
+        const ingredientSelect = ingredientRow?.querySelector('[data-tour="product-ingredient-select"]') || document.querySelector('[data-tour="product-ingredient-select"]');
+        const firstIngredientValue = ingredientSelect
+          ? Array.from(ingredientSelect.options).find((option) => option.value)?.value || ''
+          : '';
+        if (firstIngredientValue) setInputValue(ingredientSelect, firstIngredientValue);
+        const qtyInput = ingredientRow?.querySelector('[data-tour="product-ingredient-qty"]') || document.querySelector('[data-tour="product-ingredient-qty"]');
+        setInputValue(qtyInput, '1');
+        const timer = window.setTimeout(() => runActions(index + 1, 0), 520);
+        actionTimers.push(timer);
+        return;
+      }
+
+      if (action === 'payment-demo-qris-fill' || action === 'payment-demo-transfer-fill') {
+        const isTransfer = action === 'payment-demo-transfer-fill';
+        const typeStatusSelects = document.querySelectorAll('[data-tour="payment-type-status-field"] select');
+        setInputValue(typeStatusSelects[0], isTransfer ? 'transfer' : 'qris');
+        setInputValue(typeStatusSelects[1], 'active');
+        const suffix = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).replace(/\D/g, '');
+        setInputValue(document.querySelector('[data-tour="payment-name-field"]'), isTransfer ? `Transfer Tutorial ${suffix}` : `QRIS Tutorial ${suffix}`);
+        setInputValue(document.querySelector('[data-tour="payment-key-field"]'), isTransfer ? `transfer-tutorial-${suffix}` : `qris-tutorial-${suffix}`);
+        setInputValue(document.querySelector('[data-tour="payment-provider-field"]'), isTransfer ? 'Bank' : 'QRIS');
+        const accountInputs = document.querySelectorAll('[data-tour="payment-account-fields"] input');
+        setInputValue(accountInputs[0], 'Sultan Kebab');
+        setInputValue(accountInputs[1], isTransfer ? '123123112327' : '0895353025503');
+        const timeoutInputs = document.querySelectorAll('[data-tour="payment-timeout-sort-fields"] input');
+        setInputValue(timeoutInputs[0], '15');
+        setInputValue(timeoutInputs[1], isTransfer ? '2' : '1');
+        setInputValue(
+          document.querySelector('[data-tour="payment-instructions-field"]'),
+          isTransfer
+            ? 'Transfer sesuai total bayar, lalu upload bukti pembayaran.'
+            : 'Scan QRIS, pastikan nominal sesuai total bayar, lalu upload bukti pembayaran.'
+        );
+        const timer = window.setTimeout(() => runActions(index + 1, 0), 620);
+        actionTimers.push(timer);
+        return;
+      }
+
       if (action === 'stock-demo-master-fill') {
         const suffix = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).replace(/\D/g, '');
         setInputValue(document.querySelector('[data-tour="stock-master-name-field"] input'), `Bahan Tutorial ${suffix}`);

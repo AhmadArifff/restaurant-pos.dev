@@ -213,7 +213,7 @@ export default function PaymentManagementPage() {
     <AuthGuard>
       <AdminLayout>
         <div className="mx-auto max-w-7xl space-y-6">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div data-tour="payment-header" className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.28em] text-orange-400">Payment</p>
               <h1 className="mt-2 text-3xl font-black text-white">Metode Pembayaran Pelanggan</h1>
@@ -221,7 +221,7 @@ export default function PaymentManagementPage() {
                 Atur QRIS, transfer, instruksi bayar, dan batas waktu pembayaran untuk pesanan meja pelanggan.
               </p>
             </div>
-            <div className="grid grid-cols-2 gap-3 sm:w-72">
+            <div data-tour="payment-stats" className="grid grid-cols-2 gap-3 sm:w-72">
               {refreshing && (
                 <div className="col-span-2 rounded-full border border-sky-500/25 bg-sky-500/10 px-3 py-1.5 text-center text-xs font-bold text-sky-200">
                   Sinkronisasi payment...
@@ -239,8 +239,8 @@ export default function PaymentManagementPage() {
           </div>
 
           <div className="grid gap-6 xl:grid-cols-[1fr_420px]">
-            <section className="space-y-4">
-              <div className="rounded-3xl border border-sky-500/20 bg-sky-500/10 p-5">
+            <section data-tour="payment-list" className="space-y-4">
+              <div data-tour="payment-flow" className="rounded-3xl border border-sky-500/20 bg-sky-500/10 p-5">
                 <p className="text-xs font-black uppercase tracking-[0.22em] text-sky-300">Alur tampilan pelanggan</p>
                 <div className="mt-4 grid gap-3 md:grid-cols-2">
                   <div className="rounded-2xl border border-sky-200/15 bg-slate-900/60 p-4">
@@ -277,6 +277,7 @@ export default function PaymentManagementPage() {
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.04 }}
+                  data-tour="payment-card"
                   className="rounded-3xl border border-slate-700 bg-slate-800 p-5"
                 >
                   <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px_auto] lg:items-start">
@@ -305,8 +306,10 @@ export default function PaymentManagementPage() {
                         </p>
                       )}
                     </div>
-                    <PaymentMethodCard method={method} compact preview />
-                    <div className="flex shrink-0 flex-col gap-3 lg:w-32">
+                    <div data-tour="payment-card-preview">
+                      <PaymentMethodCard method={method} compact preview />
+                    </div>
+                    <div data-tour="payment-card-actions" className="flex shrink-0 flex-col gap-3 lg:w-32">
                       <button onClick={() => editMethod(method)} className="rounded-xl bg-slate-700 px-3 py-2 text-sm font-black text-white">
                         Edit
                       </button>
@@ -325,13 +328,13 @@ export default function PaymentManagementPage() {
             </section>
 
             <aside className="xl:sticky xl:top-6 xl:h-fit">
-              <div className="rounded-3xl border border-slate-700 bg-slate-800 p-5">
+              <div data-tour="payment-form" className="rounded-3xl border border-slate-700 bg-slate-800 p-5">
                 <h2 className="text-xl font-black text-white">{editing ? 'Edit Payment' : 'Tambah Payment'}</h2>
-                <div className="mt-4">
+                <div data-tour="payment-preview-card" className="mt-4">
                   <PaymentMethodCard method={previewMethod} preview />
                 </div>
                 <form onSubmit={save} className="mt-4 space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
+                  <div data-tour="payment-type-status-field" className="grid grid-cols-2 gap-3">
                     <select
                       value={form.type}
                       onChange={(event) => setForm((prev) => ({
@@ -355,6 +358,7 @@ export default function PaymentManagementPage() {
                     </select>
                   </div>
                   <input
+                    data-tour="payment-name-field"
                     value={form.name}
                     onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
                     placeholder="Nama metode, contoh QRIS BCA"
@@ -362,18 +366,20 @@ export default function PaymentManagementPage() {
                     required
                   />
                   <input
+                    data-tour="payment-key-field"
                     value={form.method_key}
                     onChange={(event) => setForm((prev) => ({ ...prev, method_key: event.target.value }))}
                     placeholder="Kode metode, contoh qris-bca"
                     className="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-white outline-none focus:border-orange-500"
                   />
                   <input
+                    data-tour="payment-provider-field"
                     value={form.provider_name}
                     onChange={(event) => setForm((prev) => ({ ...prev, provider_name: event.target.value }))}
                     placeholder="Provider / bank"
                     className="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-white outline-none focus:border-orange-500"
                   />
-                  <div className="grid grid-cols-2 gap-3">
+                  <div data-tour="payment-account-fields" className="grid grid-cols-2 gap-3">
                     <input
                       value={form.account_name}
                       onChange={(event) => setForm((prev) => ({ ...prev, account_name: event.target.value }))}
@@ -387,7 +393,7 @@ export default function PaymentManagementPage() {
                       className="rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-white outline-none focus:border-orange-500"
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div data-tour="payment-timeout-sort-fields" className="grid grid-cols-2 gap-3">
                     <input
                       type="number"
                       min="1"
@@ -404,13 +410,14 @@ export default function PaymentManagementPage() {
                     />
                   </div>
                   <textarea
+                    data-tour="payment-instructions-field"
                     value={form.instructions}
                     onChange={(event) => setForm((prev) => ({ ...prev, instructions: event.target.value }))}
                     placeholder="Tata cara pembayaran..."
                     className="min-h-28 w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-white outline-none focus:border-orange-500"
                   />
                   {form.type === 'qris' ? (
-                    <div className="rounded-2xl border border-slate-700 bg-slate-900 p-3">
+                    <div data-tour="payment-qris-upload" className="rounded-2xl border border-slate-700 bg-slate-900 p-3">
                       <p className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Gambar QRIS</p>
                       <input
                         type="file"
@@ -422,7 +429,7 @@ export default function PaymentManagementPage() {
                       <p className="mt-2 text-xs leading-5 text-slate-500">Upload hanya untuk QRIS. Preview kartu di atas akan berubah otomatis.</p>
                     </div>
                   ) : (
-                    <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-xs leading-5 text-emerald-100">
+                    <div data-tour="payment-transfer-note" className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-xs leading-5 text-emerald-100">
                       Metode transfer tidak memakai upload gambar. Pelanggan akan melihat kartu rekening, tombol copy nomor rekening, dan instruksi transfer.
                     </div>
                   )}
@@ -436,8 +443,8 @@ export default function PaymentManagementPage() {
                       Hapus gambar QR saat update
                     </label>
                   )}
-                  <div className="flex gap-2">
-                    <button disabled={saving} className="flex-1 rounded-xl bg-orange-500 px-4 py-3 text-sm font-black text-white hover:bg-orange-400 disabled:opacity-50">
+                  <div data-tour="payment-form-actions" className="flex gap-2">
+                    <button data-tour="payment-save-button" disabled={saving} className="flex-1 rounded-xl bg-orange-500 px-4 py-3 text-sm font-black text-white hover:bg-orange-400 disabled:opacity-50">
                       {saving ? 'Menyimpan...' : editing ? 'Update Payment' : 'Simpan Payment'}
                     </button>
                     {editing && (
