@@ -22,6 +22,7 @@ import Sidebar from './Sidebar';
 import AuthGuard from '@/components/ui/AuthGuard';
 import PWAInstallPrompt from '@/components/ui/PWAInstallPrompt';
 import FloatingChatButton from '@/components/ui/FloatingChatButton';
+import FloatingTutorialButton from '@/components/ui/FloatingTutorialButton';
 import { useAuthStore } from '@/store/authStore';
 
 export default function AdminLayout({ children, noPadding = false }) {
@@ -38,6 +39,7 @@ export default function AdminLayout({ children, noPadding = false }) {
           {children}
           <PWAInstallPrompt />
         </main>
+        <FloatingTutorialButton />
         <FloatingChatButton />
       </div>
     </AuthGuard>

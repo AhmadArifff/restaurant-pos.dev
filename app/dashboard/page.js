@@ -443,9 +443,9 @@ function MultiLineChart({ xLabels = [], series = [], height = 180 }) {
 
 
 // ── Chart Card ────────────────────────────────────────────────
-function ChartCard({ title, stats, tabs, activeTab, onTabChange, children }) {
+function ChartCard({ title, stats, tabs, activeTab, onTabChange, children, tourId }) {
   return (
-    <div className="bg-slate-800/80 rounded-2xl p-4 sm:p-5 border border-slate-700/60">
+    <div data-tour={tourId} className="bg-slate-800/80 rounded-2xl p-4 sm:p-5 border border-slate-700/60">
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-4">
         <div>
           <h2 className="text-white font-bold text-sm sm:text-base">{title}</h2>
@@ -938,7 +938,7 @@ const filteredBestSelling = bestSelling.filter(p => {
       <div className="max-w-7xl mx-auto space-y-5 pb-8">
 
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div data-tour="dashboard-header" className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h1 className="text-white text-xl sm:text-2xl font-black tracking-tight">
               Dashboard
@@ -966,7 +966,7 @@ const filteredBestSelling = bestSelling.filter(p => {
           <>
             {/* Stat Cards - Today */}
             <div className="space-y-5">
-              <div>
+              <div data-tour="dashboard-today-stats">
                 <h3 className="text-slate-400 text-xs font-semibold mb-3 uppercase">Hari Ini</h3>
                 <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
                   {[
@@ -1013,7 +1013,7 @@ const filteredBestSelling = bestSelling.filter(p => {
               </div>
 
               {/* Stat Cards - Monthly */}
-              <div>
+              <div data-tour="dashboard-month-stats">
                 <h3 className="text-slate-400 text-xs font-semibold mb-3 uppercase">Bulan {MONTHS[currentMonth - 1]} {year}</h3>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                   {[
@@ -1055,7 +1055,7 @@ const filteredBestSelling = bestSelling.filter(p => {
               </div>
 
               {/* Stat Cards - Yearly */}
-              <div>
+              <div data-tour="dashboard-year-stats">
                 <h3 className="text-slate-400 text-xs font-semibold mb-3 uppercase">Tahun {year}</h3>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                   {[
@@ -1099,6 +1099,7 @@ const filteredBestSelling = bestSelling.filter(p => {
 
             {/* Grafik Bulan Terpilih */}
             <ChartCard
+              tourId="dashboard-month-chart"
               title={`Penjualan ${MONTHS[currentMonth - 1]} ${year}`}
               stats={[
                 {
@@ -1145,6 +1146,7 @@ const filteredBestSelling = bestSelling.filter(p => {
 
             {/* Grafik Tahun */}
             <ChartCard
+              tourId="dashboard-year-chart"
               title={`Penjualan Tahun ${year}`}
               stats={[
                 {
@@ -1193,7 +1195,7 @@ const filteredBestSelling = bestSelling.filter(p => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
 
               {/* Produk Terlaris */}
-              <div className="bg-slate-800/80 rounded-2xl p-4 sm:p-5 border border-slate-700/60">
+              <div data-tour="dashboard-best-selling" className="bg-slate-800/80 rounded-2xl p-4 sm:p-5 border border-slate-700/60">
                 <div className="space-y-3 mb-4">
                   <div className="flex items-center justify-between">
                     <h2 className="text-white font-bold text-sm sm:text-base">🏆 Produk Terlaris</h2>
@@ -1318,7 +1320,7 @@ const filteredBestSelling = bestSelling.filter(p => {
               </div>
 
               {/* Stok Menipis */}
-              <div className="bg-slate-800/80 rounded-2xl p-4 sm:p-5 border border-slate-700/60">
+              <div data-tour="dashboard-low-stock" className="bg-slate-800/80 rounded-2xl p-4 sm:p-5 border border-slate-700/60">
                 <h2 className="text-white font-bold text-sm sm:text-base mb-4">
                   ⚠️ Bahan Baku Menipis
                 </h2>
@@ -1387,14 +1389,14 @@ const filteredBestSelling = bestSelling.filter(p => {
 
             {/* ── Karyawan Aktif + Grafik Kehadiran ── */}
             {(activeUsers.length > 0 || attendance.users?.length > 0) && (
-              <div className="bg-slate-800/80 rounded-2xl p-4 sm:p-5 border border-slate-700/60">
+              <div data-tour="dashboard-schedule" className="bg-slate-800/80 rounded-2xl p-4 sm:p-5 border border-slate-700/60">
                 <h2 className="text-white font-bold text-sm sm:text-base mb-4">
                   👥 Karyawan Aktif & Kehadiran ({MONTHS[currentMonth - 1]} {year})
                 </h2>
 
                 {/* Active users */}
                 {activeUsers.length > 0 && (
-                  <div className="mb-5">
+                  <div data-tour="dashboard-active-users" className="mb-5">
                     <p className="text-slate-500 text-xs font-medium mb-3">
                       Sedang online hari ini — {activeUsers.length} orang
                     </p>
@@ -1448,7 +1450,7 @@ const filteredBestSelling = bestSelling.filter(p => {
                   }));
 
                   return (
-                    <>
+                    <div data-tour="dashboard-attendance-chart">
                       <p className="text-slate-500 text-xs font-medium mb-3">
                         Rekap kehadiran bulan ini — {allWeeks.length} minggu
                       </p>
@@ -1467,7 +1469,7 @@ const filteredBestSelling = bestSelling.filter(p => {
                         active={attendFilter}
                         height={180}
                       />
-                    </>
+                    </div>
                   );
                 })()}
               </div>
@@ -1537,6 +1539,7 @@ const filteredBestSelling = bestSelling.filter(p => {
 
               return (
                 <ChartCard
+                  tourId="dashboard-staff-performance"
                   title={`📊 Performa Penjualan Karyawan (${MONTHS[currentMonth - 1]} ${year})`}
                   stats={[
                     { label:'Total Transaksi', value: totalTrx,                                    color:'#60a5fa' },
