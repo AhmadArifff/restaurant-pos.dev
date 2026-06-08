@@ -765,6 +765,274 @@ const TUTORIALS = [
       },
     ],
   },
+  {
+    id: 'discounts',
+    title: 'Vocher & Diskon',
+    route: '/discounts',
+    roles: ['admin'],
+    description: 'Pelajari reward review, kode voucher, paket bundle, kuota klaim, masa berlaku, distribusi diskon, dan aksi program.',
+    steps: [
+      {
+        selector: '[data-tour="discount-header"]',
+        title: 'Vocher & Diskon sebagai kumpulan komponen',
+        body: 'React components adalah building block utama aplikasi React: bagian kecil yang mandiri dan bisa dipakai ulang, mirip Lego. Di menu diskon ini, header, kartu statistik, form program, filter, kartu program, dan aksi edit/nonaktif/hapus digabung menjadi workflow marketing.',
+        details: ['Reward Review dipakai setelah pelanggan memberi review.', 'Kode Voucher dipakai dari sosial media atau input kasir.', 'Paket Bundle otomatis membaca kombinasi menu di cart.', 'Semua program tetap mengikuti kuota, status, dan masa berlaku.'],
+      },
+      {
+        selector: '[data-tour="discount-stats"]',
+        title: 'Kartu Ringkasan Diskon',
+        body: 'Kartu ini membaca kondisi program diskon secara cepat.',
+        details: ['Program aktif menunjukkan promo yang masih bisa dipakai.', 'Distribusi diskon menunjukkan nilai potongan yang sudah keluar.', 'Total klaim membaca jumlah penggunaan program.', 'Ringkasan ini membantu admin menilai promo yang sedang berjalan.'],
+      },
+      {
+        selector: '[data-tour="discount-form"]',
+        title: 'Form Buat Program',
+        body: 'Form ini dipakai untuk membuat atau mengedit program diskon.',
+        details: ['Mode Buat Program membuat data baru.', 'Mode Edit memuat data program lama ke form.', 'Data hanya tersimpan setelah tombol Simpan atau Update diklik.', 'Tutorial akan menyiapkan contoh data tanpa submit otomatis.'],
+      },
+      {
+        selector: '[data-tour="discount-name-field"]',
+        actions: ['discount-demo-voucher-fill'],
+        title: 'Nama Program',
+        body: 'Nama program membantu admin dan kasir memahami promo yang sedang digunakan.',
+        details: ['Gunakan nama jelas seperti Reward Review Pelanggan atau Promo Sosial Media.', 'Nama tampil di daftar program dan detail potongan.', 'Tutorial mengisi nama demo voucher.', 'Nama tidak harus sama dengan kode voucher.'],
+      },
+      {
+        selector: '[data-tour="discount-type-status-field"]',
+        actions: ['discount-demo-voucher-fill'],
+        title: 'Jenis dan Status',
+        body: 'Jenis menentukan logic klaim diskon, sedangkan status menentukan apakah program bisa dipakai.',
+        details: ['Kode Voucher butuh kode 13 karakter.', 'Paket Bundle butuh daftar menu dan qty minimum.', 'Reward Review butuh rating layanan dan menu.', 'Status nonaktif menyimpan program tapi tidak bisa diklaim.'],
+      },
+      {
+        selector: '[data-tour="discount-validity-field"]',
+        actions: ['discount-demo-voucher-fill'],
+        title: 'Masa Berlaku',
+        body: 'Masa berlaku mengontrol apakah program aktif berdasarkan tanggal atau hanya sampai kuota habis.',
+        details: ['Tidak expired berarti program aktif sampai kuota habis atau dinonaktifkan.', 'Pakai expired membutuhkan mulai aktif dan expired pada.', 'Status Terjadwal, Expired, atau Kuota Habis dihitung otomatis.', 'Tanggal ditampilkan kembali di daftar program.'],
+      },
+      {
+        selector: '[data-tour="discount-voucher-code-field"]',
+        actions: ['discount-demo-voucher-fill', 'discount-generate-code'],
+        title: 'Kode Voucher',
+        body: 'Field ini hanya muncul untuk jenis Kode Voucher.',
+        details: ['Kode dibatasi huruf besar dan angka.', 'Panjang kode maksimal 13 karakter.', 'Tombol Generate membuat kode acak yang siap dipakai.', 'Kode ini bisa diketik di kasir atau halaman order pelanggan.'],
+      },
+      {
+        selector: '[data-tour="discount-value-fields"]',
+        actions: ['discount-demo-voucher-fill'],
+        title: 'Tipe dan Nilai Diskon',
+        body: 'Bagian ini menentukan besaran potongan.',
+        details: ['Persen menghitung potongan dari dasar transaksi yang valid.', 'Rupiah memberi potongan nominal tetap.', 'Nilai harus diisi realistis supaya margin tidak bocor.', 'Untuk bundle, potongan hanya berlaku pada menu paket yang memenuhi syarat.'],
+      },
+      {
+        selector: '[data-tour="discount-usage-fields"]',
+        actions: ['discount-demo-voucher-fill'],
+        title: 'Limit Klaim',
+        body: 'Limit klaim mencegah satu pelanggan memakai promo berlebihan.',
+        details: ['Klaim / No. HP menentukan batas per nomor pelanggan.', 'Kuota total membatasi jumlah klaim semua pelanggan.', 'Kosong pada kuota total berarti tanpa batas total.', 'Pemakaian tampil dalam format klaim terpakai/kuota.'],
+      },
+      {
+        selector: '[data-tour="discount-review-fields"]',
+        actions: ['discount-demo-review-fill'],
+        title: 'Rule Reward Review',
+        body: 'Field ini muncul untuk program Reward Review.',
+        details: ['Min. rating layanan menentukan rating pelayanan minimal.', 'Min. rating menu menentukan rating per menu minimal.', 'Voucher review sebaiknya dipakai untuk pesanan berikutnya, bukan memotong pesanan yang sudah dibayar.', 'Rule ini membantu reward review tetap adil.'],
+      },
+      {
+        selector: '[data-tour="discount-bundle-section"]',
+        actions: ['discount-demo-bundle-fill'],
+        title: 'Paket Bundle',
+        body: 'Bagian bundle menentukan menu apa saja yang wajib ada agar diskon paket bisa diklaim.',
+        details: ['Pilih menu yang menjadi syarat bundle.', 'Qty kanan adalah minimum porsi tiap menu.', 'Diskon bundle hanya menghitung menu yang masuk paket.', 'Pilih semua bisa digunakan jika promo berlaku untuk semua menu.'],
+      },
+      {
+        selector: '[data-tour="discount-bundle-row"]',
+        actions: ['discount-demo-bundle-fill'],
+        title: 'Baris Menu Bundle',
+        body: 'Setiap baris adalah satu menu dalam syarat paket bundle.',
+        details: ['Checkbox memilih menu masuk paket.', 'Input qty menentukan minimal porsi.', 'Nama menu berasal dari data produk.', 'Jangan memilih menu yang stoknya sering habis untuk promo utama.'],
+      },
+      {
+        selector: '[data-tour="discount-note-field"]',
+        title: 'Catatan Program',
+        body: 'Catatan menjelaskan tujuan atau aturan tambahan promo.',
+        details: ['Catatan membantu admin lain memahami konteks promo.', 'Catatan dapat menjelaskan campaign sosial media.', 'Untuk reward review, catatan bisa menjelaskan alur klaim voucher.', 'Field ini opsional.'],
+      },
+      {
+        selector: '[data-tour="discount-save-button"]',
+        actions: ['discount-demo-voucher-fill'],
+        title: 'Simpan Program ke Database',
+        body: 'Tombol ini menjalankan submit asli. Jika user klik Simpan, program diskon dikirim ke backend lalu disimpan di Supabase.',
+        details: ['Tutorial hanya menyiapkan contoh input.', 'Klik Simpan hanya jika ingin membuat program demo.', 'Setelah sukses, daftar program refresh.', 'Jika batal atau tidak klik Simpan, contoh input tidak masuk database.'],
+      },
+      {
+        selector: '[data-tour="discount-list"]',
+        title: 'Daftar Program',
+        body: 'Daftar ini menampilkan semua program diskon yang sudah dibuat.',
+        details: ['Program dikelompokkan berdasarkan filter tipe.', 'Setiap kartu menampilkan status, diskon, masa berlaku, distribusi, klaim, dan aksi.', 'Data refresh tanpa menutup halaman saat sinkronisasi.', 'Kartu kosong muncul bila filter tidak punya hasil.'],
+      },
+      {
+        selector: '[data-tour="discount-date-filter"]',
+        title: 'Filter Range Masa Berlaku',
+        body: 'Filter tanggal membantu mencari promo berdasarkan periode aktif.',
+        details: ['Klik tanggal awal lalu tanggal akhir seperti range booking.', 'Program tanpa expired tetap ditampilkan karena aktif sampai kuota habis.', 'Filter ini tidak mengubah data database.', 'Gunakan filter saat histori promo sudah banyak.'],
+      },
+      {
+        selector: '[data-tour="discount-type-filters"]',
+        title: 'Filter Jenis Program',
+        body: 'Chip filter membagi program berdasarkan jenis.',
+        details: ['Semua menampilkan seluruh program.', 'Reward Review hanya menampilkan reward review.', 'Kode Voucher hanya menampilkan voucher sosial media.', 'Paket Bundle hanya menampilkan bundle menu.'],
+      },
+      {
+        selector: '[data-tour="discount-program-card"]',
+        title: 'Kartu Program',
+        body: 'Kartu program merangkum satu promo dan statusnya.',
+        details: ['Badge jenis menjelaskan tipe program.', 'Badge status bisa Aktif, Nonaktif, Terjadwal, Expired, atau Kuota Habis.', 'Untuk bundle, daftar menu dan qty ditampilkan di kartu.', 'Masa berlaku menjelaskan kapan promo bisa dipakai.'],
+      },
+      {
+        selector: '[data-tour="discount-program-result"]',
+        title: 'Distribusi dan Klaim',
+        body: 'Bagian kanan kartu membaca hasil pemakaian promo.',
+        details: ['Distribusi diskon menunjukkan total rupiah potongan.', 'Klaim menampilkan jumlah terpakai dan kuota total jika ada.', 'Angka ini membantu evaluasi promo yang boros atau efektif.', 'Jika 0 klaim berarti promo belum dipakai.'],
+      },
+      {
+        selector: '[data-tour="discount-program-actions"]',
+        title: 'Aksi Program',
+        body: 'Aksi kartu dipakai untuk mengelola program yang sudah ada.',
+        details: ['Edit memuat data ke form kiri.', 'Nonaktif/Aktif mengubah ketersediaan promo.', 'Hapus memakai konfirmasi modal dan menghapus permanen.', 'Aksi ini tidak otomatis menghapus transaksi yang sudah memakai diskon.'],
+      },
+    ],
+  },
+  {
+    id: 'pos-history',
+    title: 'Riwayat POS',
+    route: '/pos/history',
+    roles: ['admin'],
+    description: 'Pelajari filter range, pencarian invoice, statistik omzet, distribusi diskon, tabel transaksi, void stok, dan analitik riwayat POS.',
+    steps: [
+      {
+        selector: '[data-tour="pos-history-header"]',
+        title: 'Riwayat POS sebagai kumpulan komponen',
+        body: 'React components adalah building block utama aplikasi React: bagian kecil yang mandiri dan bisa dipakai ulang, mirip Lego. Di riwayat POS ini, header, filter, statistik, tabel, aksi void, dan grafik analitik digabung menjadi halaman audit transaksi.',
+        details: ['Halaman ini default membaca transaksi hari ini.', 'Admin bisa memfilter range tanggal.', 'Data menampilkan kasir/admin pembuat transaksi.', 'Riwayat dipakai untuk audit, bukan edit transaksi biasa.'],
+      },
+      {
+        selector: '[data-tour="pos-history-filters"]',
+        title: 'Filter dan Cari',
+        body: 'Panel filter mempersempit data agar halaman tetap ringan saat transaksi banyak.',
+        details: ['Range transaksi memakai satu kalender tanggal awal dan akhir.', 'Search mencari invoice, kasir, atau admin.', 'Cari menerapkan filter.', 'Reset mengembalikan range ke hari ini.'],
+      },
+      {
+        selector: '[data-tour="pos-history-date-filter"]',
+        title: 'Range Transaksi',
+        body: 'Date range memilih periode transaksi yang ingin diaudit.',
+        details: ['Klik tanggal pertama sebagai awal range.', 'Klik tanggal kedua sebagai akhir range.', 'Filter ini mengurangi jumlah data yang dimuat dari backend.', 'Default hari ini menjaga load awal tetap cepat.'],
+      },
+      {
+        selector: '[data-tour="pos-history-search"]',
+        actions: ['pos-history-demo-search'],
+        title: 'Pencarian Invoice atau Kasir',
+        body: 'Search membantu menemukan transaksi tertentu.',
+        details: ['Bisa ketik nomor invoice.', 'Bisa ketik nama kasir atau admin.', 'Tutorial mengisi contoh kata ORD.', 'Klik Cari untuk memuat data sesuai pencarian.'],
+      },
+      {
+        selector: '[data-tour="pos-history-filter-actions"]',
+        actions: ['pos-history-demo-search'],
+        title: 'Tombol Cari dan Reset',
+        body: 'Aksi filter menentukan data yang ditampilkan.',
+        details: ['Cari mengirim parameter tanggal dan search ke backend.', 'Reset mengosongkan search dan kembali ke hari ini.', 'Saat loading, tombol dinonaktifkan untuk mencegah request dobel.', 'Status sinkronisasi muncul saat refresh berjalan.'],
+      },
+      {
+        selector: '[data-tour="pos-history-monthly-stats"]',
+        title: 'Statistik per Bulan',
+        body: 'Kartu bulanan muncul bila range berisi data transaksi.',
+        details: ['Omzet bulanan menampilkan total penjualan.', 'Margin memakai estimasi 35%.', 'Jumlah transaksi membantu membaca volume.', 'Kartu ini memudahkan evaluasi periode panjang.'],
+      },
+      {
+        selector: '[data-tour="pos-history-summary"]',
+        title: 'Ringkasan Total',
+        body: 'Ringkasan total membaca performa dari transaksi yang sedang tampil.',
+        details: ['Total transaksi membaca jumlah row.', 'Total penjualan membaca omzet.', 'Total margin membaca estimasi profit.', 'Total distribusi diskon membaca semua potongan pelanggan.'],
+      },
+      {
+        selector: '[data-tour="pos-history-discount-summary"]',
+        title: 'Distribusi Diskon',
+        body: 'Kartu ini khusus membaca dampak voucher, bundle, dan reward review pada transaksi POS.',
+        details: ['Total distribusi diskon adalah rupiah potongan.', 'Rata-rata persen menghitung rata-rata diskon transaksi yang memakai promo.', 'Jumlah transaksi menunjukkan berapa transaksi memakai diskon.', 'Bagian ini membantu menilai campaign promo.'],
+      },
+      {
+        selector: '[data-tour="pos-history-table"]',
+        title: 'Tabel Transaksi',
+        body: 'Tabel adalah audit trail utama riwayat POS.',
+        details: ['Kolom invoice adalah identitas transaksi.', 'Waktu menunjukkan kapan transaksi dibuat.', 'Pembuat/Kasir menjelaskan aktor transaksi.', 'Total dan Diskon menunjukkan nilai transaksi.'],
+      },
+      {
+        selector: '[data-tour="pos-history-row"]',
+        title: 'Baris Transaksi',
+        body: 'Satu baris adalah satu transaksi POS.',
+        details: ['Admin langsung berarti transaksi dibuat admin.', 'Admin atas nama kasir berarti admin mencatat untuk kasir tertentu.', 'Kasir sendiri berarti kasir membuat transaksinya.', 'Metode pembayaran membantu audit tunai, QRIS, atau transfer.'],
+      },
+      {
+        selector: '[data-tour="pos-history-row-discount"]',
+        title: 'Diskon per Transaksi',
+        body: 'Kolom diskon membaca potongan yang digunakan di transaksi tersebut.',
+        details: ['Jika ada promo, nilai rupiah tampil hijau.', 'Jika tidak ada promo, kolom berisi tanda strip.', 'Nilai ini ikut masuk ke total distribusi diskon.', 'Detail jenis diskon berasal dari data transaksi dan program terkait.'],
+      },
+      {
+        selector: '[data-tour="pos-history-delete-action"]',
+        title: 'Hapus & Kembalikan Stok',
+        body: 'Tombol ini dipakai untuk void transaksi dengan alasan, lalu stok bahan dikembalikan.',
+        details: ['Gunakan hanya untuk transaksi salah, batal, atau duplikat.', 'Aksi ini membuka modal alasan.', 'Tidak boleh langsung hapus tanpa alasan audit.', 'Stok dikembalikan sesuai item transaksi oleh backend.'],
+      },
+      {
+        selector: '[data-tour="pos-history-delete-modal"]',
+        actions: ['pos-history-open-delete-modal'],
+        title: 'Modal Void Transaksi',
+        body: 'Modal ini muncul sebelum transaksi dihapus dan stok dikembalikan.',
+        details: ['Invoice yang akan divoid ditampilkan di modal.', 'Peringatan menjelaskan aksi dicatat sebagai void.', 'User harus mengisi alasan yang jelas.', 'Tutorial hanya membuka modal, tidak menekan tombol konfirmasi.'],
+      },
+      {
+        selector: '[data-tour="pos-history-delete-reason"]',
+        actions: ['pos-history-demo-delete-reason'],
+        title: 'Alasan Void',
+        body: 'Alasan wajib diisi agar audit operasional jelas.',
+        details: ['Contoh: salah input pembayaran.', 'Contoh lain: pesanan batal atau transaksi duplikat.', 'Tutorial mengisi alasan contoh.', 'Tombol konfirmasi aktif setelah alasan tidak kosong.'],
+      },
+      {
+        selector: '[data-tour="pos-history-delete-modal-actions"]',
+        actions: ['pos-history-demo-delete-reason'],
+        title: 'Aksi Modal Void',
+        body: 'Bagian bawah modal menentukan batal atau eksekusi void.',
+        details: ['Batal menutup modal tanpa perubahan.', 'Ya, Hapus & Kembalikan Stok menjalankan aksi permanen.', 'Klik tombol merah hanya jika benar-benar ingin void.', 'Setelah sukses, tabel refresh dan stok kembali.'],
+      },
+      {
+        selector: '[data-tour="pos-history-payment-analysis"]',
+        actions: ['pos-history-close-delete-modal'],
+        title: 'Analisis Metode Pembayaran',
+        body: 'Panel ini membaca kontribusi tunai, QRIS, dan transfer.',
+        details: ['Setiap kartu menampilkan jumlah transaksi dan total omzet.', 'Progress bar menunjukkan kontribusi dari total omzet.', 'Hover memberi rasa interaktif untuk dashboard audit.', 'Analisis ini membantu keputusan metode bayar utama.'],
+      },
+      {
+        selector: '[data-tour="pos-history-hourly-chart"]',
+        title: 'Tren Transaksi Harian',
+        body: 'Grafik jam membaca kapan transaksi paling ramai.',
+        details: ['Bar per jam menunjukkan jumlah transaksi.', 'Jam puncak membantu manajemen shift.', 'Rata-rata per jam membaca ritme operasional.', 'Range membantu memahami sebaran traffic harian.'],
+      },
+      {
+        selector: '[data-tour="pos-history-daily-chart"]',
+        title: 'Tren Omzet Harian',
+        body: 'Grafik harian membaca pergerakan revenue dalam range filter.',
+        details: ['Bar hijau berarti di atas rata-rata.', 'Bar amber berarti di bawah rata-rata.', 'Hari terbaik membantu membaca puncak omzet.', 'Rata-rata harian membantu evaluasi periode.'],
+      },
+      {
+        selector: '[data-tour="pos-history-footer-info"]',
+        title: 'Catatan Audit',
+        body: 'Footer mengingatkan bahwa riwayat POS adalah data audit read-only.',
+        details: ['Data transaksi tidak diedit langsung dari tabel.', 'Filter dipakai untuk mencari transaksi.', 'Void punya modal alasan khusus.', 'Catatan ini menjaga user memahami batasan halaman.'],
+      },
+    ],
+  },
 ];
 
 function getStorageKey(user) {
@@ -1064,6 +1332,94 @@ export default function FloatingTutorialButton() {
             : 'Scan QRIS, pastikan nominal sesuai total bayar, lalu upload bukti pembayaran.'
         );
         const timer = window.setTimeout(() => runActions(index + 1, 0), 620);
+        actionTimers.push(timer);
+        return;
+      }
+
+      if (action === 'discount-demo-voucher-fill' || action === 'discount-demo-review-fill' || action === 'discount-demo-bundle-fill') {
+        const isReview = action === 'discount-demo-review-fill';
+        const isBundle = action === 'discount-demo-bundle-fill';
+        const suffix = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).replace(/\D/g, '');
+        const typeStatusSelects = document.querySelectorAll('[data-tour="discount-type-status-field"] select');
+        setInputValue(typeStatusSelects[0], isReview ? 'review_reward' : isBundle ? 'bundle' : 'voucher');
+        setInputValue(typeStatusSelects[1], 'active');
+        setInputValue(
+          document.querySelector('[data-tour="discount-name-field"] input'),
+          isReview ? `Reward Review Tutorial ${suffix}` : isBundle ? `Bundle Tutorial ${suffix}` : `Voucher Tutorial ${suffix}`
+        );
+        const valueInputs = document.querySelectorAll('[data-tour="discount-value-fields"] input, [data-tour="discount-value-fields"] select');
+        setInputValue(valueInputs[0], 'percent');
+        setInputValue(valueInputs[1], isBundle ? '10' : '5');
+        const usageInputs = document.querySelectorAll('[data-tour="discount-usage-fields"] input');
+        setInputValue(usageInputs[0], '1');
+        setInputValue(usageInputs[1], isBundle ? '5' : '10');
+        setInputValue(
+          document.querySelector('[data-tour="discount-note-field"] textarea'),
+          isReview ? 'Reward review demo tutorial.' : isBundle ? 'Paket bundle demo tutorial.' : 'Kode voucher demo tutorial.'
+        );
+
+        if (!isReview && !isBundle) {
+          const codeInput = document.querySelector('[data-tour="discount-voucher-code-field"] input');
+          if (codeInput && !codeInput.value) {
+            const generator = document.querySelector('[data-tour-action="discount-generate-code"]');
+            generator?.click();
+          }
+        }
+
+        if (isReview) {
+          const reviewInputs = document.querySelectorAll('[data-tour="discount-review-fields"] input');
+          setInputValue(reviewInputs[0], '4');
+          setInputValue(reviewInputs[1], '4');
+        }
+
+        if (isBundle) {
+          const bundleRows = document.querySelectorAll('[data-tour="discount-bundle-row"]');
+          if (bundleRows.length === 0 && attempt < 24) {
+            const timer = window.setTimeout(() => runActions(index, attempt + 1), 180);
+            actionTimers.push(timer);
+            return;
+          }
+          Array.from(bundleRows).slice(0, 2).forEach((row, rowIndex) => {
+            const checkbox = row.querySelector('input[type="checkbox"]');
+            const qty = row.querySelector('input[type="number"]');
+            if (checkbox && !checkbox.checked) checkbox.click();
+            setInputValue(qty, rowIndex + 1);
+          });
+        }
+
+        const timer = window.setTimeout(() => runActions(index + 1, 0), isBundle ? 720 : 520);
+        actionTimers.push(timer);
+        return;
+      }
+
+      if (action === 'pos-history-demo-search') {
+        setInputValue(document.querySelector('[data-tour="pos-history-search"] input'), 'ORD');
+        const timer = window.setTimeout(() => runActions(index + 1, 0), 360);
+        actionTimers.push(timer);
+        return;
+      }
+
+      if (action === 'pos-history-open-delete-modal') {
+        const trigger = document.querySelector('[data-tour-action="pos-history-open-delete-modal"]');
+        if (trigger) {
+          trigger.click();
+        }
+        const timer = window.setTimeout(() => runActions(index + 1, 0), 420);
+        actionTimers.push(timer);
+        return;
+      }
+
+      if (action === 'pos-history-demo-delete-reason') {
+        setInputValue(document.querySelector('[data-tour="pos-history-delete-reason"] textarea'), 'Demo tutorial: transaksi salah input.');
+        const timer = window.setTimeout(() => runActions(index + 1, 0), 360);
+        actionTimers.push(timer);
+        return;
+      }
+
+      if (action === 'pos-history-close-delete-modal') {
+        const cancelButton = document.querySelector('[data-tour="pos-history-delete-modal-actions"] button');
+        cancelButton?.click();
+        const timer = window.setTimeout(() => runActions(index + 1, 0), 360);
         actionTimers.push(timer);
         return;
       }

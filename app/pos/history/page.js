@@ -216,27 +216,29 @@ export default function TransactionHistoryPage() {
       <AdminLayout>
         <div className="w-full max-w-6xl mx-auto px-4 py-8">
           {/* Header */}
-          <div className="mb-8">
+          <div data-tour="pos-history-header" className="mb-8">
             <h1 className="text-3xl font-black text-white mb-2">📊 Riwayat Transaksi POS</h1>
             <p className="text-slate-400">Pantau semua transaksi dengan detail kasir/admin yang melakukan</p>
           </div>
 
           {/* Filters */}
-          <div className="bg-slate-800 border border-slate-700 rounded-xl p-6 mb-8">
+          <div data-tour="pos-history-filters" className="bg-slate-800 border border-slate-700 rounded-xl p-6 mb-8">
             <h2 className="text-lg font-bold text-white mb-4">🔍 Filter & Cari</h2>
             <div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)_minmax(0,1fr)]">
-              <DateRangePicker
-                label="Range transaksi"
-                value={{ start: dateFrom, end: dateTo }}
-                onChange={({ start, end }) => {
-                  setDateFrom(start);
-                  setDateTo(end);
-                }}
-                helperText="Klik tanggal awal transaksi, lalu tanggal akhir"
-              />
+              <div data-tour="pos-history-date-filter">
+                <DateRangePicker
+                  label="Range transaksi"
+                  value={{ start: dateFrom, end: dateTo }}
+                  onChange={({ start, end }) => {
+                    setDateFrom(start);
+                    setDateTo(end);
+                  }}
+                  helperText="Klik tanggal awal transaksi, lalu tanggal akhir"
+                />
+              </div>
 
               {/* Search */}
-              <label className="flex min-h-[58px] flex-col justify-center rounded-xl border border-slate-600 bg-slate-700 px-3 py-2 transition hover:border-orange-500/70 focus-within:border-orange-500 focus-within:ring-1 focus-within:ring-orange-500">
+              <label data-tour="pos-history-search" className="flex min-h-[58px] flex-col justify-center rounded-xl border border-slate-600 bg-slate-700 px-3 py-2 transition hover:border-orange-500/70 focus-within:border-orange-500 focus-within:ring-1 focus-within:ring-orange-500">
                 <span className="block text-xs font-semibold text-slate-300">
                   Cari (Invoice, Kasir, Admin)
                 </span>
@@ -250,7 +252,7 @@ export default function TransactionHistoryPage() {
               </label>
 
               {/* Buttons */}
-              <div className="flex min-h-[58px] gap-2">
+              <div data-tour="pos-history-filter-actions" className="flex min-h-[58px] gap-2">
                 <button
                   onClick={handleApplyFilter}
                   disabled={loading || refreshing}
@@ -271,7 +273,7 @@ export default function TransactionHistoryPage() {
 
           {/* Monthly Statistics Cards */}
           {monthlyStats.length > 0 && (
-            <div className="mb-8">
+            <div data-tour="pos-history-monthly-stats" className="mb-8">
               <h2 className="text-lg font-bold text-white mb-4">📈 Statistik per Bulan</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {monthlyStats.map((stat, idx) => {
@@ -325,7 +327,7 @@ export default function TransactionHistoryPage() {
           )}
 
           {/* Summary Overall */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <div data-tour="pos-history-summary" className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
             <div className="bg-slate-800 border border-slate-700 rounded-xl p-4">
               <p className="text-slate-400 text-sm">Total Transaksi</p>
               <p className="text-2xl font-black text-white">{transactions.length}</p>
@@ -342,7 +344,7 @@ export default function TransactionHistoryPage() {
                 {formatCurrency(totalMargin)}
               </p>
             </div>
-            <div className="bg-slate-800 border border-emerald-500/25 rounded-xl p-4">
+            <div data-tour="pos-history-discount-summary" className="bg-slate-800 border border-emerald-500/25 rounded-xl p-4">
               <p className="text-slate-400 text-sm">Total Distribusi Diskon</p>
               <p className="text-2xl font-black text-emerald-400">
                 {formatCurrency(totalDiscount)}
@@ -352,7 +354,7 @@ export default function TransactionHistoryPage() {
           </div>
 
           {/* Table */}
-          <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
+          <div data-tour="pos-history-table" className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
             {loading && transactions.length === 0 ? (
               <TableSkeleton rows={7} cols={8} />
             ) : transactions.length === 0 ? (
@@ -396,6 +398,7 @@ export default function TransactionHistoryPage() {
                       return (
                         <tr
                           key={tx.id}
+                          data-tour="pos-history-row"
                           className="hover:bg-slate-700/50 transition border-b border-slate-700"
                         >
                           <td className="px-4 py-3 font-mono text-sm text-slate-300">
@@ -434,7 +437,7 @@ export default function TransactionHistoryPage() {
                           <td className="px-4 py-3 text-sm font-semibold text-orange-400 text-right">
                             {formatCurrency(tx.total_price)}
                           </td>
-                          <td className="px-4 py-3 text-sm font-semibold text-emerald-400 text-right">
+                          <td data-tour="pos-history-row-discount" className="px-4 py-3 text-sm font-semibold text-emerald-400 text-right">
                             {Number(tx.customer_discount_amount || 0) > 0
                               ? formatCurrency(tx.customer_discount_amount)
                               : '-'}
@@ -442,6 +445,8 @@ export default function TransactionHistoryPage() {
                           <td className="px-4 py-3 text-right">
                             <button
                               type="button"
+                              data-tour="pos-history-delete-action"
+                              data-tour-action="pos-history-open-delete-modal"
                               onClick={() => handleDeleteTransaction(tx)}
                               className="rounded-lg border border-red-400/25 bg-red-500/10 px-3 py-1.5 text-xs font-bold text-red-200 transition hover:bg-red-500/20"
                             >
@@ -460,7 +465,7 @@ export default function TransactionHistoryPage() {
           {/* Enhanced Dashboard Section */}
           <div className="mt-12 space-y-8">
             {/* Payment Method Analysis */}
-            <div className="bg-gradient-to-br from-slate-800 via-slate-850 to-slate-900 border border-slate-700 rounded-2xl p-6 shadow-2xl hover:shadow-orange-500/10 transition-all duration-300">
+            <div data-tour="pos-history-payment-analysis" className="bg-gradient-to-br from-slate-800 via-slate-850 to-slate-900 border border-slate-700 rounded-2xl p-6 shadow-2xl hover:shadow-orange-500/10 transition-all duration-300">
               <div className="bg-gradient-to-r from-orange-500 to-pink-600 h-1 rounded-full mb-4" />
               <h2 className="text-xl font-bold bg-gradient-to-r from-orange-400 to-pink-400 bg-clip-text text-transparent mb-2">
                 💳 Analisis Metode Pembayaran
@@ -505,7 +510,7 @@ export default function TransactionHistoryPage() {
             </div>
 
             {/* Hourly Transaction Wave Chart */}
-            <div className="bg-gradient-to-br from-slate-800 via-slate-850 to-slate-900 border border-slate-700 rounded-2xl p-6 shadow-2xl hover:shadow-blue-500/10 transition-all duration-300">
+            <div data-tour="pos-history-hourly-chart" className="bg-gradient-to-br from-slate-800 via-slate-850 to-slate-900 border border-slate-700 rounded-2xl p-6 shadow-2xl hover:shadow-blue-500/10 transition-all duration-300">
               <div className="bg-gradient-to-r from-blue-500 to-cyan-600 h-1 rounded-full mb-4" />
               <h2 className="text-xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent mb-2">
                 📊 Tren Transaksi Harian
@@ -582,7 +587,7 @@ export default function TransactionHistoryPage() {
             </div>
 
             {/* Daily Revenue Trend */}
-            <div className="bg-gradient-to-br from-slate-800 via-slate-850 to-slate-900 border border-slate-700 rounded-2xl p-6 shadow-2xl hover:shadow-green-500/10 transition-all duration-300">
+            <div data-tour="pos-history-daily-chart" className="bg-gradient-to-br from-slate-800 via-slate-850 to-slate-900 border border-slate-700 rounded-2xl p-6 shadow-2xl hover:shadow-green-500/10 transition-all duration-300">
               <div className="bg-gradient-to-r from-green-500 to-emerald-600 h-1 rounded-full mb-4" />
               <h2 className="text-xl font-bold bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent mb-2">
                 💹 Tren Omzet Harian
@@ -675,7 +680,7 @@ export default function TransactionHistoryPage() {
           </div>
 
           {/* Footer info */}
-          <div className="mt-8 p-4 bg-slate-900 border border-slate-700 rounded-lg text-slate-400 text-sm">
+          <div data-tour="pos-history-footer-info" className="mt-8 p-4 bg-slate-900 border border-slate-700 rounded-lg text-slate-400 text-sm">
             <p>
               <strong>ℹ️ Informasi:</strong> Tabel ini menampilkan semua transaksi POS dengan detail siapa yang melakukan transaksi. 
               Data tidak dapat diubah (read-only). Gunakan filter tanggal dan pencarian untuk menemukan transaksi tertentu.
@@ -684,7 +689,7 @@ export default function TransactionHistoryPage() {
 
           {deleteModal.open && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-              <div className="w-full max-w-lg rounded-2xl border border-red-400/25 bg-slate-900 shadow-2xl">
+              <div data-tour="pos-history-delete-modal" className="w-full max-w-lg rounded-2xl border border-red-400/25 bg-slate-900 shadow-2xl">
                 <div className="border-b border-slate-700 px-5 py-4">
                   <p className="text-xs font-black uppercase tracking-[0.22em] text-red-300">Konfirmasi void transaksi</p>
                   <h2 className="mt-2 text-xl font-black text-white">Hapus & Kembalikan Stok</h2>
@@ -696,7 +701,7 @@ export default function TransactionHistoryPage() {
                   <div className="rounded-xl border border-yellow-400/20 bg-yellow-500/10 p-3 text-sm leading-6 text-yellow-100">
                     Aksi ini dicatat sebagai void. Isi alasan yang jelas agar audit operasional mudah dilacak.
                   </div>
-                  <label className="block text-sm font-semibold text-slate-300">
+                  <label data-tour="pos-history-delete-reason" className="block text-sm font-semibold text-slate-300">
                     Alasan
                     <textarea
                       value={deleteModal.reason}
@@ -708,7 +713,7 @@ export default function TransactionHistoryPage() {
                     />
                   </label>
                 </div>
-                <div className="flex flex-col-reverse gap-3 border-t border-slate-700 px-5 py-4 sm:flex-row sm:justify-end">
+                <div data-tour="pos-history-delete-modal-actions" className="flex flex-col-reverse gap-3 border-t border-slate-700 px-5 py-4 sm:flex-row sm:justify-end">
                   <button
                     type="button"
                     onClick={closeDeleteModal}

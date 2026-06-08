@@ -324,7 +324,7 @@ export default function DiscountsPage() {
     <AuthGuard requiredRole="admin">
       <AdminLayout>
         <div className="mx-auto max-w-7xl space-y-6">
-          <div>
+          <div data-tour="discount-header">
             <p className="text-xs font-black uppercase tracking-[0.24em] text-orange-400">Marketing Discount</p>
             <h1 className="mt-2 text-3xl font-black text-white">Vocher & Diskon</h1>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
@@ -332,7 +332,7 @@ export default function DiscountsPage() {
             </p>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
+          <div data-tour="discount-stats" className="grid gap-4 md:grid-cols-3">
             <div className="rounded-xl border border-slate-700 bg-slate-800 p-4">
               <p className="text-sm text-slate-400">Program aktif</p>
               <p className="mt-2 text-3xl font-black text-white">{stats.active}</p>
@@ -347,8 +347,8 @@ export default function DiscountsPage() {
             </div>
           </div>
 
-          <div className="grid gap-6 xl:grid-cols-[420px_minmax(0,1fr)]">
-            <form onSubmit={saveProgram} className="space-y-4 rounded-2xl border border-slate-700 bg-slate-800 p-5">
+          <div data-tour="discount-workspace" className="grid gap-6 xl:grid-cols-[420px_minmax(0,1fr)]">
+            <form data-tour="discount-form" onSubmit={saveProgram} className="space-y-4 rounded-2xl border border-slate-700 bg-slate-800 p-5">
               <div className="flex items-center justify-between gap-3">
                 <h2 className="text-xl font-black text-white">{editing ? 'Edit Program' : 'Buat Program'}</h2>
                 {editing && (
@@ -358,12 +358,12 @@ export default function DiscountsPage() {
                 )}
               </div>
 
-              <label className="block text-sm font-semibold text-slate-300">
+              <label data-tour="discount-name-field" className="block text-sm font-semibold text-slate-300">
                 Nama program
                 <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-white outline-none focus:border-orange-500" required />
               </label>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div data-tour="discount-type-status-field" className="grid grid-cols-2 gap-3">
                 <label className="block text-sm font-semibold text-slate-300">
                   Jenis
                   <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-white outline-none focus:border-orange-500">
@@ -381,7 +381,7 @@ export default function DiscountsPage() {
                 </label>
               </div>
 
-              <div className="rounded-xl border border-slate-700 bg-slate-900/70 p-3">
+              <div data-tour="discount-validity-field" className="rounded-xl border border-slate-700 bg-slate-900/70 p-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-sm font-semibold text-slate-300">Masa berlaku</p>
                   <span className={`rounded-full px-2.5 py-1 text-[11px] font-black ${selectedState.className}`}>
@@ -433,7 +433,7 @@ export default function DiscountsPage() {
               </div>
 
               {form.type === 'voucher' && (
-                <label className="block text-sm font-semibold text-slate-300">
+                <label data-tour="discount-voucher-code-field" className="block text-sm font-semibold text-slate-300">
                   Kode voucher
                   <div className="mt-1 flex gap-2">
                     <input
@@ -445,6 +445,8 @@ export default function DiscountsPage() {
                     />
                     <button
                       type="button"
+                      data-tour="discount-generate-code"
+                      data-tour-action="discount-generate-code"
                       onClick={handleGenerateVoucherCode}
                       className="shrink-0 rounded-xl border border-orange-500/35 bg-orange-500/10 px-3 py-2 text-xs font-black text-orange-300 transition hover:bg-orange-500/20"
                     >
@@ -455,7 +457,7 @@ export default function DiscountsPage() {
                 </label>
               )}
 
-              <div className="grid grid-cols-2 gap-3">
+              <div data-tour="discount-value-fields" className="grid grid-cols-2 gap-3">
                 <label className="block text-sm font-semibold text-slate-300">
                   Tipe diskon
                   <select value={form.discount_type} onChange={(e) => setForm({ ...form, discount_type: e.target.value })} className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-white outline-none focus:border-orange-500">
@@ -469,7 +471,7 @@ export default function DiscountsPage() {
                 </label>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div data-tour="discount-usage-fields" className="grid grid-cols-2 gap-3">
                 <label className="block text-sm font-semibold text-slate-300">
                   Klaim / No. HP
                   <input type="number" min="0" value={form.usage_limit_per_phone} onChange={(e) => setForm({ ...form, usage_limit_per_phone: e.target.value })} className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-white outline-none focus:border-orange-500" />
@@ -481,7 +483,7 @@ export default function DiscountsPage() {
               </div>
 
               {form.type === 'review_reward' && (
-                <div className="grid grid-cols-2 gap-3">
+                <div data-tour="discount-review-fields" className="grid grid-cols-2 gap-3">
                   <label className="block text-sm font-semibold text-slate-300">
                     Min. rating layanan
                     <input type="number" min="1" max="5" value={form.min_service_rating} onChange={(e) => setForm({ ...form, min_service_rating: e.target.value })} className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-white outline-none focus:border-orange-500" />
@@ -494,8 +496,8 @@ export default function DiscountsPage() {
               )}
 
               {form.type === 'bundle' && (
-                <div>
-                  <div className="mb-2 flex items-center justify-between gap-3">
+                <div data-tour="discount-bundle-section">
+                  <div data-tour="discount-bundle-actions" className="mb-2 flex items-center justify-between gap-3">
                     <p className="text-sm font-semibold text-slate-300">Menu paket bundle</p>
                     <button
                       type="button"
@@ -505,12 +507,12 @@ export default function DiscountsPage() {
                       {allBundleSelected ? 'Hapus semua' : 'Pilih semua'}
                     </button>
                   </div>
-                  <div className="max-h-52 space-y-2 overflow-y-auto rounded-xl border border-slate-700 bg-slate-900 p-3">
+                  <div data-tour="discount-bundle-list" className="max-h-52 space-y-2 overflow-y-auto rounded-xl border border-slate-700 bg-slate-900 p-3">
                     {products.map((product) => {
                       const selectedItem = form.bundle_items.find((item) => Number(item.product_id) === Number(product.id));
                       const checked = Boolean(selectedItem);
                       return (
-                        <div key={product.id} className="grid grid-cols-[minmax(0,1fr)_92px] items-center gap-3 rounded-lg bg-slate-950/40 px-2 py-2 text-sm text-slate-300">
+                        <div key={product.id} data-tour="discount-bundle-row" className="grid grid-cols-[minmax(0,1fr)_92px] items-center gap-3 rounded-lg bg-slate-950/40 px-2 py-2 text-sm text-slate-300">
                           <label className="flex min-w-0 items-center gap-2">
                             <input type="checkbox" checked={checked} onChange={() => toggleBundleProduct(product.id)} />
                             <span className="truncate">{product.name}</span>
@@ -532,18 +534,18 @@ export default function DiscountsPage() {
                 </div>
               )}
 
-              <label className="block text-sm font-semibold text-slate-300">
+              <label data-tour="discount-note-field" className="block text-sm font-semibold text-slate-300">
                 Catatan
                 <textarea value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} className="mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-white outline-none focus:border-orange-500" />
               </label>
 
-              <button disabled={saving} className="w-full rounded-xl bg-orange-500 px-4 py-3 text-sm font-black text-white transition hover:bg-orange-400 disabled:opacity-50">
+              <button data-tour="discount-save-button" disabled={saving} className="w-full rounded-xl bg-orange-500 px-4 py-3 text-sm font-black text-white transition hover:bg-orange-400 disabled:opacity-50">
                 {saving ? 'Menyimpan...' : editing ? 'Update Program' : 'Simpan Program'}
               </button>
             </form>
 
-            <section className="rounded-2xl border border-slate-700 bg-slate-800 p-5">
-              <div className="flex flex-wrap items-center justify-between gap-3">
+            <section data-tour="discount-list" className="rounded-2xl border border-slate-700 bg-slate-800 p-5">
+              <div data-tour="discount-list-header" className="flex flex-wrap items-center justify-between gap-3">
                 <h2 className="text-xl font-black text-white">Daftar Program</h2>
                 {refreshing && (
                   <span className="rounded-full border border-sky-500/25 bg-sky-500/10 px-3 py-1.5 text-xs font-bold text-sky-200">
@@ -551,7 +553,7 @@ export default function DiscountsPage() {
                   </span>
                 )}
               </div>
-              <div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,360px)_auto] md:items-center">
+              <div data-tour="discount-date-filter" className="mt-4 grid gap-3 md:grid-cols-[minmax(0,360px)_auto] md:items-center">
                 <DateRangePicker
                   label="Range masa berlaku"
                   value={dateFilter}
@@ -564,7 +566,7 @@ export default function DiscountsPage() {
                   Filter ini membaca rentang aktif program. Program tanpa expired tetap ditampilkan karena aktif sampai kuota habis atau dinonaktifkan.
                 </p>
               </div>
-              <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+              <div data-tour="discount-type-filters" className="mt-4 flex gap-2 overflow-x-auto pb-1">
                 {typeFilters.map((filter) => (
                   <button
                     key={filter.key}
@@ -585,7 +587,7 @@ export default function DiscountsPage() {
                   </button>
                 ))}
               </div>
-              <div className="mt-4 space-y-3">
+              <div data-tour="discount-program-list" className="mt-4 space-y-3">
                 {loading && programs.length === 0 && <p className="rounded-xl bg-slate-900 p-5 text-slate-400">Memuat data...</p>}
                 {!loading && programs.length === 0 && <p className="rounded-xl bg-slate-900 p-5 text-slate-400">Belum ada program diskon.</p>}
                 {!loading && programs.length > 0 && filteredPrograms.length === 0 && (
@@ -595,10 +597,10 @@ export default function DiscountsPage() {
                   const programState = getProgramState(program);
                   const bundleItems = getProgramBundleItems(program);
                   return (
-                  <article key={program.id} className="rounded-xl border border-slate-700 bg-slate-900 p-4">
+                  <article key={program.id} data-tour="discount-program-card" className="rounded-xl border border-slate-700 bg-slate-900 p-4">
                     <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                       <div>
-                        <div className="flex flex-wrap items-center gap-2">
+                        <div data-tour="discount-program-status" className="flex flex-wrap items-center gap-2">
                           <span className="rounded-full bg-orange-500/15 px-2.5 py-1 text-[11px] font-black text-orange-300">{typeLabel[program.type] || program.type}</span>
                           <span className={`rounded-full px-2.5 py-1 text-[11px] font-black ${programState.className}`}>{programState.label}</span>
                           {program.code && <span className="rounded-full bg-slate-800 px-2.5 py-1 text-[11px] font-black text-white">{program.code}</span>}
@@ -628,10 +630,10 @@ export default function DiscountsPage() {
                             : 'Tidak expired, berhenti saat kuota habis atau dinonaktifkan'}
                         </p>
                       </div>
-                      <div className="text-left md:text-right">
+                      <div data-tour="discount-program-result" className="text-left md:text-right">
                         <p className="text-sm font-bold text-emerald-400">{formatCurrency(program.distributed_amount)}</p>
                         <p className="text-xs text-slate-500">{formatClaimCount(program)}</p>
-                        <div className="mt-3 flex flex-wrap gap-2 md:justify-end">
+                        <div data-tour="discount-program-actions" className="mt-3 flex flex-wrap gap-2 md:justify-end">
                           <button onClick={() => editProgram(program)} className="rounded-lg bg-slate-700 px-3 py-1.5 text-xs font-bold text-white">Edit</button>
                           <button onClick={() => toggleProgramStatus(program)} className="rounded-lg bg-yellow-500/15 px-3 py-1.5 text-xs font-bold text-yellow-200">
                             {program.status === 'active' ? 'Nonaktif' : 'Aktif'}
