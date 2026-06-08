@@ -95,126 +95,157 @@ const TUTORIALS = [
       },
       {
         selector: '[data-tour="stock-master"]',
+        roles: ['admin'],
+        actions: ['stock-tab-master'],
         title: 'Master Bahan Baku',
         body: 'Bagian ini adalah daftar ingredient dasar, bukan menu siap jual. Satu produk bisa memakai beberapa bahan dari daftar ini.',
         details: ['Nama bahan dipakai di resep produk.', 'Satuan menentukan perhitungan qty seperti gram, ml, pcs, atau porsi.', 'Minimal stok menjadi batas alert menipis.', 'Stok saat ini dan harga dihitung dari transaksi stok gudang.'],
       },
       {
         selector: '[data-tour="stock-master-actions"]',
+        roles: ['admin'],
+        actions: ['stock-tab-master'],
         title: 'Aksi Bahan Baku',
         body: 'Kontrol di kanan atas dipakai untuk membaca tren harga dan menambah master bahan.',
         details: ['Dropdown tahun mengubah periode tren harga.', 'Tombol Tambah Bahan membuka form bahan baku.', 'Jumlah bahan baku memberi ringkasan total master yang tersedia.', 'Catatan kecil mengingatkan stok ditambah dari tab Catat Pembelian.'],
       },
       {
         selector: '[data-tour="stock-master-trends"]',
+        roles: ['admin'],
+        actions: ['stock-tab-master'],
         title: 'Tren Harga Bahan',
         body: 'Kartu tren membantu membaca perubahan harga beli bahan baku.',
         details: ['Kolom tahun membandingkan harga pertama dan terakhir pada tahun terpilih.', 'Kolom All membandingkan harga sepanjang histori pembelian.', 'Indikator naik, turun, atau stabil membantu keputusan pembelian.', 'Jumlah pembelian menunjukkan banyaknya data historis yang dipakai.'],
       },
       {
         selector: '[data-tour="stock-master-table"]',
+        roles: ['admin'],
+        actions: ['stock-tab-master'],
         title: 'Tabel Bahan Baku',
         body: 'Tabel ini menggabungkan master bahan, stok terkini, harga rata-rata, dan aksi edit/hapus.',
         details: ['Kolom Nama Bahan dan Satuan menjelaskan identitas bahan.', 'Min. Stok dipakai untuk status Aman, Menipis, atau Habis.', 'Harga/Satuan menampilkan average cost dan harga terakhir.', 'Tombol Edit mengubah master, tombol Hapus meminta konfirmasi modal.'],
       },
       {
         selector: '[data-tour="stock-warehouse-tabs"]',
+        actions: ['stock-tab-warehouse'],
         title: 'Subtab Stok Gudang',
         body: 'Subtab membagi gudang menjadi saldo, pemasukan, dan pengeluaran.',
         details: ['Saldo Stok menampilkan posisi stok saat ini.', 'Pemasukan mencatat pembelian bahan dan menambah saldo gudang.', 'Pengeluaran mencatat bahan yang keluar untuk menu, transaksi, atau pengajuan.', 'Role kasir hanya melihat subtab yang sesuai kewenangannya.'],
       },
       {
         selector: '[data-tour="stock-summary"]',
+        actions: ['stock-tab-warehouse', 'stock-subtab-summary'],
         title: 'Saldo Stok Gudang',
         body: 'Saldo adalah hasil akhir dari semua stok masuk dikurangi stok keluar.',
         details: ['Informasi cabang memperjelas stok yang sedang dibaca.', 'Data dihitung otomatis dari pemasukan, pengeluaran, dan pengajuan yang disetujui.', 'Tidak ada input manual langsung di saldo agar audit tetap rapi.', 'Jika stok kosong, sistem menampilkan empty state.'],
       },
       {
         selector: '[data-tour="stock-summary-cards"]',
+        roles: ['admin'],
+        actions: ['stock-tab-warehouse', 'stock-subtab-summary'],
         title: 'Kartu Nilai Stok',
         body: 'Kartu ringkasan membantu admin membaca nilai uang dari pergerakan stok.',
         details: ['Total Nilai Masuk menghitung nilai pembelian.', 'Total Nilai Keluar menghitung nilai bahan yang dipakai atau keluar.', 'Nilai Stok Gudang membaca selisih nilai masuk dan keluar.', 'Bagian ini hanya tampil lengkap untuk admin.'],
       },
       {
         selector: '[data-tour="stock-summary-table"]',
+        actions: ['stock-tab-warehouse', 'stock-subtab-summary'],
         title: 'Tabel Saldo',
         body: 'Tabel saldo menampilkan kondisi tiap bahan secara operasional.',
         details: ['Total Masuk dan Total Keluar memakai satuan bahan masing-masing.', 'Saldo Stok menunjukkan qty aktual yang tersisa.', 'Status Habis, Menipis, dan Aman membantu prioritas pengadaan.', 'Nilai rupiah di dalam kurung membantu membaca dampak biaya.'],
       },
       {
         selector: '[data-tour="stock-in"]',
+        roles: ['admin'],
+        actions: ['stock-tab-warehouse', 'stock-subtab-in'],
         title: 'Pemasukan Stok',
         body: 'Pemasukan dipakai untuk mencatat bahan yang dibeli atau masuk ke gudang.',
         details: ['Data pemasukan menambah saldo stok gudang.', 'Catat Pembelian membuka modal input beberapa bahan sekaligus.', 'Edit dan hapus pembelian tetap memicu perhitungan ulang saldo.', 'Harga pembelian menjadi dasar moving average bahan.'],
       },
       {
         selector: '[data-tour="stock-in-filters"]',
+        roles: ['admin'],
+        actions: ['stock-tab-warehouse', 'stock-subtab-in'],
         title: 'Filter Pemasukan',
         body: 'Filter pemasukan membantu mempersempit data pembelian.',
         details: ['Bulan dan tahun memilih periode pembelian.', 'Chip bahan baku memfilter data ke item tertentu.', 'Badge angka menunjukkan jumlah data per bahan.', 'Filter Semua mengembalikan daftar penuh pada periode itu.'],
       },
       {
         selector: '[data-tour="stock-in-table"]',
+        roles: ['admin'],
+        actions: ['stock-tab-warehouse', 'stock-subtab-in'],
         title: 'Tabel Pemasukan',
         body: 'Tabel ini adalah audit trail pembelian stok.',
         details: ['Tanggal menunjukkan kapan pembelian dicatat.', 'Jumlah dan Harga/Satuan membentuk Total Biaya.', 'Harga Avg membantu membandingkan pembelian terhadap rata-rata.', 'Dicatat Oleh dan Catatan memberi konteks operasional.'],
       },
       {
         selector: '[data-tour="stock-out"]',
+        actions: ['stock-tab-warehouse', 'stock-subtab-out'],
         title: 'Pengeluaran Stok',
         body: 'Pengeluaran membaca bahan yang keluar dari gudang atau stok kasir.',
         details: ['Pengeluaran bisa berasal dari transaksi POS, pengajuan manual, atau catatan admin.', 'Tombol Catat Pengeluaran membuka form berbasis menu atau bahan.', 'Data kasir tetap dibatasi pada user dan role yang sesuai.', 'Nilai pengeluaran membantu membaca biaya produksi.'],
       },
       {
         selector: '[data-tour="stock-out-filters"]',
+        actions: ['stock-tab-warehouse', 'stock-subtab-out'],
         title: 'Filter Tanggal Pengeluaran',
         body: 'Filter tanggal memilih range data pengeluaran stok.',
         details: ['Dari adalah tanggal awal.', 'Sampai adalah tanggal akhir.', 'Tombol Cari memuat ulang data sesuai range.', 'Range dipakai agar tabel tetap ringan saat histori banyak.'],
       },
       {
         selector: '[data-tour="stock-out-pills"]',
+        actions: ['stock-tab-warehouse', 'stock-subtab-out'],
         title: 'Filter Status Pengeluaran',
         body: 'Chip status memisahkan sumber dan status pengeluaran.',
         details: ['Semua menampilkan semua data pada range.', 'Sudah Keluar atau Disetujui menunjukkan stok yang benar-benar keluar.', 'Menunggu menunjukkan pengajuan yang belum diproses admin.', 'Ditolak dan Transaksi POS membantu audit sumber pengeluaran.'],
       },
       {
         selector: '[data-tour="stock-out-table"]',
+        actions: ['stock-tab-warehouse', 'stock-subtab-out'],
         title: 'Tabel Pengeluaran',
         body: 'Tabel pengeluaran menjelaskan bahan apa yang keluar, berapa nilainya, dan dari sumber mana.',
         details: ['Tanggal, Bahan Baku, Jumlah, Harga/Sat, dan Total Nilai membaca detail biaya.', 'Status Sumber membedakan transaksi, pending, approved, atau rejected.', 'Sumber Cabang dan Sumber Stok membantu melacak lokasi stok.', 'Pengaju, Status, dan Catatan menjelaskan siapa dan kenapa stok keluar.'],
       },
       {
         selector: '[data-tour="stock-requests"]',
+        actions: ['stock-tab-requests'],
         title: 'Pengajuan Stok',
         body: 'Bagian ini mengelola permintaan stok dari kasir ke admin.',
         details: ['Admin melihat semua pengajuan kasir.', 'Kasir melihat pengajuan miliknya sendiri.', 'Pengajuan pending dapat diproses, ditolak, atau diajukan ulang sesuai status.', 'Item pengajuan menampilkan qty diminta, qty disetujui, harga, dan total nilai.'],
       },
       {
         selector: '[data-tour="stock-request-filters"]',
+        actions: ['stock-tab-requests'],
         title: 'Filter Pengajuan',
         body: 'Filter ini menjaga daftar pengajuan tetap mudah dibaca.',
         details: ['Tanggal Dari dan Sampai memilih periode pengajuan.', 'Chip Semua, Menunggu, Disetujui, dan Ditolak memfilter status.', 'Jumlah pengajuan memberi ringkasan data yang sedang tampil.', 'Gunakan filter ini saat histori pengajuan sudah banyak.'],
       },
       {
         selector: '[data-tour="stock-request-list"]',
+        actions: ['stock-tab-requests'],
         title: 'Kartu Pengajuan',
         body: 'Setiap kartu pengajuan adalah satu request stok beserta item bahan di dalamnya.',
         details: ['Header kartu menunjukkan nama kasir, tanggal, dan status.', 'Tombol Proses membuka modal approve untuk pengajuan pending.', 'Tombol Ajukan Ulang muncul pada pengajuan yang ditolak.', 'Tabel item menampilkan bahan, qty diajukan, qty disetujui, harga, dan total.'],
       },
       {
         selector: '[data-tour="stock-master-modal"]',
+        roles: ['admin'],
+        actions: ['stock-tab-master'],
         title: 'Modal Bahan Baku',
         body: 'Jika modal bahan baku sedang dibuka, bagian ini menjelaskan field yang harus diisi.',
         details: ['Nama Bahan wajib diisi sebagai identitas ingredient.', 'Satuan memilih unit perhitungan stok.', 'Min. Stok Alert menentukan batas status menipis.', 'Batal menutup form, Simpan atau Update menyimpan perubahan.'],
       },
       {
         selector: '[data-tour="stock-purchase-modal"]',
+        roles: ['admin'],
+        actions: ['stock-tab-warehouse', 'stock-subtab-in'],
         title: 'Modal Catat Pembelian',
         body: 'Jika modal pembelian sedang dibuka, form ini dipakai untuk memasukkan stok masuk.',
         details: ['Pilih Bahan Baku menentukan item yang bertambah.', 'Jumlah dan Harga/Satuan menghitung subtotal otomatis.', 'Tambah Bahan Lain membuat banyak baris pembelian sekaligus.', 'Total Pembelian merangkum semua item sebelum disimpan.'],
       },
       {
         selector: '[data-tour="stock-out-modal"]',
+        actions: ['stock-tab-warehouse', 'stock-subtab-out'],
         title: 'Modal Pengeluaran atau Pengajuan',
         body: 'Jika modal pengeluaran sedang dibuka, form ini bisa menghitung bahan otomatis dari menu dan qty porsi.',
         details: ['Pilih satu atau beberapa menu lalu isi qty menu.', 'Ringkasan bahan terkunci dari resep produk dan tidak dipilih manual.', 'Qty divalidasi agar tidak melebihi stok yang bisa dibuat dari bahan tersedia.', 'Admin dapat memilih kasir, sedangkan kasir mengirim pengajuan atas namanya sendiri.'],
@@ -246,7 +277,15 @@ export default function FloatingTutorialButton() {
     TUTORIALS.filter((tutorial) => !tutorial.roles || tutorial.roles.includes(user?.role))
   ), [user?.role]);
   const activeTutorial = availableTutorials.find((item) => item.id === activeTutorialId);
-  const activeStep = activeTutorial?.steps?.[stepIndex];
+  const activeSteps = useMemo(() => (
+    (activeTutorial?.steps || []).filter((step) => !step.roles || step.roles.includes(user?.role))
+  ), [activeTutorial, user?.role]);
+  const activeStep = activeSteps[stepIndex];
+
+  useEffect(() => {
+    if (!activeTutorial || stepIndex < activeSteps.length) return;
+    setStepIndex(Math.max(0, activeSteps.length - 1));
+  }, [activeSteps.length, activeTutorial, stepIndex]);
 
   useEffect(() => {
     if (!user) return;
@@ -292,6 +331,15 @@ export default function FloatingTutorialButton() {
     }
 
     let cancelled = false;
+    const actionTimers = [];
+    activeStep.actions?.forEach((action, index) => {
+      const timer = window.setTimeout(() => {
+        if (cancelled) return;
+        document.querySelector(`[data-tour-action="${action}"]`)?.click();
+      }, index * 220);
+      actionTimers.push(timer);
+    });
+
     const updateHighlight = () => {
       const element = document.querySelector(activeStep.selector);
       if (!element) {
@@ -312,10 +360,16 @@ export default function FloatingTutorialButton() {
     };
 
     updateHighlight();
+    const delayedHighlight = window.setTimeout(
+      updateHighlight,
+      activeStep.actions?.length ? activeStep.actions.length * 240 + 320 : 160
+    );
     window.addEventListener('resize', updateHighlight);
     window.addEventListener('scroll', updateHighlight, true);
     return () => {
       cancelled = true;
+      actionTimers.forEach((timer) => window.clearTimeout(timer));
+      window.clearTimeout(delayedHighlight);
       window.removeEventListener('resize', updateHighlight);
       window.removeEventListener('scroll', updateHighlight, true);
     };
@@ -415,7 +469,7 @@ export default function FloatingTutorialButton() {
 
   const goNext = () => {
     if (!activeTutorial) return;
-    if (stepIndex >= activeTutorial.steps.length - 1) {
+    if (stepIndex >= activeSteps.length - 1) {
       finishTutorial();
       return;
     }
@@ -469,7 +523,7 @@ export default function FloatingTutorialButton() {
               <div className="min-h-0 flex-1 overflow-y-auto p-5 pb-3">
               <div className="mb-4 flex items-center justify-between gap-3">
                 <span className="rounded-full bg-amber-500/15 px-3 py-1 text-xs font-black text-amber-200">
-                  Step {stepIndex + 1}/{activeTutorial.steps.length}
+                  Step {stepIndex + 1}/{activeSteps.length}
                 </span>
                 <button
                   type="button"
@@ -510,7 +564,7 @@ export default function FloatingTutorialButton() {
                   onClick={goNext}
                   className="flex-[1.4] rounded-2xl bg-amber-400 px-4 py-3 text-sm font-black text-slate-950 transition hover:bg-amber-300"
                 >
-                  {stepIndex >= activeTutorial.steps.length - 1 ? 'Selesai' : 'Lanjut'}
+                  {stepIndex >= activeSteps.length - 1 ? 'Selesai' : 'Lanjut'}
                 </button>
               </div>
               </div>

@@ -374,9 +374,9 @@ function getPercentTrend(percent) {
   return { label: 'Stabil 0.00%', cls: 'text-slate-400', bg: 'bg-slate-700/40 border-slate-600/40', icon: '•' };
 }
 // ── Shared UI ─────────────────────────────────────────────────
-function TabBtn({ active, onClick, children }) {
+function TabBtn({ active, onClick, children, ...props }) {
   return (
-    <button onClick={onClick}
+    <button onClick={onClick} {...props}
       className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
         active ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/25'
                : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
@@ -386,9 +386,9 @@ function TabBtn({ active, onClick, children }) {
   );
 }
 
-function SubTab({ active, onClick, children }) {
+function SubTab({ active, onClick, children, ...props }) {
   return (
-    <button onClick={onClick}
+    <button onClick={onClick} {...props}
       className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
         active ? 'bg-orange-500 text-white'
                : 'bg-slate-800 text-slate-400 border border-slate-700 hover:text-white hover:border-slate-600'
@@ -781,9 +781,9 @@ function AdminStockPage({ successModal, setSuccessModal }) {
     <>
       <div data-tour="stock-tabs" className="mb-5 flex flex-wrap items-center gap-2">
         <div className="flex flex-wrap gap-2 bg-slate-800/50 rounded-2xl p-1.5 w-fit">
-        <TabBtn active={tab==='master'}   onClick={() => setTab('master')}>   📦 Bahan Baku</TabBtn>
-        <TabBtn active={tab==='main'}     onClick={() => setTab('main')}>     🏪 Stok Gudang</TabBtn>
-        <TabBtn active={tab==='requests'} onClick={() => setTab('requests')}> 📋 Pengajuan Kasir</TabBtn>
+        <TabBtn data-tour-action="stock-tab-master" active={tab==='master'}   onClick={() => setTab('master')}>   📦 Bahan Baku</TabBtn>
+        <TabBtn data-tour-action="stock-tab-warehouse" active={tab==='main'}     onClick={() => setTab('main')}>     🏪 Stok Gudang</TabBtn>
+        <TabBtn data-tour-action="stock-tab-requests" active={tab==='requests'} onClick={() => setTab('requests')}> 📋 Pengajuan Kasir</TabBtn>
         </div>
         {stockRefreshing && (
           <span className="rounded-full border border-sky-500/25 bg-sky-500/10 px-3 py-1.5 text-xs font-bold text-sky-200">
@@ -971,9 +971,9 @@ function AdminStockPage({ successModal, setSuccessModal }) {
         ) : (
         <div data-tour="stock-warehouse" className="space-y-4">
           <div data-tour="stock-warehouse-tabs" className="flex flex-wrap items-center gap-2">
-            <SubTab active={mainTab==='summary'} onClick={() => setMainTab('summary')}>📊 Saldo Stok</SubTab>
-            <SubTab active={mainTab==='in'}      onClick={() => setMainTab('in')}>📥 Pemasukan</SubTab>
-            <SubTab active={mainTab==='out'}     onClick={() => setMainTab('out')}>📤 Pengeluaran</SubTab>
+            <SubTab data-tour-action="stock-subtab-summary" active={mainTab==='summary'} onClick={() => setMainTab('summary')}>📊 Saldo Stok</SubTab>
+            <SubTab data-tour-action="stock-subtab-in" active={mainTab==='in'}      onClick={() => setMainTab('in')}>📥 Pemasukan</SubTab>
+            <SubTab data-tour-action="stock-subtab-out" active={mainTab==='out'}     onClick={() => setMainTab('out')}>📤 Pengeluaran</SubTab>
             {mainTab === 'in' && (
               <button
                 onClick={() => setShowPurchase(true)}
@@ -2403,8 +2403,8 @@ function KasirStockPage({ successModal, setSuccessModal }) {
     <>
       <div data-tour="stock-tabs" className="mb-5 flex flex-wrap items-center gap-2">
         <div className="flex flex-wrap gap-2 bg-slate-800/50 rounded-2xl p-1.5 w-fit">
-        <TabBtn active={tab==='gudang'}   onClick={() => setTab('gudang')}>   🏪 Stok Gudang</TabBtn>
-        <TabBtn active={tab==='requests'} onClick={() => setTab('requests')}> 📋 Pengajuan Saya</TabBtn>
+        <TabBtn data-tour-action="stock-tab-warehouse" active={tab==='gudang'}   onClick={() => setTab('gudang')}>   🏪 Stok Gudang</TabBtn>
+        <TabBtn data-tour-action="stock-tab-requests" active={tab==='requests'} onClick={() => setTab('requests')}> 📋 Pengajuan Saya</TabBtn>
         </div>
         {stockRefreshing && (
           <span className="rounded-full border border-sky-500/25 bg-sky-500/10 px-3 py-1.5 text-xs font-bold text-sky-200">
@@ -2419,8 +2419,8 @@ function KasirStockPage({ successModal, setSuccessModal }) {
         ) : (
         <div data-tour="stock-warehouse" className="space-y-4">
           <div data-tour="stock-warehouse-tabs" className="flex flex-wrap items-center gap-2">
-            <SubTab active={mainTab==='summary'} onClick={() => setMainTab('summary')}>📊 Saldo Stok</SubTab>
-            <SubTab active={mainTab==='out'}     onClick={() => setMainTab('out')}>📤 Pengeluaran</SubTab>
+            <SubTab data-tour-action="stock-subtab-summary" active={mainTab==='summary'} onClick={() => setMainTab('summary')}>📊 Saldo Stok</SubTab>
+            <SubTab data-tour-action="stock-subtab-out" active={mainTab==='out'}     onClick={() => setMainTab('out')}>📤 Pengeluaran</SubTab>
           </div>
 
           {/* ── Saldo Stok ── */}
