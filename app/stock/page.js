@@ -1731,6 +1731,19 @@ function AdminStockPage({ successModal, setSuccessModal }) {
       {showOutForm && (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
           <div data-tour="stock-out-modal" className="bg-slate-800 rounded-2xl border border-slate-700 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <button
+              type="button"
+              data-tour-action="stock-close-out-modal"
+              className="hidden"
+              aria-hidden="true"
+              tabIndex={-1}
+              onClick={() => {
+                setShowOutForm(false);
+                setOutItems([{ stock_item_id:'', qty:'', note:'' }]);
+                setOutUserId('');
+                setOutMenuSelections([createEmptyRecipeSelection()]);
+              }}
+            />
             <div className="flex items-center justify-between p-5 border-b border-slate-700/60">
               <div>
                 <h3 className="text-white font-bold">📤 Catat Pengeluaran Stok</h3>
@@ -2784,6 +2797,18 @@ function KasirStockPage({ successModal, setSuccessModal }) {
       {showOutForm && (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
           <div data-tour="stock-out-modal" className="bg-slate-800 rounded-2xl border border-slate-700 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <button
+              type="button"
+              data-tour-action="stock-close-out-modal"
+              className="hidden"
+              aria-hidden="true"
+              tabIndex={-1}
+              onClick={() => {
+                setShowOutForm(false);
+                setOutItems([{ stock_item_id:'', qty:'', note:'' }]);
+                setOutMenuSelections([createEmptyRecipeSelection()]);
+              }}
+            />
             <div className="flex items-center justify-between p-5 border-b border-slate-700/60">
               <div>
                 <h3 className="text-white font-bold">📤 Ajukan Stok Cabang</h3>
