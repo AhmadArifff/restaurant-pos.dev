@@ -224,7 +224,7 @@ export default function TransactionHistoryPage() {
           {/* Filters */}
           <div className="bg-slate-800 border border-slate-700 rounded-xl p-6 mb-8">
             <h2 className="text-lg font-bold text-white mb-4">🔍 Filter & Cari</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)_minmax(0,1fr)] gap-4 mb-4">
+            <div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)_minmax(0,1fr)]">
               <DateRangePicker
                 label="Range transaksi"
                 value={{ start: dateFrom, end: dateTo }}
@@ -236,35 +236,32 @@ export default function TransactionHistoryPage() {
               />
 
               {/* Search */}
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="flex min-h-[58px] flex-col justify-center rounded-xl border border-slate-600 bg-slate-700 px-3 py-2 transition hover:border-orange-500/70 focus-within:border-orange-500 focus-within:ring-1 focus-within:ring-orange-500">
+                <span className="block text-xs font-semibold text-slate-300">
                   Cari (Invoice, Kasir, Admin)
-                </label>
+                </span>
                 <input
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Ketik untuk mencari..."
-                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg 
-                    text-white placeholder-slate-500 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
+                  className="mt-0.5 w-full bg-transparent text-sm font-semibold text-white placeholder-slate-500 outline-none"
                 />
-              </div>
+              </label>
 
               {/* Buttons */}
-              <div className="flex gap-2 items-end">
+              <div className="flex min-h-[58px] gap-2">
                 <button
                   onClick={handleApplyFilter}
                   disabled={loading || refreshing}
-                  className="flex-1 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold 
-                    rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 rounded-xl bg-orange-500 px-4 py-2 font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   🔎 Cari
                 </button>
                 <button
                   onClick={handleResetFilter}
                   disabled={loading || refreshing}
-                  className="flex-1 px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white font-semibold 
-                    rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 rounded-xl bg-slate-600 px-4 py-2 font-semibold text-white transition hover:bg-slate-500 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   ↻ Reset
                 </button>
