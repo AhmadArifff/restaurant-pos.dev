@@ -779,7 +779,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
 
   return (
     <>
-      <div className="mb-5 flex flex-wrap items-center gap-2">
+      <div data-tour="stock-tabs" className="mb-5 flex flex-wrap items-center gap-2">
         <div className="flex flex-wrap gap-2 bg-slate-800/50 rounded-2xl p-1.5 w-fit">
         <TabBtn active={tab==='master'}   onClick={() => setTab('master')}>   📦 Bahan Baku</TabBtn>
         <TabBtn active={tab==='main'}     onClick={() => setTab('main')}>     🏪 Stok Gudang</TabBtn>
@@ -797,8 +797,8 @@ function AdminStockPage({ successModal, setSuccessModal }) {
         masterInitialLoading ? (
           <StockMasterSkeleton />
         ) : (
-        <div className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+        <div data-tour="stock-master" className="space-y-4">
+          <div data-tour="stock-master-actions" className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-slate-300 text-sm font-semibold">{stockItems.length} bahan baku</p>
               <p className="text-slate-600 text-xs mt-0.5">Stok & harga dikelola di Stok Gudang → Catat Pembelian</p>
@@ -819,7 +819,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
           </div>
 
           {priceTrends.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+            <div data-tour="stock-master-trends" className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
               {priceTrends.map((trend) => {
                 const yearTrend = getPercentTrend(trend.year_change_percent);
                 const allTrend = getPercentTrend(trend.all_change_percent);
@@ -857,11 +857,11 @@ function AdminStockPage({ successModal, setSuccessModal }) {
           )}
 
           {stockItems.length === 0
-            ? <div className="bg-slate-800/60 rounded-2xl border border-slate-700/40 py-12">
+            ? <div data-tour="stock-master-table" className="bg-slate-800/60 rounded-2xl border border-slate-700/40 py-12">
                 <EmptyState icon="📦" title="Belum ada bahan baku" sub="Tambahkan bahan baku terlebih dahulu" />
               </div>
             : (
-              <div className="bg-slate-800/80 rounded-2xl border border-slate-700/60 overflow-hidden">
+              <div data-tour="stock-master-table" className="bg-slate-800/80 rounded-2xl border border-slate-700/60 overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
@@ -969,8 +969,8 @@ function AdminStockPage({ successModal, setSuccessModal }) {
         warehouseInitialLoading ? (
           <StockWarehouseSkeleton mode={mainTab} />
         ) : (
-        <div className="space-y-4">
-          <div className="flex flex-wrap items-center gap-2">
+        <div data-tour="stock-warehouse" className="space-y-4">
+          <div data-tour="stock-warehouse-tabs" className="flex flex-wrap items-center gap-2">
             <SubTab active={mainTab==='summary'} onClick={() => setMainTab('summary')}>📊 Saldo Stok</SubTab>
             <SubTab active={mainTab==='in'}      onClick={() => setMainTab('in')}>📥 Pemasukan</SubTab>
             <SubTab active={mainTab==='out'}     onClick={() => setMainTab('out')}>📤 Pengeluaran</SubTab>
@@ -986,8 +986,8 @@ function AdminStockPage({ successModal, setSuccessModal }) {
 
           {/* Saldo */}
           {mainTab==='summary' && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div data-tour="stock-summary" className="space-y-4">
+              <div data-tour="stock-summary-cards" className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {[
                   { label:'Total Nilai Masuk',  val:`Rp ${totalIn.toLocaleString('id-ID')}`,          color:'text-blue-400',  bg:'bg-blue-500'  },
                   { label:'Total Nilai Keluar', val:`Rp ${totalOut.toLocaleString('id-ID')}`,          color:'text-red-400',   bg:'bg-red-500'   },
@@ -1007,7 +1007,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                   Tidak ada input manual di halaman ini.
                 </p>
               </div>
-              <div className="bg-slate-800/80 rounded-2xl border border-slate-700/60 overflow-hidden">
+              <div data-tour="stock-summary-table" className="bg-slate-800/80 rounded-2xl border border-slate-700/60 overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
@@ -1057,8 +1057,8 @@ function AdminStockPage({ successModal, setSuccessModal }) {
 
           {/* Pemasukan */}
           {mainTab === 'in' && (
-            <div className="space-y-3">
-              <div className="flex flex-wrap gap-2 items-center">
+            <div data-tour="stock-in" className="space-y-3">
+              <div data-tour="stock-in-filters" className="flex flex-wrap gap-2 items-center">
                 <select value={selMonth} onChange={e => { setSelMonth(Number(e.target.value)); setFilterItemId(null); }}
                   className="bg-slate-700 border border-slate-600 text-white text-xs rounded-xl px-3 py-2 outline-none">
                   {MONTHS.map((m, i) => <option key={i} value={i+1}>{m}</option>)}
@@ -1107,7 +1107,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                 </div>
               </div>
 
-              <div className="bg-slate-800/80 rounded-2xl border border-slate-700/60 overflow-hidden">
+              <div data-tour="stock-in-table" className="bg-slate-800/80 rounded-2xl border border-slate-700/60 overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
@@ -1186,9 +1186,9 @@ function AdminStockPage({ successModal, setSuccessModal }) {
 
           {/* Pengeluaran */}
           {mainTab === 'out' && (
-            <div className="space-y-3">
+            <div data-tour="stock-out" className="space-y-3">
               {/* Filter date + tombol */}
-              <div className="flex flex-wrap gap-3 items-center justify-between">
+              <div data-tour="stock-out-filters" className="flex flex-wrap gap-3 items-center justify-between">
                 <div className="flex flex-wrap gap-2 items-center">
                   <span className="text-slate-500 text-xs">Dari:</span>
                   <input type="date" value={selDate}
@@ -1217,7 +1217,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
               </div>
 
               {/* ── Filter pills ── */}
-              <div className="flex flex-wrap gap-1.5 items-center">
+              <div data-tour="stock-out-pills" className="flex flex-wrap gap-1.5 items-center">
                 {OUT_FILTERS.map(f => (
                   <button key={f.val}
                     onClick={() => setOutTypeFilter(f.val)}
@@ -1240,7 +1240,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
               </div>
 
               {/* Tabel */}
-              <div className="bg-slate-800/80 rounded-2xl border border-slate-700/60 overflow-hidden">
+              <div data-tour="stock-out-table" className="bg-slate-800/80 rounded-2xl border border-slate-700/60 overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
@@ -1354,8 +1354,8 @@ function AdminStockPage({ successModal, setSuccessModal }) {
         requestsInitialLoading ? (
           <StockRequestSkeleton />
         ) : (
-        <div className="space-y-4">
-          <div className="flex flex-wrap gap-3 items-center">
+        <div data-tour="stock-requests" className="space-y-4">
+          <div data-tour="stock-request-filters" className="flex flex-wrap gap-3 items-center">
             <span className="text-slate-500 text-xs">Dari:</span>
             <input type="date" value={reqDateFrom2}
               onChange={e => setReqDateFrom2(e.target.value)}
@@ -1380,11 +1380,11 @@ function AdminStockPage({ successModal, setSuccessModal }) {
           </div>
 
           {requests.length===0
-            ? <div className="bg-slate-800/60 rounded-2xl border border-slate-700/40 py-12">
+            ? <div data-tour="stock-request-list" className="bg-slate-800/60 rounded-2xl border border-slate-700/40 py-12">
                 <EmptyState icon="📋" title="Tidak ada pengajuan" sub="Kasir belum mengajukan stok" />
               </div>
             : requests.map(req => (
-              <div key={req.id} className="bg-slate-800/80 rounded-2xl border border-slate-700/60 overflow-hidden">
+              <div key={req.id} data-tour="stock-request-list" className="bg-slate-800/80 rounded-2xl border border-slate-700/60 overflow-hidden">
                 <div className="flex flex-wrap items-start justify-between gap-3 p-4 border-b border-slate-700/40">
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
@@ -1519,7 +1519,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
       {/* ══ MODAL: TAMBAH/EDIT BAHAN BAKU ══ */}
       {showForm && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-800 rounded-2xl p-6 w-full max-w-md border border-slate-700 max-h-[90vh] overflow-y-auto">
+          <div data-tour="stock-master-modal" className="bg-slate-800 rounded-2xl p-6 w-full max-w-md border border-slate-700 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-white font-bold text-lg">{editId?'Edit':'Tambah'} Bahan Baku</h2>
               <button onClick={resetForm} className="text-slate-500 hover:text-white p-1 rounded-lg hover:bg-slate-700">✕</button>
@@ -1572,7 +1572,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
       {/* ══ MODAL: CATAT PEMBELIAN ══ */}
       {showPurchase && (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-800 rounded-2xl border border-slate-700 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+          <div data-tour="stock-purchase-modal" className="bg-slate-800 rounded-2xl border border-slate-700 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b border-slate-700/60">
               <div>
                 <h3 className="text-white font-bold">📥 Catat Pembelian Stok</h3>
@@ -1726,7 +1726,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
       {/* ══ MODAL: CATAT PENGELUARAN MANUAL ══ */}
       {showOutForm && (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-800 rounded-2xl border border-slate-700 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+          <div data-tour="stock-out-modal" className="bg-slate-800 rounded-2xl border border-slate-700 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b border-slate-700/60">
               <div>
                 <h3 className="text-white font-bold">📤 Catat Pengeluaran Stok</h3>
@@ -2401,7 +2401,7 @@ function KasirStockPage({ successModal, setSuccessModal }) {
 
   return (
     <>
-      <div className="mb-5 flex flex-wrap items-center gap-2">
+      <div data-tour="stock-tabs" className="mb-5 flex flex-wrap items-center gap-2">
         <div className="flex flex-wrap gap-2 bg-slate-800/50 rounded-2xl p-1.5 w-fit">
         <TabBtn active={tab==='gudang'}   onClick={() => setTab('gudang')}>   🏪 Stok Gudang</TabBtn>
         <TabBtn active={tab==='requests'} onClick={() => setTab('requests')}> 📋 Pengajuan Saya</TabBtn>
@@ -2417,22 +2417,22 @@ function KasirStockPage({ successModal, setSuccessModal }) {
         warehouseInitialLoading ? (
           <StockWarehouseSkeleton mode={mainTab} />
         ) : (
-        <div className="space-y-4">
-          <div className="flex flex-wrap items-center gap-2">
+        <div data-tour="stock-warehouse" className="space-y-4">
+          <div data-tour="stock-warehouse-tabs" className="flex flex-wrap items-center gap-2">
             <SubTab active={mainTab==='summary'} onClick={() => setMainTab('summary')}>📊 Saldo Stok</SubTab>
             <SubTab active={mainTab==='out'}     onClick={() => setMainTab('out')}>📤 Pengeluaran</SubTab>
           </div>
 
           {/* ── Saldo Stok ── */}
           {mainTab === 'summary' && (
-            <div className="space-y-3">
+            <div data-tour="stock-summary" className="space-y-3">
               <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-3 flex gap-2.5">
                 <span className="text-blue-400 shrink-0">ℹ</span>
                 <p className="text-slate-500 text-xs">
                   Saldo stok gudang keseluruhan. Semua Stok dilakukan proses approve oleh admin.
                 </p>
               </div>
-              <div className="bg-slate-800/80 rounded-2xl border border-slate-700/60 overflow-hidden">
+              <div data-tour="stock-summary-table" className="bg-slate-800/80 rounded-2xl border border-slate-700/60 overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
@@ -2486,8 +2486,8 @@ function KasirStockPage({ successModal, setSuccessModal }) {
 
           {/* ── Pengeluaran ── */}
           {mainTab === 'out' && (
-            <div className="space-y-3">
-              <div className="flex flex-wrap gap-3 items-center justify-between">
+            <div data-tour="stock-out" className="space-y-3">
+              <div data-tour="stock-out-filters" className="flex flex-wrap gap-3 items-center justify-between">
                 <div className="flex flex-wrap gap-2 items-center">
                   <span className="text-slate-500 text-xs">Dari:</span>
                   <input type="date" value={selDate} onChange={e => setSelDate(e.target.value)}
@@ -2513,7 +2513,7 @@ function KasirStockPage({ successModal, setSuccessModal }) {
               </div>
 
               {/* Filter pills kasir — tanpa 'manual' karena kasir sudah filter by user sendiri */}
-              <div className="flex flex-wrap gap-1.5 items-center">
+              <div data-tour="stock-out-pills" className="flex flex-wrap gap-1.5 items-center">
                 {[
                   { val: 'all',         label: 'Semua'           },
                   { val: 'approved',    label: '✓ Sudah Keluar'  },
@@ -2541,7 +2541,7 @@ function KasirStockPage({ successModal, setSuccessModal }) {
                 </p>
               </div>
 
-              <div className="bg-slate-800/80 rounded-2xl border border-slate-700/60 overflow-hidden">
+              <div data-tour="stock-out-table" className="bg-slate-800/80 rounded-2xl border border-slate-700/60 overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
@@ -2641,8 +2641,8 @@ function KasirStockPage({ successModal, setSuccessModal }) {
         requestsInitialLoading ? (
           <StockRequestSkeleton />
         ) : (
-        <div className="space-y-4">
-          <div className="flex flex-wrap gap-3 items-center">
+        <div data-tour="stock-requests" className="space-y-4">
+          <div data-tour="stock-request-filters" className="flex flex-wrap gap-3 items-center">
             <span className="text-slate-500 text-xs">Dari:</span>
             <input type="date" value={reqDateFrom}
               onChange={e => setReqDateFrom(e.target.value)}
@@ -2667,11 +2667,11 @@ function KasirStockPage({ successModal, setSuccessModal }) {
           </div>
 
           {requests.length === 0
-            ? <div className="bg-slate-800/60 rounded-2xl border border-slate-700/40 py-12">
+            ? <div data-tour="stock-request-list" className="bg-slate-800/60 rounded-2xl border border-slate-700/40 py-12">
                 <EmptyState icon="📋" title="Tidak ada pengajuan" sub="Belum ada pengajuan pengeluaran" />
               </div>
             : requests.map(req => (
-              <div key={req.id} className={`bg-slate-800/80 rounded-2xl border overflow-hidden ${
+              <div key={req.id} data-tour="stock-request-list" className={`bg-slate-800/80 rounded-2xl border overflow-hidden ${
                 req.status==='approved' ? 'border-green-500/30' :
                 req.status==='rejected' ? 'border-red-500/30' : 'border-slate-700/60'
               }`}>
@@ -2777,7 +2777,7 @@ function KasirStockPage({ successModal, setSuccessModal }) {
       {/* ══ MODAL: CATAT PENGELUARAN (KASIR) ══ */}
       {showOutForm && (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-800 rounded-2xl border border-slate-700 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+          <div data-tour="stock-out-modal" className="bg-slate-800 rounded-2xl border border-slate-700 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b border-slate-700/60">
               <div>
                 <h3 className="text-white font-bold">📤 Ajukan Stok Cabang</h3>
@@ -3040,7 +3040,7 @@ export default function StockPage() {
   return (
     <AdminLayout>
       <div className="max-w-7xl mx-auto pb-8 space-y-5">
-        <div>
+        <div data-tour="stock-header">
           <h1 className="text-white text-xl sm:text-2xl font-black tracking-tight">
             {isAdmin ? 'Manajemen Stok' : 'Stok Saya'}
           </h1>
