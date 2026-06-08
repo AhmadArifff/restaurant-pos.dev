@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 
@@ -62,9 +62,9 @@ const TUTORIALS = [
       },
       {
         selector: '[data-tour="dashboard-schedule"]',
-        title: 'Informasi Jadwal & Kehadiran',
+        title: 'Karyawan Aktif & Kehadiran',
         body: 'Bagian ini menghubungkan aktivitas staf, kehadiran, dan performa kerja.',
-        details: ['Karyawan aktif menunjukkan siapa yang sedang online.', 'Grafik kehadiran merangkum hari hadir per minggu.', 'Filter chip staf membantu fokus pada orang tertentu.', 'Data ini menjadi dasar membaca jadwal operasional.'],
+        details: ['Karyawan aktif menunjukkan siapa yang sedang online.', 'Grafik kehadiran merangkum hari hadir per minggu.', 'Filter chip staf membantu fokus pada orang tertentu.', 'Data ini menjadi dasar membaca aktivitas operasional tim.'],
       },
       {
         selector: '[data-tour="dashboard-staff-performance"]',
@@ -74,43 +74,14 @@ const TUTORIALS = [
       },
     ],
   },
-  {
-    id: 'schedule-info',
-    title: 'Informasi Jadwal',
-    route: '/dashboard',
-    roles: ['admin'],
-    description: 'Fokus pada area karyawan aktif, grafik kehadiran, dan performa staf di dashboard.',
-    steps: [
-      {
-        selector: '[data-tour="dashboard-schedule"]',
-        title: 'Pusat Informasi Jadwal',
-        body: 'Tutorial ini fokus pada informasi jadwal yang saat ini berada di halaman dashboard.',
-        details: ['Area ini muncul saat ada data staf aktif atau data kehadiran.', 'Periode mengikuti range dashboard.', 'Gunakan bagian ini untuk membaca aktivitas operasional tim.'],
-      },
-      {
-        selector: '[data-tour="dashboard-active-users"]',
-        title: 'Karyawan Aktif Hari Ini',
-        body: 'Kartu karyawan aktif memperlihatkan staf yang sedang online di sistem.',
-        details: ['Nama dan role membantu mengenali staf.', 'Durasi online menunjukkan lama aktivitas hari ini.', 'Tanggal hadir memberi konteks absensi hari berjalan.'],
-      },
-      {
-        selector: '[data-tour="dashboard-attendance-chart"]',
-        title: 'Grafik Kehadiran',
-        body: 'Grafik kehadiran memadatkan data absensi menjadi visual mingguan.',
-        details: ['Chip nama staf dapat dipakai sebagai filter.', 'Garis chart menunjukkan jumlah hari hadir per minggu.', 'Hover chart untuk membaca detail tanggal hadir.'],
-      },
-      {
-        selector: '[data-tour="dashboard-staff-performance"]',
-        title: 'Hubungan Jadwal dan Performa',
-        body: 'Setelah melihat kehadiran, bandingkan dengan performa penjualan karyawan.',
-        details: ['Total transaksi menunjukkan aktivitas kerja.', 'Omzet dan margin membantu membaca kontribusi bisnis.', 'Tab chart memecah performa ke transaksi dan produk.'],
-      },
-    ],
-  },
 ];
 
 function getStorageKey(user) {
   return `pos-tutorial-launcher-seen-v1-${user?.id || user?.email || user?.name || 'guest'}`;
+}
+
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
 }
 
 export default function FloatingTutorialButton() {
@@ -121,6 +92,8 @@ export default function FloatingTutorialButton() {
   const [activeTutorialId, setActiveTutorialId] = useState(null);
   const [stepIndex, setStepIndex] = useState(0);
   const [highlight, setHighlight] = useState(null);
+  const [buttonPos, setButtonPos] = useState(null);
+  const dragRef = useRef(null);
 
   const availableTutorials = useMemo(() => (
     TUTORIALS.filter((tutorial) => !tutorial.roles || tutorial.roles.includes(user?.role))
@@ -138,6 +111,32 @@ export default function FloatingTutorialButton() {
     }, 900);
     return () => window.clearTimeout(timer);
   }, [user]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const storageKey = 'pos-tutorial-button-position-v1';
+    const setSafePosition = () => {
+      const fallback = {
+        x: window.innerWidth - 176,
+        y: window.innerHeight - 88,
+      };
+      let saved = null;
+      try {
+        saved = JSON.parse(window.localStorage.getItem(storageKey));
+      } catch {
+        saved = null;
+      }
+      const source = saved || fallback;
+      setButtonPos({
+        x: clamp(Number(source.x || fallback.x), 12, window.innerWidth - 76),
+        y: clamp(Number(source.y || fallback.y), 12, window.innerHeight - 76),
+      });
+    };
+
+    setSafePosition();
+    window.addEventListener('resize', setSafePosition);
+    return () => window.removeEventListener('resize', setSafePosition);
+  }, []);
 
   useEffect(() => {
     if (!activeStep?.selector || !open) {
@@ -176,6 +175,69 @@ export default function FloatingTutorialButton() {
   }, [activeStep, open, pathname]);
 
   if (!user || availableTutorials.length === 0) return null;
+
+  const getPanelStyle = () => {
+    const width = typeof window === 'undefined' ? 420 : Math.min(420, window.innerWidth - 32);
+    if (activeTutorial && highlight && typeof window !== 'undefined') {
+      const gap = 18;
+      const rightLeft = highlight.left + highlight.width + gap;
+      const leftLeft = highlight.left - width - gap;
+      const canUseRight = rightLeft + width <= window.innerWidth - 16;
+      return {
+        top: `${clamp(highlight.top, 16, Math.max(16, window.innerHeight - 420))}px`,
+        left: `${canUseRight ? rightLeft : clamp(leftLeft, 16, window.innerWidth - width - 16)}px`,
+        width: `${width}px`,
+        maxHeight: 'calc(100vh - 32px)',
+      };
+    }
+
+    return {
+      top: '50%',
+      left: '50%',
+      width: `${width}px`,
+      maxHeight: 'calc(100vh - 32px)',
+      transform: 'translate(-50%, -50%)',
+    };
+  };
+
+  const handlePointerDown = (event) => {
+    if (!buttonPos) return;
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    dragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      originX: buttonPos.x,
+      originY: buttonPos.y,
+      moved: false,
+    };
+  };
+
+  const handlePointerMove = (event) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId || typeof window === 'undefined') return;
+    const dx = event.clientX - drag.startX;
+    const dy = event.clientY - drag.startY;
+    if (Math.abs(dx) + Math.abs(dy) > 4) drag.moved = true;
+    setButtonPos({
+      x: clamp(drag.originX + dx, 12, window.innerWidth - 76),
+      y: clamp(drag.originY + dy, 12, window.innerHeight - 76),
+    });
+  };
+
+  const handlePointerUp = (event) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    event.currentTarget.releasePointerCapture?.(event.pointerId);
+    if (typeof window !== 'undefined') {
+      const next = {
+        x: clamp(drag.originX + event.clientX - drag.startX, 12, window.innerWidth - 76),
+        y: clamp(drag.originY + event.clientY - drag.startY, 12, window.innerHeight - 76),
+      };
+      setButtonPos(next);
+      window.localStorage.setItem('pos-tutorial-button-position-v1', JSON.stringify(next));
+    }
+  };
 
   const startTutorial = (tutorial) => {
     setActiveTutorialId(tutorial.id);
@@ -224,7 +286,10 @@ export default function FloatingTutorialButton() {
       )}
 
       {open && (
-        <div className="fixed bottom-24 right-4 z-[60] w-[min(420px,calc(100vw-32px))] overflow-hidden rounded-3xl border border-amber-500/25 bg-slate-950 shadow-2xl shadow-black/50 sm:right-24">
+        <div
+          className="fixed z-[60] overflow-y-auto rounded-3xl border border-amber-500/25 bg-slate-950 shadow-2xl shadow-black/50"
+          style={getPanelStyle()}
+        >
           <div className="border-b border-white/10 bg-gradient-to-br from-amber-500/18 to-slate-900 px-5 py-4">
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -321,11 +386,29 @@ export default function FloatingTutorialButton() {
         </div>
       )}
 
-      <div className="fixed bottom-6 right-24 z-50 h-16 w-16 sm:right-28">
+      <div
+        className="fixed z-50 h-16 w-16"
+        style={{
+          left: `${buttonPos?.x ?? 24}px`,
+          top: `${buttonPos?.y ?? 24}px`,
+          touchAction: 'none',
+        }}
+      >
         <button
           type="button"
-          onClick={() => setOpen((value) => !value)}
-          className="grid h-16 w-16 place-items-center rounded-full border border-amber-300/35 bg-gradient-to-br from-amber-400 to-orange-700 text-sm font-black text-slate-950 shadow-xl shadow-amber-950/35 transition hover:-translate-y-0.5 hover:shadow-amber-700/30"
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+          onClick={() => {
+            if (dragRef.current?.moved) {
+              dragRef.current = null;
+              return;
+            }
+            dragRef.current = null;
+            setOpen((value) => !value);
+          }}
+          className="grid h-16 w-16 cursor-grab place-items-center rounded-full border border-amber-300/35 bg-gradient-to-br from-amber-400 to-orange-700 text-sm font-black text-slate-950 shadow-xl shadow-amber-950/35 transition hover:-translate-y-0.5 hover:shadow-amber-700/30 active:cursor-grabbing"
           aria-label={open ? 'Tutup tutorial assistant' : 'Buka tutorial assistant'}
           aria-expanded={open}
           title={open ? 'Tutup tutorial' : 'Buka tutorial'}
