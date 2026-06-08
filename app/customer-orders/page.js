@@ -230,6 +230,174 @@ function Stars({ value = 0, size = 'text-sm' }) {
   );
 }
 
+function CustomerOrdersTutorialDemo({ isAdmin }) {
+  return (
+    <div className="customer-orders-tutorial-demo grid gap-4 rounded-3xl border border-orange-400/35 bg-orange-500/5 p-4">
+      <div className="rounded-2xl border border-orange-400/25 bg-slate-950/70 px-4 py-3">
+        <p className="text-xs font-black uppercase tracking-[0.22em] text-orange-300">Mode Demo Tutorial</p>
+        <p className="mt-1 text-sm leading-6 text-slate-300">
+          Data di bawah adalah contoh dummy untuk latihan membaca alur. Tidak tersimpan ke database kecuali user memilih aksi simpan pada form asli.
+        </p>
+      </div>
+
+      <div className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-start">
+        <article
+          className="rounded-3xl border border-slate-700 bg-slate-800 p-5 shadow-xl shadow-black/10"
+          data-tour="customer-orders-demo-card"
+        >
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <div className="flex flex-wrap items-center gap-2" data-tour="customer-orders-demo-status-badges">
+                <span className="rounded-full bg-orange-500/15 px-3 py-1 text-xs font-black uppercase text-orange-300">
+                  Meja 03
+                </span>
+                <span className="rounded-full bg-blue-500/15 px-3 py-1 text-xs font-black uppercase text-blue-300">
+                  Diterima
+                </span>
+                <span className="rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-black text-emerald-300">
+                  Paket Bundle 50%
+                </span>
+                <span className="rounded-full bg-sky-500/15 px-3 py-1 text-xs font-black text-sky-300">
+                  Kode Voucher 5%
+                </span>
+              </div>
+              <h2 className="mt-3 text-xl font-black text-white">ORD-DEMO-20260608-0001</h2>
+              <p className="mt-1 text-sm text-slate-400">Pelanggan Tutorial - 6281234567890</p>
+            </div>
+            <div className="text-left lg:text-right" data-tour="customer-orders-demo-total">
+              <p className="text-xs text-slate-500">Total pesanan</p>
+              <strong className="text-2xl text-orange-400">{formatRp(144400)}</strong>
+              <div className="mt-2 space-y-1 text-xs">
+                <p className="text-emerald-300">Paket Bundle: Test Bundle -{formatRp(62000)}</p>
+                <p className="text-sky-300">Kode Voucher: KEBABDEMO13 -{formatRp(7600)}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_auto]">
+            <div className="rounded-2xl bg-slate-900/60 p-3" data-tour="customer-orders-demo-items">
+              {[
+                ['Adana Kebab Platter', 1, 89000],
+                ['Arabic Qahwa Coffee', 1, 35000],
+                ['Ayran Sultan', 1, 28000],
+              ].map(([name, qty, subtotal]) => (
+                <div key={name} className="flex justify-between gap-3 border-b border-slate-700/60 py-2 text-sm last:border-0">
+                  <span className="text-slate-300">{name} x{qty}</span>
+                  <span className="font-bold text-white">{formatRp(subtotal)}</span>
+                </div>
+              ))}
+              <div className="mt-3 space-y-2 border-t border-slate-700/60 pt-3" data-tour="customer-orders-demo-discounts">
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Diskon terpakai</p>
+                <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-xs text-emerald-100">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="font-black">Paket Bundle 50%</span>
+                    <strong className="text-red-300">-{formatRp(62000)}</strong>
+                  </div>
+                  <p className="mt-1 font-semibold">Test Bundle</p>
+                  <p className="mt-1 opacity-80">Dasar potongan: {formatRp(124000)}</p>
+                </div>
+                <div className="rounded-xl border border-sky-500/20 bg-sky-500/10 p-3 text-xs text-sky-100">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="font-black">Kode Voucher 5%</span>
+                    <strong className="text-red-300">-{formatRp(7600)}</strong>
+                  </div>
+                  <p className="mt-1 font-semibold">Voucher Tutorial</p>
+                  <p className="mt-1 opacity-80">Kode: KEBABDEMO13</p>
+                </div>
+              </div>
+              <div className="mt-3 rounded-xl bg-slate-950/45 p-2">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-xs font-semibold text-slate-200">Rating menu demo</span>
+                  <Stars value={5} />
+                </div>
+                <p className="mt-1 text-xs text-slate-400">Menu enak dan pelayanan cepat.</p>
+              </div>
+              <p className="mt-3 text-xs italic text-slate-500">Catatan: Jangan terlalu pedas.</p>
+              <div className="mt-3 rounded-xl border border-sky-500/20 bg-sky-500/10 p-3 text-xs text-sky-100" data-tour="customer-orders-demo-payment">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-bold">Pembayaran: QRIS Tutorial</span>
+                  <span className="rounded-full bg-yellow-500/20 px-2 py-1 font-black uppercase text-yellow-100">
+                    Bukti dikirim
+                  </span>
+                </div>
+                <p className="mt-1 text-sky-100/70">Deadline: 08/06/2026, 19.45</p>
+                <button type="button" className="mt-2 inline-flex font-black text-sky-200 underline">
+                  Lihat bukti pembayaran
+                </button>
+                <p className="mt-1 text-sky-100/70">Catatan bayar: Nominal sudah sesuai.</p>
+              </div>
+              <div className="mt-3 rounded-xl border border-sky-500/20 bg-sky-500/10 p-3 text-xs text-sky-100" data-tour="customer-orders-demo-proof-modal">
+                <p className="font-black uppercase tracking-[0.16em] text-sky-300">Preview modal bukti</p>
+                <div className="mt-3 grid min-h-36 place-items-center rounded-2xl bg-white text-center text-slate-950">
+                  <div>
+                    <p className="text-sm font-black">Bukti Pembayaran Demo</p>
+                    <p className="mt-1 text-xs">QRIS - Rp 144.400</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2 lg:w-44 lg:flex-col" data-tour="customer-orders-demo-status-actions">
+              {[
+                ['2. Siapkan', 'bg-yellow-500'],
+                ['3. Siap Diantar', 'bg-emerald-500'],
+                ['4. Selesai', 'bg-orange-500'],
+                ['Batalkan', 'bg-red-500'],
+              ].map(([label, color]) => (
+                <button key={label} type="button" className={`${color} rounded-xl px-3 py-2 text-xs font-black text-white`}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </article>
+        <label
+          data-tour="customer-orders-demo-select"
+          className="flex items-center justify-center gap-2 rounded-2xl border border-orange-500 bg-orange-500/15 px-4 py-3 text-xs font-black text-orange-200 transition lg:min-h-[112px] lg:w-20 lg:flex-col"
+        >
+          <input type="checkbox" checked readOnly className="h-5 w-5 accent-orange-500" />
+          Pilih
+        </label>
+      </div>
+
+      {isAdmin && (
+        <div className="grid gap-4 lg:grid-cols-3">
+          <div className="rounded-3xl border border-slate-700 bg-slate-800 p-5" data-tour="customer-orders-demo-table-form">
+            <h2 className="text-xl font-black text-white">Tambah Meja QR Demo</h2>
+            <div className="mt-4 space-y-3">
+              <div className="rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm font-semibold text-white">03</div>
+              <div className="rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm font-semibold text-white">Meja Window</div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm font-semibold text-white">4</div>
+                <div className="rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm font-semibold text-white">Aktif</div>
+              </div>
+              <div className="rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm font-semibold text-slate-400">Dekat kasir</div>
+            </div>
+          </div>
+          <div className="rounded-3xl border border-slate-700 bg-slate-800 p-5" data-tour="customer-orders-demo-table-list">
+            <h2 className="text-xl font-black text-white">QR Meja Demo</h2>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              {['01', '02', '03', '04'].map((table) => (
+                <div key={table} className={`rounded-2xl border p-3 text-left ${table === '03' ? 'border-orange-500 bg-orange-500/15' : 'border-slate-700 bg-slate-900'}`}>
+                  <p className="text-xs text-slate-500">Meja</p>
+                  <strong className="text-lg text-white">{table}</strong>
+                  <p className="text-xs capitalize text-slate-400">active</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="rounded-3xl border border-slate-700 bg-slate-800 p-5" data-tour="customer-orders-demo-qr-preview">
+            <QRCodeCard value="https://restaurant-pos.dev/order/demo-token" title="Meja 03" size={150} />
+            <div className="mt-3 flex gap-2">
+              <button type="button" className="flex-1 rounded-xl bg-slate-700 px-3 py-2 text-sm font-bold text-white">Edit</button>
+              <button type="button" className="flex-1 rounded-xl bg-red-500/80 px-3 py-2 text-sm font-bold text-white">Nonaktif</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 const getOrderUrl = (token) => {
   if (typeof window === 'undefined') return `/order/${token}`;
   return `${window.location.origin}/order/${token}`;
@@ -622,6 +790,7 @@ export default function CustomerOrdersPage() {
                   Belum ada pesanan meja untuk filter ini.
                 </div>
               )}
+              <CustomerOrdersTutorialDemo isAdmin={isAdmin} />
               {visibleOrders.map((order) => {
                 const discountComponents = getDiscountComponents(order);
                 const canSelectOrder = !['completed', 'cancelled'].includes(order.status);
@@ -925,6 +1094,14 @@ export default function CustomerOrdersPage() {
               </div>
             </div>
           )}
+          <style jsx global>{`
+            .customer-orders-tutorial-demo {
+              display: none;
+            }
+            html[data-tutorial-id="customer-orders"] .customer-orders-tutorial-demo {
+              display: grid;
+            }
+          `}</style>
         </div>
       </AdminLayout>
     </AuthGuard>

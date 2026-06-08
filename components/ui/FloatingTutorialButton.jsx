@@ -1089,70 +1089,70 @@ const TUTORIALS = [
         details: ['Setiap kartu adalah satu order dari pelanggan.', 'Skeleton tampil saat data pertama kali dimuat.', 'Empty state tampil jika tidak ada order sesuai filter.', 'Data refresh ringan menjaga UI tetap smooth.'],
       },
       {
-        selector: '[data-tour="customer-order-card"]',
+        selector: '[data-tour="customer-orders-demo-card"]',
         title: 'Kartu Order',
         body: 'Kartu order merangkum meja, status, pelanggan, total, item, pembayaran, review, dan aksi status.',
-        details: ['Kode order adalah identitas utama pesanan.', 'Nama dan nomor HP membantu validasi pelanggan.', 'Badge status dan diskon mempercepat pembacaan.', 'Kartu tetap bisa dibaca walau order punya banyak item.'],
+        details: ['Step detail memakai data dummy agar tutorial tetap jalan walau belum ada order asli.', 'Kode order adalah identitas utama pesanan.', 'Nama dan nomor HP membantu validasi pelanggan.', 'Badge status dan diskon mempercepat pembacaan.', 'Kartu tetap bisa dibaca walau order punya banyak item.'],
       },
       {
-        selector: '[data-tour="customer-order-status-badges"]',
+        selector: '[data-tour="customer-orders-demo-status-badges"]',
         title: 'Badge Status dan Diskon',
         body: 'Badge memberi ringkasan visual di bagian atas kartu.',
         details: ['Badge meja menunjukkan nomor meja.', 'Badge status menunjukkan tahap order.', 'Badge diskon menunjukkan paket bundle, kode voucher, atau reward review.', 'Review selesai tampil bila pelanggan sudah memberi ulasan.'],
       },
       {
-        selector: '[data-tour="customer-order-total"]',
+        selector: '[data-tour="customer-orders-demo-total"]',
         title: 'Total dan Potongan',
         body: 'Bagian total menampilkan nilai akhir dan rincian diskon yang dipakai.',
         details: ['Total pesanan memakai final_total jika ada.', 'Setiap komponen diskon ditampilkan dengan nilai potongan.', 'Paket bundle, voucher, dan reward review dibedakan labelnya.', 'Informasi ini membantu kasir menjawab pertanyaan pelanggan.'],
       },
       {
-        selector: '[data-tour="customer-order-items"]',
+        selector: '[data-tour="customer-orders-demo-items"]',
         title: 'Item Pesanan',
         body: 'Item pesanan menunjukkan menu, qty, subtotal, catatan, rating menu, dan detail diskon.',
         details: ['Setiap item menampilkan nama produk dan qty.', 'Subtotal item membantu cek ulang pesanan.', 'Diskon terpakai memiliki panel detail sendiri.', 'Rating menu tampil setelah pelanggan review.'],
       },
       {
-        selector: '[data-tour="customer-order-payment"]',
+        selector: '[data-tour="customer-orders-demo-payment"]',
         title: 'Pembayaran Pelanggan',
         body: 'Panel pembayaran menunjukkan metode, status bukti, deadline, dan catatan pembayaran.',
         details: ['Menunggu bukti berarti pelanggan belum upload.', 'Bukti dikirim berarti kasir/admin perlu verifikasi.', 'Terkonfirmasi berarti pembayaran sudah disetujui.', 'Deadline membantu membaca apakah pembayaran melewati batas waktu.'],
       },
       {
-        selector: '[data-tour="customer-order-status-actions"]',
+        selector: '[data-tour="customer-orders-demo-status-actions"]',
         title: 'Aksi Status per Order',
         body: 'Tombol status di tiap kartu dipakai untuk memproses satu order secara manual.',
         details: ['Aksi yang tidak eligible akan nonaktif.', 'Batalkan membuka alur pembatalan dan pengembalian stok jika berlaku.', 'Selesai menutup order agar tidak bisa dipilih lagi.', 'Gunakan batch action untuk banyak order sekaligus.'],
       },
       {
-        selector: '[data-tour="customer-order-select"]',
+        selector: '[data-tour="customer-orders-demo-select"]',
         title: 'Checkbox Order',
         body: 'Checkbox menentukan order mana yang masuk ke aksi batch.',
         details: ['Pilih order yang ingin diproses bersama.', 'Order selesai dan dibatalkan diberi label Final.', 'Checkbox membantu approve sebagian, bukan semua.', 'Ini mengurangi kesalahan saat order sedang ramai.'],
       },
       {
-        selector: '[data-tour="customer-orders-table-form"]',
+        selector: '[data-tour="customer-orders-demo-table-form"]',
         roles: ['admin'],
         title: 'Form Meja QR',
         body: 'Admin memakai form ini untuk menambah atau mengedit meja yang bisa dipakai pelanggan self order.',
         details: ['Nomor meja wajib unik dan jelas.', 'Nama area membantu membedakan lokasi meja.', 'Kapasitas dan status membantu operasional.', 'Catatan meja memberi konteks tambahan.'],
       },
       {
-        selector: '[data-tour="customer-orders-table-list"]',
+        selector: '[data-tour="customer-orders-demo-table-list"]',
         roles: ['admin'],
         title: 'Daftar QR Meja',
         body: 'Daftar ini menampilkan meja yang bisa dipilih untuk membuat QR self order.',
         details: ['Klik meja untuk melihat QR publiknya.', 'Status aktif, maintenance, dan nonaktif menentukan ketersediaan meja.', 'Cabang meja ditampilkan agar tidak tertukar.', 'Meja aktif/session pelanggan lain tetap dikunci oleh backend.'],
       },
       {
-        selector: '[data-tour="customer-orders-qr-preview"]',
+        selector: '[data-tour="customer-orders-demo-qr-preview"]',
         roles: ['admin'],
         title: 'Preview QR Meja',
         body: 'QR ini dipakai pelanggan membuka halaman order meja langsung dari tempat duduk.',
         details: ['QR berisi token unik meja.', 'Edit memuat data meja ke form.', 'Nonaktif menonaktifkan meja dari daftar order.', 'Jangan mengganti QR saat meja sedang dipakai pelanggan.'],
       },
       {
-        selector: '[data-tour="customer-orders-proof-modal"]',
+        selector: '[data-tour="customer-orders-demo-proof-modal"]',
         title: 'Modal Bukti Pembayaran',
         body: 'Jika pelanggan upload bukti pembayaran, kasir atau admin membukanya dalam modal ini.',
         details: ['Gambar bukti tampil langsung di modal.', 'PDF diberi tombol buka file.', 'Modal menjaga user tetap di halaman pesanan.', 'Verifikasi dilakukan dari status pembayaran/order, bukan dari tab baru.'],
@@ -1390,6 +1390,25 @@ export default function FloatingTutorialButton() {
       })
   ), [activeTutorial, user?.role]);
   const activeStep = activeSteps[stepIndex];
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const root = document.documentElement;
+    if (open && activeTutorialId) {
+      root.dataset.tutorialId = activeTutorialId;
+      root.dataset.tutorialStep = String(stepIndex + 1);
+      root.dataset.tutorialDemo = 'true';
+    } else {
+      delete root.dataset.tutorialId;
+      delete root.dataset.tutorialStep;
+      delete root.dataset.tutorialDemo;
+    }
+    return () => {
+      delete root.dataset.tutorialId;
+      delete root.dataset.tutorialStep;
+      delete root.dataset.tutorialDemo;
+    };
+  }, [activeTutorialId, open, stepIndex]);
 
   useEffect(() => {
     if (!activeTutorial || stepIndex < activeSteps.length) return;
