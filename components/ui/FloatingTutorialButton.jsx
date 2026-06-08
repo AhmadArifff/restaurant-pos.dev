@@ -180,14 +180,22 @@ export default function FloatingTutorialButton() {
     const width = typeof window === 'undefined' ? 420 : Math.min(420, window.innerWidth - 32);
     if (activeTutorial && highlight && typeof window !== 'undefined') {
       const gap = 18;
+      const preferredHeight = Math.min(560, window.innerHeight - 32);
+      const spaceBelow = window.innerHeight - (highlight.top + highlight.height) - 16;
+      const spaceAbove = highlight.top - 16;
       const rightLeft = highlight.left + highlight.width + gap;
       const leftLeft = highlight.left - width - gap;
       const canUseRight = rightLeft + width <= window.innerWidth - 16;
+      const verticalTop = spaceBelow >= Math.min(360, preferredHeight)
+        ? highlight.top + highlight.height + gap
+        : spaceAbove >= Math.min(360, preferredHeight)
+          ? highlight.top - preferredHeight - gap
+          : highlight.top;
       return {
-        top: `${clamp(highlight.top, 16, Math.max(16, window.innerHeight - 420))}px`,
+        top: `${clamp(verticalTop, 16, Math.max(16, window.innerHeight - preferredHeight - 16))}px`,
         left: `${canUseRight ? rightLeft : clamp(leftLeft, 16, window.innerWidth - width - 16)}px`,
         width: `${width}px`,
-        maxHeight: 'calc(100vh - 32px)',
+        maxHeight: `${preferredHeight}px`,
       };
     }
 
@@ -195,7 +203,7 @@ export default function FloatingTutorialButton() {
       top: '50%',
       left: '50%',
       width: `${width}px`,
-      maxHeight: 'calc(100vh - 32px)',
+      maxHeight: `${typeof window === 'undefined' ? 560 : Math.min(560, window.innerHeight - 32)}px`,
       transform: 'translate(-50%, -50%)',
     };
   };
@@ -287,7 +295,7 @@ export default function FloatingTutorialButton() {
 
       {open && (
         <div
-          className="fixed z-[60] overflow-y-auto rounded-3xl border border-amber-500/25 bg-slate-950 shadow-2xl shadow-black/50"
+          className="fixed z-[60] flex flex-col overflow-hidden rounded-3xl border border-amber-500/25 bg-slate-950 shadow-2xl shadow-black/50"
           style={getPanelStyle()}
         >
           <div className="border-b border-white/10 bg-gradient-to-br from-amber-500/18 to-slate-900 px-5 py-4">
@@ -310,7 +318,8 @@ export default function FloatingTutorialButton() {
           </div>
 
           {activeTutorial && activeStep ? (
-            <div className="p-5">
+            <div className="flex min-h-0 flex-1 flex-col">
+              <div className="min-h-0 flex-1 overflow-y-auto p-5 pb-3">
               <div className="mb-4 flex items-center justify-between gap-3">
                 <span className="rounded-full bg-amber-500/15 px-3 py-1 text-xs font-black text-amber-200">
                   Step {stepIndex + 1}/{activeTutorial.steps.length}
@@ -337,8 +346,10 @@ export default function FloatingTutorialButton() {
                   ))}
                 </div>
               )}
+              </div>
 
-              <div className="mt-5 flex gap-2">
+              <div className="border-t border-white/10 bg-slate-950/95 p-5 pt-3">
+              <div className="flex gap-2">
                 <button
                   type="button"
                   onClick={goBack}
@@ -354,6 +365,7 @@ export default function FloatingTutorialButton() {
                 >
                   {stepIndex >= activeTutorial.steps.length - 1 ? 'Selesai' : 'Lanjut'}
                 </button>
+              </div>
               </div>
             </div>
           ) : (
