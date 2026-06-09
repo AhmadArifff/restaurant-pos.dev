@@ -1186,7 +1186,7 @@ const TUTORIALS = [
         selector: '[data-tour="users-header"]',
         title: 'Tim Kasir sebagai kumpulan komponen',
         body: 'React components adalah building block utama aplikasi React: bagian kecil yang mandiri dan bisa dipakai ulang, mirip Lego. Di menu Tim Kasir ini, header, tombol aksi, statistik, kalender event, filter range, tabel user, dan modal form digabung menjadi workflow manajemen tim.',
-        details: ['Halaman ini hanya untuk admin.', 'Admin bisa membuat akun kasir.', 'Admin bisa membuat jadwal shift kasir.', 'Data jadwal disimpan ke backend dan database.'],
+        details: ['Halaman ini hanya untuk admin.', 'Data akun kasir bersifat global dan bisa ditempatkan di cabang mana pun.', 'Jadwal shift mengikuti cabang aktif.', 'Satu kasir tidak bisa dijadwalkan di dua cabang pada tanggal yang sama.'],
       },
       {
         selector: '[data-tour="users-actions"]',
@@ -1197,14 +1197,14 @@ const TUTORIALS = [
       {
         selector: '[data-tour="users-stats"]',
         title: 'Statistik Tim',
-        body: 'Kartu statistik memberi ringkasan cepat jumlah user, kasir, dan shift aktif pada range filter.',
-        details: ['Total User menghitung admin dan kasir.', 'Kasir menghitung user dengan role kasir.', 'Jadwal Range menghitung shift yang statusnya terjadwal.', 'Angka berubah mengikuti data terbaru.'],
+        body: 'Kartu statistik memberi ringkasan cepat jumlah user global, kasir global, dan shift aktif pada cabang serta range filter.',
+        details: ['Total User menghitung semua admin dan kasir.', 'Kasir menghitung semua user dengan role kasir.', 'Jadwal Range menghitung shift terjadwal di cabang aktif.', 'Angka jadwal berubah mengikuti cabang dan tanggal.'],
       },
       {
         selector: '[data-tour="users-schedule-panel"]',
         title: 'Panel Jadwal Kasir',
-        body: 'Panel ini adalah pusat manajemen shift kasir berbentuk calendar event.',
-        details: ['Setiap tanggal menjadi kolom/kartu kalender.', 'Event shift tampil di dalam tanggalnya.', 'Klik + Shift di tanggal tertentu untuk membuat jadwal pada hari itu.', 'Edit dan Hapus tersedia di setiap event.'],
+        body: 'Panel ini adalah pusat penempatan shift kasir per cabang berbentuk calendar event.',
+        details: ['Setiap tanggal menjadi kolom/kartu kalender.', 'Event shift tampil untuk cabang aktif.', 'Klik + Shift di tanggal tertentu untuk membuat jadwal pada hari itu.', 'Sistem mencegah kasir yang sama ditempatkan di cabang lain pada tanggal yang sama.'],
       },
       {
         selector: '[data-tour="users-schedule-filter"]',
@@ -1242,7 +1242,7 @@ const TUTORIALS = [
         actions: ['users-open-schedule-modal'],
         title: 'Pilih Kasir',
         body: 'Dropdown ini memilih kasir yang akan dijadwalkan.',
-        details: ['Daftar diambil dari user role kasir.', 'Jika kasir belum ada, buat akun kasir dulu.', 'Satu kasir bisa punya banyak shift pada range berbeda.', 'Nama kasir akan tampil di kartu event kalender.'],
+        details: ['Daftar diambil dari semua user role kasir.', 'Jika kasir belum ada, buat akun kasir dulu.', 'Satu kasir bisa berpindah cabang di tanggal berbeda.', 'Jika tanggalnya sama, sistem menolak penempatan ganda antar cabang.'],
       },
       {
         selector: '[data-tour="users-schedule-date-field"]',
@@ -1284,7 +1284,7 @@ const TUTORIALS = [
         actions: ['users-open-schedule-modal'],
         title: 'Simpan Jadwal',
         body: 'Tombol ini menyimpan jadwal ke database lewat backend.',
-        details: ['Tutorial tidak menekan tombol ini otomatis.', 'Klik hanya jika data jadwal sudah benar.', 'Setelah sukses, kalender memuat ulang data range aktif.', 'Error tampil sebagai modal feedback produksi tanpa kode exception.'],
+        details: ['Tutorial tidak menekan tombol ini otomatis.', 'Klik hanya jika data jadwal sudah benar.', 'Setelah sukses, kalender cabang aktif memuat ulang data range aktif.', 'Jika kasir sudah punya jadwal di cabang lain pada tanggal yang sama, sistem menampilkan pesan validasi.'],
       },
       {
         selector: '[data-tour="users-table-section"]',

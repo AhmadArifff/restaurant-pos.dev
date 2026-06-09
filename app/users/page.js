@@ -107,7 +107,7 @@ export default function UsersPage() {
 
   const loadUsers = async () => {
     try {
-      const response = await getUsers({ branch_id: activeBranchId || undefined });
+      const response = await getUsers();
       setUsers(response.data || []);
     } catch {
       showFeedback('error', 'Gagal Memuat Tim', 'Data tim kasir belum bisa dimuat. Coba refresh halaman.');
@@ -225,7 +225,7 @@ export default function UsersPage() {
             <p className="text-xs font-black uppercase tracking-[0.22em] text-orange-400">Team Management</p>
             <h1 className="mt-2 text-3xl font-black text-white">Manajemen Kasir</h1>
             <p className="mt-2 text-sm text-slate-400">
-              Kelola akun kasir, role, dan jadwal kerja harian untuk <span className="font-bold text-orange-300">{activeBranchName}</span>.
+              Kelola akun kasir global, role, dan penempatan jadwal kerja per cabang.
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row" data-tour="users-actions">
@@ -267,7 +267,7 @@ export default function UsersPage() {
           <div className="rounded-2xl border border-slate-700 bg-slate-900/70 p-5">
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Total User</p>
             <p className="mt-3 text-3xl font-black text-white">{users.length}</p>
-            <p className="mt-1 text-sm text-slate-500">Admin dan kasir di cabang aktif</p>
+            <p className="mt-1 text-sm text-slate-500">Admin dan kasir global</p>
           </div>
           <div className="rounded-2xl border border-slate-700 bg-slate-900/70 p-5">
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Kasir</p>
@@ -287,7 +287,7 @@ export default function UsersPage() {
               <p className="text-xs font-black uppercase tracking-[0.22em] text-orange-400">Jadwal Kasir</p>
               <h2 className="mt-2 text-2xl font-black text-white">Calendar Event Shift</h2>
               <p className="mt-1 text-sm text-slate-400">
-                Jadwal untuk {activeBranchName}. Klik tanggal awal dan tanggal akhir dalam satu kalender untuk filter range.
+                Penempatan jadwal untuk {activeBranchName}. Satu kasir tidak bisa ditempatkan di dua cabang pada tanggal yang sama.
               </p>
             </div>
             <div className="w-full lg:w-[360px]" data-tour="users-schedule-filter">
@@ -479,6 +479,9 @@ export default function UsersPage() {
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.18em] text-orange-400">Schedule Form</p>
                 <h2 className="mt-1 text-xl font-black text-white">{editingSchedule ? 'Edit Jadwal Kasir' : 'Tambah Jadwal Kasir'}</h2>
+                <p className="mt-1 text-xs font-semibold text-slate-400">
+                  Penempatan cabang: <span className="text-orange-300">{activeBranchName}</span>
+                </p>
               </div>
               <button type="button" onClick={() => setScheduleModal(false)} className="text-2xl text-slate-500 hover:text-white" data-tour-action="users-close-schedule-modal">x</button>
             </div>
