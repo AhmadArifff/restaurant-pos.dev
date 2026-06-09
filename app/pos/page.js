@@ -866,7 +866,7 @@ export default function PosPage() {
                 </div>
               )}
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3" data-tour="pos-product-grid">
+              <div className="grid auto-rows-fr grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4" data-tour="pos-product-grid">
                 {loading
                   ? [...Array(8)].map((_, i) => <ProductSkeleton key={i} />)
                   : filtered.length === 0
@@ -888,7 +888,7 @@ export default function PosPage() {
                         : null;
 
                       return (
-                        <div key={product.id} data-tour="pos-product-card" data-soldout={soldOut ? 'true' : 'false'}>
+                        <div key={product.id} data-tour="pos-product-card" data-soldout={soldOut ? 'true' : 'false'} className="h-full">
                           <ProductCard
                             product={product}
                             inCart={inCart}

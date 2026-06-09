@@ -358,42 +358,6 @@ function CustomerOrdersTutorialDemo({ isAdmin }) {
           Pilih
         </label>
       </div>
-
-      {isAdmin && (
-        <div className="grid gap-4 lg:grid-cols-3">
-          <div className="rounded-3xl border border-slate-700 bg-slate-800 p-5" data-tour="customer-orders-demo-table-form">
-            <h2 className="text-xl font-black text-white">Tambah Meja QR Demo</h2>
-            <div className="mt-4 space-y-3">
-              <div className="rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm font-semibold text-white">03</div>
-              <div className="rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm font-semibold text-white">Meja Window</div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm font-semibold text-white">4</div>
-                <div className="rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm font-semibold text-white">Aktif</div>
-              </div>
-              <div className="rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm font-semibold text-slate-400">Dekat kasir</div>
-            </div>
-          </div>
-          <div className="rounded-3xl border border-slate-700 bg-slate-800 p-5" data-tour="customer-orders-demo-table-list">
-            <h2 className="text-xl font-black text-white">QR Meja Demo</h2>
-            <div className="mt-4 grid grid-cols-2 gap-2">
-              {['01', '02', '03', '04'].map((table) => (
-                <div key={table} className={`rounded-2xl border p-3 text-left ${table === '03' ? 'border-orange-500 bg-orange-500/15' : 'border-slate-700 bg-slate-900'}`}>
-                  <p className="text-xs text-slate-500">Meja</p>
-                  <strong className="text-lg text-white">{table}</strong>
-                  <p className="text-xs capitalize text-slate-400">active</p>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="rounded-3xl border border-slate-700 bg-slate-800 p-5" data-tour="customer-orders-demo-qr-preview">
-            <QRCodeCard value="https://restaurant-pos.dev/order/demo-token" title="Meja 03" size={150} />
-            <div className="mt-3 flex gap-2">
-              <button type="button" className="flex-1 rounded-xl bg-slate-700 px-3 py-2 text-sm font-bold text-white">Edit</button>
-              <button type="button" className="flex-1 rounded-xl bg-red-500/80 px-3 py-2 text-sm font-bold text-white">Nonaktif</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -43,7 +43,7 @@ export default function ProductCard({
     return acc;
   }, {});
 
-  const buttonClasses = `relative bg-slate-800/80 rounded-2xl text-left
+  const buttonClasses = `relative flex h-full min-h-[232px] w-full flex-col bg-slate-800/80 rounded-2xl text-left
     border overflow-hidden transition-all duration-200 group
     ${
       soldOut
@@ -121,7 +121,7 @@ export default function ProductCard({
       </div>
 
       {/* Info */}
-      <div className="p-3">
+      <div className="flex flex-1 flex-col p-3">
         <p className="text-white font-semibold text-sm leading-tight line-clamp-2 mb-1">
           {product.name}
         </p>
@@ -151,7 +151,7 @@ export default function ProductCard({
 
         {/* Admin: Expandable details */}
         {isAdmin && selectedSourceUser && !soldOut && (
-          <div className="mt-2 space-y-1">
+          <div className="mt-auto space-y-1 pt-2">
             {/* Expand Header */}
             <div
               onClick={(e) => {
