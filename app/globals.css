@@ -745,46 +745,101 @@ body {
 }
 .landing-page .campaign-bundle-items {
   display: grid;
-  gap: 0.55rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
 }
 .landing-page .campaign-bundle-item {
-  display: grid;
-  grid-template-columns: 58px minmax(0, 1fr);
-  gap: 0.75rem;
-  align-items: center;
+  position: relative;
+  display: flex;
+  min-height: 220px;
+  flex-direction: column;
+  justify-content: flex-end;
   overflow: hidden;
-  border: 1px solid rgba(76,175,80,0.22);
-  border-radius: 18px;
+  border: 1px solid rgba(201,168,76,0.28);
+  border-radius: 10px;
   background:
-    linear-gradient(135deg, rgba(76,175,80,0.12), rgba(201,168,76,0.08)),
+    radial-gradient(circle at 18% 0%, rgba(201,168,76,0.2), transparent 34%),
     rgba(13,10,6,0.42);
-  padding: 0.48rem;
+  padding: 0;
+  box-shadow: 0 20px 48px rgba(0,0,0,0.26);
+  transform-style: preserve-3d;
+  animation: campaignBundleFloat 7.2s ease-in-out infinite;
+  transition: transform 0.28s ease, border-color 0.28s ease, box-shadow 0.28s ease;
+}
+.landing-page .campaign-bundle-item:nth-child(2n) {
+  animation-delay: -1.8s;
+}
+.landing-page .campaign-bundle-item:nth-child(3n) {
+  animation-delay: -3.2s;
+}
+.landing-page .campaign-bundle-item::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background: linear-gradient(115deg, transparent 0%, rgba(201,168,76,0.16) 48%, transparent 100%);
+  transform: translateX(-85%);
+  transition: opacity 0.3s ease, transform 0.55s ease;
+  pointer-events: none;
+}
+.landing-page .campaign-bundle-item:hover {
+  border-color: rgba(201,168,76,0.68);
+  box-shadow: 0 26px 70px rgba(0,0,0,0.38), 0 0 0 1px rgba(201,168,76,0.12) inset;
+  transform: translateY(-5px) rotateX(1deg);
+}
+.landing-page .campaign-bundle-item:hover::after {
+  opacity: 1;
+  transform: translateX(85%);
 }
 .landing-page .campaign-bundle-item img {
-  width: 58px;
-  height: 58px;
-  border-radius: 14px;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   background: rgba(201,168,76,0.12);
+  transform: scale(1.02);
+  transition: transform 0.42s ease, filter 0.42s ease;
+}
+.landing-page .campaign-bundle-item:hover img {
+  filter: saturate(1.12) contrast(1.06);
+  transform: scale(1.08);
 }
 .landing-page .campaign-bundle-item div {
+  position: relative;
+  z-index: 1;
   min-width: 0;
+  margin: 0.55rem;
+  border: 1px solid rgba(201,168,76,0.12);
+  border-radius: 8px;
+  background: rgba(13,10,6,0.72);
+  padding: 0.78rem;
+  backdrop-filter: blur(10px);
 }
 .landing-page .campaign-bundle-item strong {
   display: block;
   overflow: hidden;
   color: var(--cream);
-  font-size: 0.88rem;
+  display: -webkit-box;
+  font-size: 1.02rem;
   line-height: 1.25;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  text-shadow: 0 2px 14px rgba(0,0,0,0.4);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 .landing-page .campaign-bundle-item span {
   display: block;
-  margin-top: 0.25rem;
+  margin-top: 0.34rem;
   color: #b9f6c7;
-  font-size: 0.75rem;
+  font-size: 0.77rem;
   font-weight: 900;
+}
+.landing-page .campaign-bundle-item em {
+  display: block;
+  margin-top: 0.38rem;
+  color: var(--gold-light);
+  font-style: normal;
+  font-weight: 950;
 }
 .landing-page .campaign-bundle-toggle {
   border: 1px solid rgba(201,168,76,0.28);
@@ -864,6 +919,14 @@ body {
   100% {
     left: 120%;
     opacity: 0;
+  }
+}
+@keyframes campaignBundleFloat {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) rotateX(0deg) rotateY(0deg);
+  }
+  50% {
+    transform: translate3d(0, -8px, 26px) rotateX(1deg) rotateY(-1deg);
   }
 }
 
@@ -1156,6 +1219,12 @@ body {
   }
   .landing-page .campaign-card-panel {
     padding: 0.8rem;
+  }
+  .landing-page .campaign-bundle-items {
+    grid-template-columns: 1fr;
+  }
+  .landing-page .campaign-bundle-item {
+    min-height: 210px;
   }
   .landing-page .campaign-countdown-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));

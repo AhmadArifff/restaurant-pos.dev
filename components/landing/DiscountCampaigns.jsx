@@ -33,6 +33,8 @@ const formatDiscount = (program) => {
   return `${value.toLocaleString('id-ID')}%`;
 };
 
+const formatCurrency = (value) => `Rp ${Number(value || 0).toLocaleString('id-ID')}`;
+
 const formatDate = (value) => {
   if (!value) return '';
   return new Date(value).toLocaleString('id-ID', {
@@ -403,6 +405,7 @@ export default function DiscountCampaigns() {
                             <div>
                               <strong>{item.name || `Menu #${item.product_id}`}</strong>
                               <span>{Math.max(1, Number(item.qty || 1))} pcs wajib dipesan</span>
+                              {item.price != null && <em>{formatCurrency(item.price)}</em>}
                             </div>
                           </div>
                         ))}
