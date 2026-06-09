@@ -236,57 +236,6 @@ export default function DiscountCampaigns() {
   const visibleBundleItems = isBundleExpanded
     ? orderedBundleItems
     : orderedBundleItems.slice(0, BUNDLE_PREVIEW_LIMIT);
-  const campaignVisualItems = useMemo(() => {
-    if (!activeProgram || !meta) return [];
-    if (bundleItems.length > 0) {
-      return bundleItems.map((item) => ({
-        id: item.product_id,
-        name: item.name || `Menu #${item.product_id}`,
-        price: item.price != null ? formatCurrency(item.price) : `${Math.max(1, Number(item.qty || 1))} pcs`,
-        badge: `${Math.max(1, Number(item.qty || 1))} pcs`,
-        image_url: item.image_url,
-      }));
-    }
-
-    const remainingQuota = activeProgram.total_usage_limit == null
-      ? 'Tanpa batas'
-      : `${Number(activeProgram.remaining_quota || 0).toLocaleString('id-ID')} tersisa`;
-    const timeValue = countdown?.parts
-      ? `${countdown.parts[0]?.value || '00'} ${countdown.parts[0]?.label || ''}`
-      : 'Open';
-
-    return [
-      {
-        id: 'discount',
-        name: activeProgram.type === 'voucher' && activeProgram.code ? activeProgram.code : activeProgram.name,
-        price: formatDiscount(activeProgram),
-        badge: meta.label,
-      },
-      {
-        id: 'quota',
-        name: 'Kuota Klaim',
-        price: remainingQuota,
-        badge: 'Sisa klaim',
-      },
-      {
-        id: 'timer',
-        name: countdown?.headline || 'Aktif',
-        price: timeValue,
-        badge: 'Countdown',
-      },
-      {
-        id: 'redeem',
-        name: meta.action,
-        price: activeProgram.type === 'voucher' ? (activeProgram.code || 'Voucher') : 'Self Order',
-        badge: 'Rendem',
-      },
-    ];
-  }, [activeProgram, bundleItems, countdown, meta]);
-  const campaignOrbitItems = useMemo(() => {
-    if (!campaignVisualItems.length) return [];
-    const offset = Math.floor(now / BUNDLE_ROTATE_INTERVAL) % campaignVisualItems.length;
-    return [...campaignVisualItems.slice(offset), ...campaignVisualItems.slice(0, offset)];
-  }, [campaignVisualItems, now]);
 
   useEffect(() => {
     if (activeIndex >= activePrograms.length) {
@@ -418,45 +367,6 @@ export default function DiscountCampaigns() {
                   </div>
 
                   <p className="campaign-summary">{meta.summary}</p>
-
-                  {campaignOrbitItems.length > 0 && (
-                    <div className="campaign-visual-showcase menu-3d-stage" aria-label="Preview campaign bergerak">
-                      <div className="menu-3d-orbit">
-                        {campaignOrbitItems.map((item, index) => {
-                          const positionClass = index === 0
-                            ? 'menu-3d-card-1'
-                            : index === 1
-                              ? 'menu-3d-card-2'
-                              : index === 2
-                                ? 'menu-3d-card-3'
-                                : 'menu-3d-card-3 menu-3d-card-queued';
-                          return (
-                            <div
-                              key={`${activeProgram.id}-${item.id}-visual`}
-                              className={`menu-3d-card ${positionClass}`}
-                            >
-                              {item.image_url ? (
-                                <img
-                                  alt={item.name}
-                                  src={resolveAssetUrl(item.image_url, '/images/assets/logo.png')}
-                                  loading="lazy"
-                                />
-                              ) : (
-                                <figure className="campaign-promo-face">
-                                  <span>{item.badge}</span>
-                                  <strong>{item.price}</strong>
-                                </figure>
-                              )}
-                              <div>
-                                <span>{item.name}</span>
-                                <strong>{item.price}</strong>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
 
                   <button type="button" className="campaign-btn" onClick={() => redeemProgram(activeProgram)}>
                     {meta.action}
