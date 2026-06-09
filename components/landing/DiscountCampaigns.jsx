@@ -3,9 +3,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { getActiveDiscountPrograms } from '@/lib/api';
+import { resolveAssetUrl } from '@/lib/assetUrl';
 
 const PENDING_VOUCHER_KEY = 'landing-campaign-voucher-code';
 const ROTATE_INTERVAL = 10000;
+const BUNDLE_PREVIEW_LIMIT = 3;
 
 const slideVariants = {
   enter: (direction) => ({
@@ -173,6 +175,7 @@ export default function DiscountCampaigns() {
   const [direction, setDirection] = useState(1);
   const [cycleStart, setCycleStart] = useState(Date.now());
   const [now, setNow] = useState(Date.now());
+  const [expandedBundles, setExpandedBundles] = useState({});
 
   useEffect(() => {
     let mounted = true;
@@ -263,6 +266,9 @@ export default function DiscountCampaigns() {
   const meta = activeProgram ? getTypeMeta(activeProgram.type) : null;
   const rules = activeProgram ? buildRules(activeProgram) : [];
   const countdown = activeProgram ? getCountdownState(activeProgram, now) : null;
+  const bundleItems = activeProgram?.type === 'bundle' ? (activeProgram.bundle_items || []) : [];
+  const isBundleExpanded = Boolean(expandedBundles[activeProgram?.id]);
+  const visibleBundleItems = isBundleExpanded ? bundleItems : bundleItems.slice(0, BUNDLE_PREVIEW_LIMIT);
   const progress = activePrograms.length > 1
     ? Math.min(100, Math.max(0, ((now - cycleStart) / ROTATE_INTERVAL) * 100))
     : 100;
@@ -380,13 +386,41 @@ export default function DiscountCampaigns() {
                     ))}
                   </ul>
 
-                  {activeProgram.type === 'bundle' && activeProgram.bundle_items?.length > 0 && (
+                  {activeProgram.type === 'bundle' && bundleItems.length > 0 && (
                     <div className="campaign-bundle-list">
-                      {activeProgram.bundle_items.map((item) => (
-                        <span key={`${activeProgram.id}-${item.product_id}`}>
-                          {item.name} x{Math.max(1, Number(item.qty || 1))}
-                        </span>
-                      ))}
+                      <div className="campaign-bundle-heading">
+                        <span>Menu wajib dipesan</span>
+                        <strong>{bundleItems.length} menu</strong>
+                      </div>
+                      <div className="campaign-bundle-items">
+                        {visibleBundleItems.map((item) => (
+                          <div key={`${activeProgram.id}-${item.product_id}`} className="campaign-bundle-item">
+                            <img
+                              src={resolveAssetUrl(item.image_url, '/images/assets/logo.png')}
+                              alt={item.name || `Menu #${item.product_id}`}
+                              loading="lazy"
+                            />
+                            <div>
+                              <strong>{item.name || `Menu #${item.product_id}`}</strong>
+                              <span>{Math.max(1, Number(item.qty || 1))} pcs wajib dipesan</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      {bundleItems.length > BUNDLE_PREVIEW_LIMIT && (
+                        <button
+                          type="button"
+                          className="campaign-bundle-toggle"
+                          onClick={() => setExpandedBundles((current) => ({
+                            ...current,
+                            [activeProgram.id]: !current[activeProgram.id],
+                          }))}
+                        >
+                          {isBundleExpanded
+                            ? 'Sembunyikan menu paket'
+                            : `Lihat ${bundleItems.length - BUNDLE_PREVIEW_LIMIT} menu lainnya`}
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
