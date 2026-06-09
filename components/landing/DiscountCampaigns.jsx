@@ -7,7 +7,8 @@ import { resolveAssetUrl } from '@/lib/assetUrl';
 
 const PENDING_VOUCHER_KEY = 'landing-campaign-voucher-code';
 const ROTATE_INTERVAL = 10000;
-const BUNDLE_PREVIEW_LIMIT = 3;
+const BUNDLE_PREVIEW_LIMIT = 4;
+const BUNDLE_ROTATE_INTERVAL = 3400;
 
 const slideVariants = {
   enter: (direction) => ({
@@ -178,6 +179,7 @@ export default function DiscountCampaigns() {
   const [cycleStart, setCycleStart] = useState(Date.now());
   const [now, setNow] = useState(Date.now());
   const [expandedBundles, setExpandedBundles] = useState({});
+  const [bundleCycle, setBundleCycle] = useState(0);
 
   useEffect(() => {
     let mounted = true;
@@ -204,6 +206,36 @@ export default function DiscountCampaigns() {
       .filter((program) => program?.status === 'active')
       .filter((program) => program.total_usage_limit == null || Number(program.remaining_quota || 0) > 0)
   ), [programs]);
+
+  const activeProgram = activePrograms[activeIndex] || activePrograms[0];
+  const meta = activeProgram ? getTypeMeta(activeProgram.type) : null;
+  const rules = activeProgram ? buildRules(activeProgram) : [];
+  const countdown = activeProgram ? getCountdownState(activeProgram, now) : null;
+  const bundleItems = activeProgram?.type === 'bundle' ? (activeProgram.bundle_items || []) : [];
+  const isBundleExpanded = Boolean(expandedBundles[activeProgram?.id]);
+
+  useEffect(() => {
+    setBundleCycle(0);
+  }, [activeProgram?.id]);
+
+  useEffect(() => {
+    if (activeProgram?.type !== 'bundle') return undefined;
+    if (isBundleExpanded || bundleItems.length <= BUNDLE_PREVIEW_LIMIT) return undefined;
+    const timer = window.setInterval(() => {
+      setBundleCycle((current) => current + 1);
+    }, BUNDLE_ROTATE_INTERVAL);
+    return () => window.clearInterval(timer);
+  }, [activeProgram?.id, activeProgram?.type, bundleItems.length, isBundleExpanded]);
+
+  const orderedBundleItems = useMemo(() => {
+    if (isBundleExpanded || bundleItems.length <= BUNDLE_PREVIEW_LIMIT) return bundleItems;
+    const offset = bundleCycle % bundleItems.length;
+    return [...bundleItems.slice(offset), ...bundleItems.slice(0, offset)];
+  }, [bundleItems, bundleCycle, isBundleExpanded]);
+
+  const visibleBundleItems = isBundleExpanded
+    ? orderedBundleItems
+    : orderedBundleItems.slice(0, BUNDLE_PREVIEW_LIMIT);
 
   useEffect(() => {
     if (activeIndex >= activePrograms.length) {
@@ -264,13 +296,6 @@ export default function DiscountCampaigns() {
 
   if (!loading && activePrograms.length === 0) return null;
 
-  const activeProgram = activePrograms[activeIndex] || activePrograms[0];
-  const meta = activeProgram ? getTypeMeta(activeProgram.type) : null;
-  const rules = activeProgram ? buildRules(activeProgram) : [];
-  const countdown = activeProgram ? getCountdownState(activeProgram, now) : null;
-  const bundleItems = activeProgram?.type === 'bundle' ? (activeProgram.bundle_items || []) : [];
-  const isBundleExpanded = Boolean(expandedBundles[activeProgram?.id]);
-  const visibleBundleItems = isBundleExpanded ? bundleItems : bundleItems.slice(0, BUNDLE_PREVIEW_LIMIT);
   const progress = activePrograms.length > 1
     ? Math.min(100, Math.max(0, ((now - cycleStart) / ROTATE_INTERVAL) * 100))
     : 100;
@@ -396,7 +421,16 @@ export default function DiscountCampaigns() {
                       </div>
                       <div className="campaign-bundle-items">
                         {visibleBundleItems.map((item) => (
-                          <div key={`${activeProgram.id}-${item.product_id}`} className="campaign-bundle-item">
+                          <motion.div
+                            key={`${activeProgram.id}-${item.product_id}`}
+                            layout
+                            initial={{ opacity: 0, y: 24, scale: 0.92, rotateY: -10 }}
+                            animate={{ opacity: 1, y: 0, scale: 1, rotateY: 0 }}
+                            exit={{ opacity: 0, y: -18, scale: 0.92, rotateY: 10 }}
+                            transition={{ type: 'spring', stiffness: 150, damping: 22 }}
+                            whileHover={{ y: -8, rotateX: 1.2, scale: 1.015 }}
+                            className="campaign-bundle-item"
+                          >
                             <img
                               src={resolveAssetUrl(item.image_url, '/images/assets/logo.png')}
                               alt={item.name || `Menu #${item.product_id}`}
@@ -407,7 +441,7 @@ export default function DiscountCampaigns() {
                               <span>{Math.max(1, Number(item.qty || 1))} pcs wajib dipesan</span>
                               {item.price != null && <em>{formatCurrency(item.price)}</em>}
                             </div>
-                          </div>
+                          </motion.div>
                         ))}
                       </div>
                       {bundleItems.length > BUNDLE_PREVIEW_LIMIT && (

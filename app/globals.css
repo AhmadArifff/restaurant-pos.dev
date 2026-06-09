@@ -747,11 +747,12 @@ body {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.85rem;
+  perspective: 1200px;
 }
 .landing-page .campaign-bundle-item {
   position: relative;
   display: flex;
-  min-height: 220px;
+  min-height: 230px;
   flex-direction: column;
   justify-content: flex-end;
   overflow: hidden;
@@ -772,10 +773,21 @@ body {
 .landing-page .campaign-bundle-item:nth-child(3n) {
   animation-delay: -3.2s;
 }
+.landing-page .campaign-bundle-item::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    linear-gradient(180deg, rgba(13,10,6,0.02) 0%, rgba(13,10,6,0.08) 38%, rgba(13,10,6,0.7) 100%),
+    radial-gradient(circle at 18% 12%, rgba(201,168,76,0.18), transparent 34%);
+  pointer-events: none;
+}
 .landing-page .campaign-bundle-item::after {
   content: '';
   position: absolute;
   inset: 0;
+  z-index: 2;
   opacity: 0;
   background: linear-gradient(115deg, transparent 0%, rgba(201,168,76,0.16) 48%, transparent 100%);
   transform: translateX(-85%);
@@ -799,6 +811,7 @@ body {
   object-fit: cover;
   background: rgba(201,168,76,0.12);
   transform: scale(1.02);
+  animation: campaignBundleImageBreath 8.4s ease-in-out infinite;
   transition: transform 0.42s ease, filter 0.42s ease;
 }
 .landing-page .campaign-bundle-item:hover img {
@@ -807,7 +820,7 @@ body {
 }
 .landing-page .campaign-bundle-item div {
   position: relative;
-  z-index: 1;
+  z-index: 3;
   min-width: 0;
   margin: 0.55rem;
   border: 1px solid rgba(201,168,76,0.12);
@@ -927,6 +940,16 @@ body {
   }
   50% {
     transform: translate3d(0, -8px, 26px) rotateX(1deg) rotateY(-1deg);
+  }
+}
+@keyframes campaignBundleImageBreath {
+  0%, 100% {
+    transform: scale(1.02) translate3d(0, 0, 0);
+    filter: saturate(1) contrast(1);
+  }
+  50% {
+    transform: scale(1.1) translate3d(-2%, -1.5%, 0);
+    filter: saturate(1.15) contrast(1.06);
   }
 }
 
