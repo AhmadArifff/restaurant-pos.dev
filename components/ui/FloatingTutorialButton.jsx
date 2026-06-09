@@ -1232,59 +1232,59 @@ const TUTORIALS = [
       },
       {
         selector: '[data-tour="users-schedule-modal"]',
-        actions: ['users-open-schedule-modal'],
+        actions: ['users-open-schedule-modal', 'users-demo-schedule-fill'],
         title: 'Form Jadwal Kasir',
-        body: 'Modal jadwal dipakai untuk membuat atau mengedit shift kasir.',
-        details: ['Semua field wajib operasional berada dalam satu modal.', 'Form create dan edit memakai komponen yang sama.', 'Data dikirim ke endpoint jadwal backend.', 'Tombol X menutup modal tanpa menyimpan.'],
+        body: 'Modal jadwal dipakai untuk membuat atau mengedit shift kasir. Tutorial mengisi contoh jadwal agar alurnya terlihat seperti penggunaan nyata.',
+        details: ['Semua field wajib operasional berada dalam satu modal.', 'Form create dan edit memakai komponen yang sama.', 'Demo memilih kasir tersedia, jam 09:00-17:00, status Terjadwal, dan catatan cabang aktif.', 'Tombol X menutup modal tanpa menyimpan.'],
       },
       {
         selector: '[data-tour="users-schedule-user-field"]',
-        actions: ['users-open-schedule-modal'],
+        actions: ['users-open-schedule-modal', 'users-demo-schedule-fill'],
         title: 'Pilih Kasir',
         body: 'Dropdown ini memilih kasir yang akan dijadwalkan.',
-        details: ['Daftar diambil dari semua user role kasir.', 'Kasir yang sudah ditempatkan di cabang lain pada tanggal yang sama otomatis disabled.', 'Satu kasir bisa berpindah cabang di tanggal berbeda.', 'Backend tetap memvalidasi ulang saat jadwal disimpan.'],
+        details: ['Daftar diambil dari semua user role kasir.', 'Tutorial memilih kasir pertama yang masih tersedia pada tanggal tersebut.', 'Kasir yang sudah ditempatkan di cabang lain pada tanggal yang sama otomatis disabled.', 'Backend tetap memvalidasi ulang saat jadwal disimpan.'],
       },
       {
         selector: '[data-tour="users-schedule-date-field"]',
-        actions: ['users-open-schedule-modal'],
+        actions: ['users-open-schedule-modal', 'users-demo-schedule-fill'],
         title: 'Tanggal Shift',
         body: 'Tanggal menentukan hari kerja shift tersebut.',
         details: ['Jika form dibuka dari tombol + Shift di kalender, tanggal otomatis mengikuti hari itu.', 'Tanggal tetap bisa diubah manual.', 'Saat tanggal berubah, sistem mengecek penempatan kasir di semua cabang.', 'Gunakan tanggal yang sesuai operasional cabang.'],
       },
       {
         selector: '[data-tour="users-schedule-time-field"]',
-        actions: ['users-open-schedule-modal'],
+        actions: ['users-open-schedule-modal', 'users-demo-schedule-fill'],
         title: 'Jam Mulai dan Selesai',
         body: 'Jam mulai dan selesai membentuk durasi shift kasir.',
-        details: ['Format mengikuti input time browser.', 'Jam selesai harus lebih besar dari jam mulai.', 'Durasi ini membantu admin menghindari jadwal bentrok.', 'Contoh shift umum: 09:00 sampai 17:00.'],
+        details: ['Format mengikuti input time browser.', 'Tutorial mengisi contoh 09:00 sampai 17:00.', 'Jam selesai harus lebih besar dari jam mulai.', 'Durasi ini membantu admin menghindari jadwal bentrok.'],
       },
       {
         selector: '[data-tour="users-schedule-status-field"]',
-        actions: ['users-open-schedule-modal'],
+        actions: ['users-open-schedule-modal', 'users-demo-schedule-fill'],
         title: 'Status Jadwal',
         body: 'Status membantu membedakan jadwal aktif, libur, atau sudah selesai.',
         details: ['Terjadwal berarti shift aktif untuk rencana kerja.', 'Libur bisa dipakai untuk menandai kasir tidak masuk.', 'Selesai dipakai untuk arsip shift yang sudah lewat.', 'Warna status ikut tampil di kartu kalender.'],
       },
       {
         selector: '[data-tour="users-schedule-shift-field"]',
-        actions: ['users-open-schedule-modal'],
+        actions: ['users-open-schedule-modal', 'users-demo-schedule-fill'],
         title: 'Nama Shift',
         body: 'Nama shift memberi label kerja yang mudah dipahami tim.',
-        details: ['Contoh: Shift Pagi, Shift Sore, Closing.', 'Nama ini tampil di kartu event.', 'Gunakan label singkat agar kalender tetap rapi.', 'Jika kosong, sistem memakai Shift Kasir.'],
+        details: ['Contoh demo: Shift Demo Tutorial.', 'Nama ini tampil di kartu event.', 'Gunakan label singkat agar kalender tetap rapi.', 'Jika kosong, sistem memakai Shift Kasir.'],
       },
       {
         selector: '[data-tour="users-schedule-note-field"]',
-        actions: ['users-open-schedule-modal'],
+        actions: ['users-open-schedule-modal', 'users-demo-schedule-fill'],
         title: 'Catatan Jadwal',
         body: 'Catatan dipakai untuk detail tambahan yang membantu operasional.',
         details: ['Contoh: handle POS cabang Dago.', 'Bisa dipakai untuk tugas khusus.', 'Catatan tampil ringkas di kartu event.', 'Jangan isi data sensitif yang tidak perlu.'],
       },
       {
         selector: '[data-tour="users-schedule-save-button"]',
-        actions: ['users-open-schedule-modal'],
+        actions: ['users-open-schedule-modal', 'users-demo-schedule-fill'],
         title: 'Simpan Jadwal',
         body: 'Tombol ini menyimpan jadwal ke database lewat backend.',
-        details: ['Tutorial tidak menekan tombol ini otomatis.', 'Tombol nonaktif jika kasir terpilih sudah punya penempatan pada tanggal yang sama.', 'Setelah sukses, kalender cabang aktif memuat ulang data range aktif.', 'Jika ada race condition, backend tetap menolak penempatan ganda.'],
+        details: ['Tutorial mengisi form, tetapi tidak menekan tombol ini otomatis.', 'Tombol nonaktif jika kasir terpilih sudah punya penempatan pada tanggal yang sama.', 'Setelah sukses, kalender cabang aktif memuat ulang data range aktif.', 'Jika ada race condition, backend tetap menolak penempatan ganda.'],
       },
       {
         selector: '[data-tour="users-table-section"]',
@@ -1307,45 +1307,45 @@ const TUTORIALS = [
       },
       {
         selector: '[data-tour="users-add-modal"]',
-        actions: ['users-open-user-modal'],
+        actions: ['users-open-user-modal', 'users-demo-user-fill'],
         title: 'Form Tambah Kasir',
-        body: 'Modal ini membuat user baru untuk role kasir atau admin.',
-        details: ['Nama, email, dan password wajib diisi.', 'Role menentukan akses menu setelah login.', 'Form memakai endpoint register user.', 'Setelah sukses, tabel user diperbarui.'],
+        body: 'Modal ini membuat user baru untuk role kasir atau admin. Tutorial mengisi contoh akun kasir dummy agar field dan validasinya jelas.',
+        details: ['Nama, email, dan password wajib diisi.', 'Role menentukan akses menu setelah login.', 'Demo memakai email unik berbasis waktu agar tidak bentrok.', 'Setelah sukses, tabel user diperbarui.'],
       },
       {
         selector: '[data-tour="users-form-name"]',
-        actions: ['users-open-user-modal'],
+        actions: ['users-open-user-modal', 'users-demo-user-fill'],
         title: 'Nama User',
         body: 'Field nama menjadi label user di sidebar, transaksi, jadwal, dan audit.',
         details: ['Gunakan nama asli atau nama kerja yang jelas.', 'Nama membantu admin membaca performa kasir.', 'Nama juga tampil di jadwal shift.', 'Field ini wajib diisi.'],
       },
       {
         selector: '[data-tour="users-form-email"]',
-        actions: ['users-open-user-modal'],
+        actions: ['users-open-user-modal', 'users-demo-user-fill'],
         title: 'Email Login',
         body: 'Email dipakai sebagai identitas login user.',
         details: ['Email harus unik.', 'Gunakan format email valid.', 'Jika email sudah dipakai, backend menolak simpan.', 'Hindari memakai email yang tidak bisa diakses tim.'],
       },
       {
         selector: '[data-tour="users-form-password"]',
-        actions: ['users-open-user-modal'],
+        actions: ['users-open-user-modal', 'users-demo-user-fill'],
         title: 'Password Awal',
         body: 'Password awal dipakai user untuk login pertama kali.',
         details: ['Gunakan password yang cukup kuat.', 'Berikan ke kasir lewat kanal aman.', 'Password disimpan dalam bentuk hash di backend.', 'Jangan memakai password yang sama untuk semua user produksi.'],
       },
       {
         selector: '[data-tour="users-form-role"]',
-        actions: ['users-open-user-modal'],
+        actions: ['users-open-user-modal', 'users-demo-user-fill'],
         title: 'Role User',
         body: 'Role menentukan menu apa saja yang bisa diakses user.',
         details: ['Kasir fokus pada POS dan stok kasir.', 'Admin bisa mengelola data master dan laporan.', 'Pilih role dengan hati-hati.', 'Role salah bisa membuat user melihat fitur yang tidak sesuai.'],
       },
       {
         selector: '[data-tour="users-save-button"]',
-        actions: ['users-open-user-modal'],
+        actions: ['users-open-user-modal', 'users-demo-user-fill'],
         title: 'Simpan Akun',
         body: 'Tombol ini membuat akun user baru di database.',
-        details: ['Tutorial tidak menekan tombol ini otomatis.', 'Klik setelah nama, email, password, dan role benar.', 'Setelah sukses, modal tertutup dan tabel user diperbarui.', 'Jika gagal, sistem menampilkan feedback tanpa kode error teknis.'],
+        details: ['Tutorial mengisi form, tetapi tidak menekan tombol ini otomatis.', 'Klik setelah nama, email, password, dan role benar.', 'Setelah sukses, modal tertutup dan tabel user diperbarui.', 'Jika gagal, sistem menampilkan feedback tanpa kode error teknis.'],
       },
     ],
   },
@@ -2332,6 +2332,76 @@ export default function FloatingTutorialButton() {
       }
 
       const action = actions[index];
+      if (action === 'users-open-schedule-modal' || action === 'users-open-user-modal') {
+        const modalSelector = action === 'users-open-schedule-modal'
+          ? '[data-tour="users-schedule-modal"]'
+          : '[data-tour="users-add-modal"]';
+        if (document.querySelector(modalSelector)) {
+          const timer = window.setTimeout(() => runActions(index + 1, 0), 180);
+          actionTimers.push(timer);
+          return;
+        }
+      }
+
+      if (action === 'users-demo-schedule-fill') {
+        const modal = document.querySelector('[data-tour="users-schedule-modal"]');
+        if (!modal && attempt < 24) {
+          const timer = window.setTimeout(() => runActions(index, attempt + 1), 160);
+          actionTimers.push(timer);
+          return;
+        }
+
+        if (modal) {
+          const cashierSelect = modal.querySelector('[data-tour="users-schedule-user-field"] select');
+          if (cashierSelect) {
+            const selectedOption = cashierSelect.options[cashierSelect.selectedIndex];
+            const selectedUnavailable = !cashierSelect.value || selectedOption?.disabled;
+            if (selectedUnavailable) {
+              const availableOption = Array.from(cashierSelect.options || [])
+                .find((option) => option.value && !option.disabled);
+              if (availableOption?.value) setInputValue(cashierSelect, availableOption.value);
+            }
+          }
+
+          const timeInputs = modal.querySelectorAll('[data-tour="users-schedule-time-field"] input');
+          setInputValue(timeInputs[0], '09:00');
+          setInputValue(timeInputs[1], '17:00');
+          setInputValue(modal.querySelector('[data-tour="users-schedule-status-field"] select'), 'scheduled');
+          setInputValue(modal.querySelector('[data-tour="users-schedule-shift-field"] input'), 'Shift Demo Tutorial');
+          setInputValue(
+            modal.querySelector('[data-tour="users-schedule-note-field"] textarea'),
+            'Demo penempatan kasir di cabang aktif. Jika kasir bentrok di cabang lain, opsi otomatis disabled.'
+          );
+        }
+
+        const timer = window.setTimeout(() => runActions(index + 1, 0), 520);
+        actionTimers.push(timer);
+        return;
+      }
+
+      if (action === 'users-demo-user-fill') {
+        const modal = document.querySelector('[data-tour="users-add-modal"]');
+        if (!modal && attempt < 24) {
+          const timer = window.setTimeout(() => runActions(index, attempt + 1), 160);
+          actionTimers.push(timer);
+          return;
+        }
+
+        if (modal) {
+          const suffix = new Date()
+            .toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+            .replace(/\D/g, '');
+          setInputValue(modal.querySelector('[data-tour="users-form-name"] input'), `Kasir Demo ${suffix}`);
+          setInputValue(modal.querySelector('[data-tour="users-form-email"] input'), `kasir.demo.${suffix}@sultankebab.test`);
+          setInputValue(modal.querySelector('[data-tour="users-form-password"] input'), 'demo12345');
+          setInputValue(modal.querySelector('[data-tour="users-form-role"] select'), 'kasir');
+        }
+
+        const timer = window.setTimeout(() => runActions(index + 1, 0), 520);
+        actionTimers.push(timer);
+        return;
+      }
+
       if (action === 'product-demo-basic-fill') {
         const suffix = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).replace(/\D/g, '');
         setInputValue(document.querySelector('[data-tour="product-name-field"] input'), `Produk Tutorial ${suffix}`);
