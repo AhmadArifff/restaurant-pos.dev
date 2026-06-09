@@ -1,9 +1,29 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { getActiveDiscountPrograms } from '@/lib/api';
 
 const PENDING_VOUCHER_KEY = 'landing-campaign-voucher-code';
+const ROTATE_INTERVAL = 10000;
+
+const slideVariants = {
+  enter: (direction) => ({
+    x: direction > 0 ? 90 : -90,
+    opacity: 0,
+    scale: 0.97,
+  }),
+  center: {
+    x: 0,
+    opacity: 1,
+    scale: 1,
+  },
+  exit: (direction) => ({
+    x: direction > 0 ? -90 : 90,
+    opacity: 0,
+    scale: 0.97,
+  }),
+};
 
 const formatDiscount = (program) => {
   const value = Number(program?.discount_value || 0);
@@ -64,6 +84,51 @@ const getQuotaText = (program) => {
   return `${Number(program.remaining_quota || 0).toLocaleString('id-ID')} kuota tersisa dari ${Number(program.total_usage_limit || 0).toLocaleString('id-ID')}`;
 };
 
+const getCountdownState = (program, now) => {
+  if (!program?.end_at) {
+    return {
+      headline: 'Tanpa expired',
+      note: 'Aktif sampai kuota habis atau admin menonaktifkan campaign.',
+      parts: null,
+      expired: false,
+    };
+  }
+
+  const endTime = new Date(program.end_at).getTime();
+  const diff = Math.max(0, endTime - now);
+  const totalSeconds = Math.floor(diff / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (diff <= 0) {
+    return {
+      headline: 'Waktu habis',
+      note: 'Campaign ini sedang menunggu sinkronisasi status terbaru.',
+      parts: [
+        { label: 'Hari', value: '00' },
+        { label: 'Jam', value: '00' },
+        { label: 'Menit', value: '00' },
+        { label: 'Detik', value: '00' },
+      ],
+      expired: true,
+    };
+  }
+
+  return {
+    headline: 'Berakhir dalam',
+    note: `Sampai ${formatDate(program.end_at)}`,
+    parts: [
+      { label: 'Hari', value: String(days).padStart(2, '0') },
+      { label: 'Jam', value: String(hours).padStart(2, '0') },
+      { label: 'Menit', value: String(minutes).padStart(2, '0') },
+      { label: 'Detik', value: String(seconds).padStart(2, '0') },
+    ],
+    expired: false,
+  };
+};
+
 const buildRules = (program) => {
   if (program.type === 'review_reward') {
     return [
@@ -104,6 +169,10 @@ export default function DiscountCampaigns() {
   const [programs, setPrograms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [copiedCode, setCopiedCode] = useState('');
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [direction, setDirection] = useState(1);
+  const [cycleStart, setCycleStart] = useState(Date.now());
+  const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
     let mounted = true;
@@ -120,12 +189,54 @@ export default function DiscountCampaigns() {
     };
   }, []);
 
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
   const activePrograms = useMemo(() => (
     programs
       .filter((program) => program?.status === 'active')
       .filter((program) => program.total_usage_limit == null || Number(program.remaining_quota || 0) > 0)
-      .slice(0, 6)
   ), [programs]);
+
+  useEffect(() => {
+    if (activeIndex >= activePrograms.length) {
+      setActiveIndex(0);
+      setCycleStart(Date.now());
+    }
+  }, [activeIndex, activePrograms.length]);
+
+  useEffect(() => {
+    if (activePrograms.length <= 1) return undefined;
+    const timer = window.setInterval(() => {
+      setDirection(1);
+      setActiveIndex((current) => (current + 1) % activePrograms.length);
+      setCycleStart(Date.now());
+    }, ROTATE_INTERVAL);
+    return () => window.clearInterval(timer);
+  }, [activePrograms.length]);
+
+  const goToSlide = (index) => {
+    if (index === activeIndex) return;
+    setDirection(index > activeIndex ? 1 : -1);
+    setActiveIndex(index);
+    setCycleStart(Date.now());
+  };
+
+  const goNext = () => {
+    if (activePrograms.length <= 1) return;
+    setDirection(1);
+    setActiveIndex((current) => (current + 1) % activePrograms.length);
+    setCycleStart(Date.now());
+  };
+
+  const goPrev = () => {
+    if (activePrograms.length <= 1) return;
+    setDirection(-1);
+    setActiveIndex((current) => (current - 1 + activePrograms.length) % activePrograms.length);
+    setCycleStart(Date.now());
+  };
 
   const redeemProgram = async (program) => {
     if (program?.type === 'voucher' && program.code) {
@@ -148,6 +259,14 @@ export default function DiscountCampaigns() {
 
   if (!loading && activePrograms.length === 0) return null;
 
+  const activeProgram = activePrograms[activeIndex] || activePrograms[0];
+  const meta = activeProgram ? getTypeMeta(activeProgram.type) : null;
+  const rules = activeProgram ? buildRules(activeProgram) : [];
+  const countdown = activeProgram ? getCountdownState(activeProgram, now) : null;
+  const progress = activePrograms.length > 1
+    ? Math.min(100, Math.max(0, ((now - cycleStart) / ROTATE_INTERVAL) * 100))
+    : 100;
+
   return (
     <section id="campaigns" className="campaign-section">
       <div className="campaign-header">
@@ -162,41 +281,97 @@ export default function DiscountCampaigns() {
         </p>
       </div>
 
-      <div className="campaign-grid">
-        {loading
-          ? [...Array(3)].map((_, index) => (
-              <div key={index} className="campaign-card campaign-card-loading">
-                <div />
-                <span />
-                <p />
-              </div>
-            ))
-          : activePrograms.map((program) => {
-              const meta = getTypeMeta(program.type);
-              const rules = buildRules(program);
-              return (
-                <article key={`${program.type}-${program.id}`} className={`campaign-card ${meta.accent}`}>
+      {loading ? (
+        <div className="campaign-loading-grid">
+          {[...Array(3)].map((_, index) => (
+            <div key={index} className="campaign-card campaign-card-loading">
+              <div />
+              <span />
+              <p />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="campaign-grid campaign-carousel">
+          <div className="campaign-progress" aria-hidden="true">
+            <span style={{ width: `${progress}%` }} />
+          </div>
+
+          <div className="campaign-viewport">
+            <AnimatePresence custom={direction} mode="wait">
+              <motion.article
+                key={`${activeProgram.type}-${activeProgram.id}`}
+                custom={direction}
+                variants={slideVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ duration: 0.62, ease: [0.22, 1, 0.36, 1] }}
+                drag="x"
+                dragConstraints={{ left: 0, right: 0 }}
+                dragElastic={0.18}
+                onDragEnd={(_, info) => {
+                  if (info.offset.x < -80) goNext();
+                  if (info.offset.x > 80) goPrev();
+                }}
+                className={`campaign-card campaign-slide ${meta.accent}`}
+              >
+                <div className="campaign-card-main">
                   <div className="campaign-card-top">
                     <span className="campaign-icon">{meta.icon}</span>
                     <div>
                       <span className="campaign-type">{meta.label}</span>
-                      <h3>{program.type === 'voucher' && program.code ? program.code : program.name}</h3>
+                      <h3>{activeProgram.type === 'voucher' && activeProgram.code ? activeProgram.code : activeProgram.name}</h3>
+                      {activeProgram.type === 'voucher' && activeProgram.name && (
+                        <p className="campaign-name-note">{activeProgram.name}</p>
+                      )}
                     </div>
                   </div>
 
                   <div className="campaign-discount">
-                    <strong>{formatDiscount(program)}</strong>
-                    <span>{program.discount_type === 'fixed' ? 'potongan nominal' : 'diskon'}</span>
+                    <strong>{formatDiscount(activeProgram)}</strong>
+                    <span>{activeProgram.discount_type === 'fixed' ? 'potongan nominal' : 'diskon aktif'}</span>
                   </div>
 
                   <p className="campaign-summary">{meta.summary}</p>
 
-                  <div className="campaign-info">
-                    <span>{getValidityText(program)}</span>
-                    <span>{getQuotaText(program)}</span>
-                    {Number(program.min_order_amount || 0) > 0 && (
-                      <span>Minimal order Rp {Number(program.min_order_amount || 0).toLocaleString('id-ID')}</span>
+                  <button type="button" className="campaign-btn" onClick={() => redeemProgram(activeProgram)}>
+                    {meta.action}
+                  </button>
+                  {copiedCode && copiedCode === activeProgram.code && (
+                    <p className="campaign-copy-note">
+                      Kode tersalin. Setelah pilih meja, field voucher akan otomatis terisi. Jika belum, tekan tombol Paste.
+                    </p>
+                  )}
+                </div>
+
+                <div className="campaign-card-panel">
+                  <div className={`campaign-countdown ${countdown.expired ? 'is-expired' : ''}`}>
+                    <span className="campaign-countdown-label">{countdown.headline}</span>
+                    {countdown.parts ? (
+                      <div className="campaign-countdown-grid">
+                        {countdown.parts.map((part) => (
+                          <div key={part.label} className="campaign-countdown-item">
+                            <strong>{part.value}</strong>
+                            <span>{part.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="campaign-countdown-open">
+                        <strong>OPEN</strong>
+                        <span>Sampai kuota habis</span>
+                      </div>
                     )}
+                    <p>{countdown.note}</p>
+                  </div>
+
+                  <div className="campaign-info">
+                    <span>{getQuotaText(activeProgram)}</span>
+                    {Number(activeProgram.min_order_amount || 0) > 0 && (
+                      <span>Minimal order Rp {Number(activeProgram.min_order_amount || 0).toLocaleString('id-ID')}</span>
+                    )}
+                    <span>{getValidityText(activeProgram)}</span>
                   </div>
 
                   <ul className="campaign-rules">
@@ -205,28 +380,44 @@ export default function DiscountCampaigns() {
                     ))}
                   </ul>
 
-                  {program.type === 'bundle' && program.bundle_items?.length > 0 && (
+                  {activeProgram.type === 'bundle' && activeProgram.bundle_items?.length > 0 && (
                     <div className="campaign-bundle-list">
-                      {program.bundle_items.slice(0, 4).map((item) => (
-                        <span key={`${program.id}-${item.product_id}`}>
+                      {activeProgram.bundle_items.map((item) => (
+                        <span key={`${activeProgram.id}-${item.product_id}`}>
                           {item.name} x{Math.max(1, Number(item.qty || 1))}
                         </span>
                       ))}
                     </div>
                   )}
+                </div>
+              </motion.article>
+            </AnimatePresence>
+          </div>
 
-                  <button type="button" className="campaign-btn" onClick={() => redeemProgram(program)}>
-                    {meta.action}
-                  </button>
-                  {copiedCode && copiedCode === program.code && (
-                    <p className="campaign-copy-note">
-                      Kode tersalin. Setelah pilih meja, field voucher akan otomatis terisi. Jika belum, tekan tombol Paste.
-                    </p>
-                  )}
-                </article>
-              );
-            })}
-      </div>
+          {activePrograms.length > 1 && (
+            <div className="campaign-carousel-controls">
+              <button type="button" className="campaign-nav" onClick={goPrev} aria-label="Campaign sebelumnya">
+                Prev
+              </button>
+              <div className="campaign-dots" aria-label="Pagination campaign">
+                {activePrograms.map((program, index) => (
+                  <button
+                    key={`${program.type}-${program.id}-dot`}
+                    type="button"
+                    className={`campaign-dot ${index === activeIndex ? 'is-active' : ''}`}
+                    onClick={() => goToSlide(index)}
+                    aria-label={`Tampilkan campaign ${index + 1}`}
+                    aria-current={index === activeIndex ? 'true' : undefined}
+                  />
+                ))}
+              </div>
+              <button type="button" className="campaign-nav" onClick={goNext} aria-label="Campaign berikutnya">
+                Next
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </section>
   );
 }
