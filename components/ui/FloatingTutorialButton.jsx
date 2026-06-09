@@ -504,7 +504,7 @@ const TUTORIALS = [
     id: 'products',
     title: 'Produk',
     route: '/products',
-    roles: ['admin', 'kasir'],
+    roles: ['admin'],
     description: 'Pelajari daftar menu, filter kategori, kartu stok, form gambar, kategori, resep, HPP, dan simpan produk.',
     steps: [
       {
@@ -931,7 +931,7 @@ const TUTORIALS = [
         selector: '[data-tour="pos-topbar"]',
         title: 'Kasir sebagai kumpulan komponen',
         body: 'React components adalah building block utama aplikasi React: bagian kecil yang mandiri dan bisa dipakai ulang, mirip Lego. Di menu kasir ini, topbar, filter stok, pencarian, kartu produk, keranjang, dan modal pembayaran digabung menjadi alur transaksi.',
-        details: ['Topbar membaca waktu kerja dan kasir aktif.', 'Admin dapat memilih sumber stok kasir.', 'Pencarian membantu menemukan menu cepat.', 'Pendapatan hari ini memberi ringkasan transaksi cabang aktif.'],
+        details: ['Topbar membaca waktu kerja dan kasir aktif.', 'Role kasir memakai stok miliknya sendiri, sedangkan admin bisa memilih sumber stok.', 'Pencarian membantu menemukan menu cepat.', 'Pendapatan hari ini memberi ringkasan transaksi cabang aktif.'],
       },
       {
         selector: '[data-tour="pos-clock"]',
@@ -988,7 +988,7 @@ const TUTORIALS = [
         actions: ['pos-demo-add-first-product'],
         title: 'Kartu Produk',
         body: 'Satu kartu produk adalah komponen reusable untuk satu menu.',
-        details: ['Klik kartu produk untuk menambahkan ke keranjang jika stok tersedia.', 'Tutorial mencoba menambahkan produk pertama yang stoknya tersedia.', 'Badge dalam keranjang muncul saat produk sudah dipilih.', 'Stok rendah dan habis diberi warna berbeda.', 'Admin dapat melihat detail bahan saat kartu diperluas.'],
+        details: ['Klik kartu produk untuk menambahkan ke keranjang jika stok tersedia.', 'Tutorial mencoba menambahkan produk pertama yang stoknya tersedia.', 'Badge dalam keranjang muncul saat produk sudah dipilih.', 'Stok rendah dan habis diberi warna berbeda.', 'Jika stok habis, kasir bisa masuk ke alur pengajuan stok.'],
       },
       {
         selector: '[data-tour="pos-cart"]',
@@ -1045,7 +1045,7 @@ const TUTORIALS = [
   {
     id: 'customer-orders',
     title: 'Pesanan Meja',
-    route: '/customer-orders',
+    route: '/admin/customer-orders',
     roles: ['admin', 'kasir'],
     description: 'Pelajari filter order meja, batch approve, kartu pesanan, bukti bayar, review, dan QR meja pelanggan.',
     steps: [
@@ -1053,7 +1053,7 @@ const TUTORIALS = [
         selector: '[data-tour="customer-orders-header"]',
         title: 'Pesanan Meja sebagai kumpulan komponen',
         body: 'React components adalah building block utama aplikasi React: bagian kecil yang mandiri dan bisa dipakai ulang, mirip Lego. Di menu pesanan meja ini, header, filter, batch action, kartu order, payment proof, dan QR meja digabung menjadi workflow pelayanan pelanggan.',
-        details: ['Halaman ini memantau order dari QR meja.', 'Default data berfokus pada pesanan hari ini agar load cepat.', 'Admin dan kasir bisa mengubah status sesuai alur dapur.', 'Admin juga mengelola QR meja di sidebar.'],
+        details: ['Halaman ini memantau order dari QR meja.', 'Default data berfokus pada pesanan hari ini agar load cepat.', 'Admin dan kasir bisa mengubah status sesuai alur dapur.', 'Panel QR meja hanya tampil untuk admin, sedangkan kasir fokus memproses pesanan.'],
       },
       {
         selector: '[data-tour="customer-orders-status-filters"]',
