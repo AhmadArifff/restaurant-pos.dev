@@ -36,6 +36,8 @@ const statusSteps = [
   { key: 'completed', label: 'Selesai', desc: 'Pesanan selesai. Silakan beri review.' },
 ];
 
+const PENDING_VOUCHER_KEY = 'landing-campaign-voucher-code';
+
 const formatRp = (value) => `Rp ${Number(value || 0).toLocaleString('id-ID')}`;
 
 const formatDateTime = (value) => {
@@ -453,6 +455,7 @@ export default function CustomerOrderPage() {
     const load = async () => {
       const savedOrderCode = storageKey ? localStorage.getItem(storageKey) : null;
       const savedOrderPhone = phoneStorageKey ? localStorage.getItem(phoneStorageKey) : '';
+      const pendingCampaignVoucher = String(localStorage.getItem(PENDING_VOUCHER_KEY) || '').trim().toUpperCase();
       const savedDraft = (() => {
         if (!draftStorageKey) return null;
         try {
@@ -502,10 +505,12 @@ export default function CustomerOrderPage() {
         setCart(Array.isArray(savedDraft.cart) ? savedDraft.cart.filter((item) => menuIds.has(Number(item.id))) : []);
         setCustomerName(savedDraft.customerName || '');
         setCustomerPhone(savedDraft.customerPhone || '+62');
-        setVoucherCode(savedDraft.voucherCode || '');
+        setVoucherCode(savedDraft.voucherCode || pendingCampaignVoucher || '');
         setReviewVoucherToken(savedDraft.reviewVoucherToken || '');
         setReviewVoucherValidation(savedDraft.reviewVoucherValidation || null);
         setNote(savedDraft.note || '');
+      } else if (!orderRes?.data && pendingCampaignVoucher) {
+        setVoucherCode(pendingCampaignVoucher);
       }
       if (!orderRes?.data && !savedDraftHasCart && existingSessionToken) {
         await releaseTableSession(existingSessionToken).catch(() => {});
@@ -1012,6 +1017,7 @@ export default function CustomerOrderPage() {
       if (nextOrder?.payment_method) setPaymentConfirmOrder(nextOrder);
       if (storageKey) localStorage.setItem(storageKey, nextOrder.order_code);
       if (phoneStorageKey && customerPhoneForApi) localStorage.setItem(phoneStorageKey, customerPhoneForApi);
+      localStorage.removeItem(PENDING_VOUCHER_KEY);
       if (tableSessionStorageKey) localStorage.removeItem(tableSessionStorageKey);
       if (draftStorageKey) localStorage.removeItem(draftStorageKey);
     } catch (err) {
@@ -1146,6 +1152,19 @@ export default function CustomerOrderPage() {
     }
   };
 
+  const pasteVoucherCode = async () => {
+    const fallbackCode = typeof window === 'undefined'
+      ? ''
+      : String(localStorage.getItem(PENDING_VOUCHER_KEY) || '').trim().toUpperCase();
+    try {
+      const clipboardCode = await navigator.clipboard?.readText();
+      const normalizedCode = String(clipboardCode || fallbackCode || '').trim().toUpperCase();
+      if (normalizedCode) setVoucherCode(normalizedCode);
+    } catch {
+      if (fallbackCode) setVoucherCode(fallbackCode);
+    }
+  };
+
   const renderCartPanel = (isMobile = false) => (
     <motion.div
       key={isMobile ? 'mobile-cart' : 'cart'}
@@ -1193,7 +1212,16 @@ export default function CustomerOrderPage() {
       <div className="mt-5 space-y-3">
         <input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Nama pelanggan (opsional)" className="w-full rounded-2xl border border-[#C9A84C]/20 bg-[#0D0A06] px-4 py-3 outline-none" />
         <input value={customerPhone} onChange={(e) => setCustomerPhone(formatIndonesianPhone(e.target.value))} inputMode="numeric" placeholder="+62895-3530-25503" className="w-full rounded-2xl border border-[#C9A84C]/20 bg-[#0D0A06] px-4 py-3 outline-none" />
-        <input value={voucherCode} onChange={(e) => setVoucherCode(e.target.value.toUpperCase())} placeholder="Kode vocher / voucher (opsional)" className="w-full rounded-2xl border border-[#C9A84C]/20 bg-[#0D0A06] px-4 py-3 font-bold uppercase outline-none" />
+        <div className="flex gap-2">
+          <input value={voucherCode} onChange={(e) => setVoucherCode(e.target.value.toUpperCase())} placeholder="Kode vocher / voucher (opsional)" className="min-w-0 flex-1 rounded-2xl border border-[#C9A84C]/20 bg-[#0D0A06] px-4 py-3 font-bold uppercase outline-none" />
+          <button
+            type="button"
+            onClick={pasteVoucherCode}
+            className="shrink-0 rounded-2xl border border-[#C9A84C]/25 px-4 py-3 text-xs font-black uppercase tracking-[0.12em] text-[#C9A84C]"
+          >
+            Paste
+          </button>
+        </div>
         <div className="rounded-2xl border border-[#C9A84C]/20 bg-[#0D0A06] p-3">
           <div className="flex items-start justify-between gap-3">
             <div>

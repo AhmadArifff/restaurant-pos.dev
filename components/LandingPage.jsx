@@ -6,6 +6,7 @@ import Hero from '@/components/landing/Hero';
 import Marquee from '@/components/landing/Marquee';
 import About from '@/components/landing/About';
 import Bestsellers from '@/components/landing/Bestsellers';
+import DiscountCampaigns from '@/components/landing/DiscountCampaigns';
 import MenuTabs from '@/components/landing/MenuTabs';
 import Experience from '@/components/landing/Experience';
 import Gallery from '@/components/landing/Gallery';
@@ -184,6 +185,7 @@ export default function LandingPage() {
       {sectionIsEnabled(renderedContent.marquee) && <Marquee content={renderedContent.marquee} />}
       {sectionIsEnabled(renderedContent.about) && <About content={renderedContent.about} />}
       {sectionIsEnabled(renderedContent.bestsellers) && <Bestsellers content={renderedContent.bestsellers} />}
+      <DiscountCampaigns />
       {sectionIsEnabled(renderedContent.menuTabs) && <MenuTabs content={renderedContent.menuTabs} />}
       {sectionIsEnabled(renderedContent.experience) && <Experience content={renderedContent.experience} />}
       {sectionIsEnabled(renderedContent.gallery) && <Gallery content={renderedContent.gallery} />}

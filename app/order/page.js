@@ -15,6 +15,8 @@ import {
 } from '@/lib/api';
 import QRCodeCard from '@/components/customer/QRCodeCard';
 
+const PENDING_VOUCHER_KEY = 'landing-campaign-voucher-code';
+
 const getOrderUrl = (token) => {
   if (typeof window === 'undefined') return `/order/${token}`;
   return `${window.location.origin}/order/${token}`;
@@ -42,7 +44,18 @@ export default function SelectDiningTablePage() {
   const [queueInfo, setQueueInfo] = useState(null);
   const [queueLoading, setQueueLoading] = useState(false);
   const [queueName, setQueueName] = useState('');
+  const [pendingVoucherCode, setPendingVoucherCode] = useState('');
   const queueStorageKey = selectedBranch?.id ? `customer-table-queue-${selectedBranch.id}` : '';
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const incomingVoucherCode = new URLSearchParams(window.location.search).get('voucher') || '';
+    const savedCode = incomingVoucherCode || window.localStorage.getItem(PENDING_VOUCHER_KEY) || '';
+    const normalizedCode = String(savedCode || '').trim().toUpperCase();
+    if (!normalizedCode) return;
+    window.localStorage.setItem(PENDING_VOUCHER_KEY, normalizedCode);
+    setPendingVoucherCode(normalizedCode);
+  }, []);
 
   const readSavedTableState = async (rows) => {
     if (typeof window === 'undefined') return { orders: {}, drafts: {} };
@@ -222,6 +235,15 @@ export default function SelectDiningTablePage() {
               Setiap meja punya QR unik. Pelanggan bisa membuka menu, mengirim pesanan, memantau status, lalu memberi review untuk mendapat potongan 5%.
             </p>
           </motion.div>
+
+          {pendingVoucherCode && (
+            <div className="mt-6 rounded-[1.5rem] border border-[#C9A84C]/25 bg-[#C9A84C]/10 p-4 text-sm leading-6 text-[#F5EDD8]">
+              <strong className="text-[#C9A84C]">Kode voucher {pendingVoucherCode} sudah disiapkan.</strong>
+              <span className="mt-1 block text-[#EDE0C4]/72">
+                Pilih cabang dan meja. Saat masuk keranjang, field kode voucher akan otomatis terisi. Jika browser tidak mengizinkan otomatis, tekan tombol Paste di field voucher.
+              </span>
+            </div>
+          )}
 
           <div className="mt-8">
             <p className="mb-3 text-xs font-black uppercase tracking-[0.28em] text-[#C9A84C]">Pilih Cabang</p>
