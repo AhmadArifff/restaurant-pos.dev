@@ -12,6 +12,7 @@ import {
   registerUser,
   updateCashierSchedule,
 } from '@/lib/api';
+import { useAuthStore } from '@/store/authStore';
 
 const statusOptions = [
   { value: 'scheduled', label: 'Terjadwal', className: 'border-emerald-500/25 bg-emerald-500/10 text-emerald-200' },
@@ -65,6 +66,7 @@ const emptyScheduleForm = {
 
 export default function UsersPage() {
   const todayKey = toDateKey(new Date());
+  const { user, selectedBranchId } = useAuthStore();
   const [users, setUsers] = useState([]);
   const [schedules, setSchedules] = useState([]);
   const [userModal, setUserModal] = useState(false);
@@ -82,6 +84,8 @@ export default function UsersPage() {
     start: todayKey,
     end: toDateKey(addDays(new Date(), 6)),
   });
+  const activeBranchId = selectedBranchId || user?.default_branch_id || user?.branch_id || null;
+  const activeBranchName = user?.branch_name || (activeBranchId ? `Cabang #${activeBranchId}` : 'Cabang aktif');
 
   const cashiers = useMemo(() => users.filter((user) => user.role === 'kasir'), [users]);
   const calendarDays = useMemo(() => buildDays(dateRange.start, dateRange.end), [dateRange.start, dateRange.end]);
@@ -103,7 +107,7 @@ export default function UsersPage() {
 
   const loadUsers = async () => {
     try {
-      const response = await getUsers();
+      const response = await getUsers({ branch_id: activeBranchId || undefined });
       setUsers(response.data || []);
     } catch {
       showFeedback('error', 'Gagal Memuat Tim', 'Data tim kasir belum bisa dimuat. Coba refresh halaman.');
@@ -118,6 +122,7 @@ export default function UsersPage() {
       const response = await getCashierSchedules({
         date_from: dateRange.start,
         date_to: dateRange.end || dateRange.start,
+        branch_id: activeBranchId || undefined,
       });
       setSchedules(response.data || []);
     } catch {
@@ -129,12 +134,13 @@ export default function UsersPage() {
   };
 
   useEffect(() => {
+    setPageLoading(true);
     loadUsers();
-  }, []);
+  }, [activeBranchId]);
 
   useEffect(() => {
     loadSchedules();
-  }, [dateRange.start, dateRange.end]);
+  }, [dateRange.start, dateRange.end, activeBranchId]);
 
   const openScheduleModal = (schedule = null, day = null) => {
     setEditingSchedule(schedule);
@@ -158,7 +164,7 @@ export default function UsersPage() {
     event.preventDefault();
     setLoading(true);
     try {
-      await registerUser(form);
+      await registerUser({ ...form, default_branch_id: activeBranchId || undefined, branch_id: activeBranchId || undefined });
       await loadUsers();
       setUserModal(false);
       setForm(emptyUserForm);
@@ -177,6 +183,7 @@ export default function UsersPage() {
       const payload = {
         ...scheduleForm,
         user_id: Number(scheduleForm.user_id),
+        branch_id: activeBranchId || undefined,
       };
       if (editingSchedule) {
         await updateCashierSchedule(editingSchedule.id, payload);
@@ -217,7 +224,9 @@ export default function UsersPage() {
           <div>
             <p className="text-xs font-black uppercase tracking-[0.22em] text-orange-400">Team Management</p>
             <h1 className="mt-2 text-3xl font-black text-white">Manajemen Kasir</h1>
-            <p className="mt-2 text-sm text-slate-400">Kelola akun kasir, role, cabang, dan jadwal kerja harian.</p>
+            <p className="mt-2 text-sm text-slate-400">
+              Kelola akun kasir, role, dan jadwal kerja harian untuk <span className="font-bold text-orange-300">{activeBranchName}</span>.
+            </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row" data-tour="users-actions">
             <button
@@ -258,7 +267,7 @@ export default function UsersPage() {
           <div className="rounded-2xl border border-slate-700 bg-slate-900/70 p-5">
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Total User</p>
             <p className="mt-3 text-3xl font-black text-white">{users.length}</p>
-            <p className="mt-1 text-sm text-slate-500">Admin dan kasir terdaftar</p>
+            <p className="mt-1 text-sm text-slate-500">Admin dan kasir di cabang aktif</p>
           </div>
           <div className="rounded-2xl border border-slate-700 bg-slate-900/70 p-5">
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Kasir</p>
@@ -277,7 +286,9 @@ export default function UsersPage() {
             <div>
               <p className="text-xs font-black uppercase tracking-[0.22em] text-orange-400">Jadwal Kasir</p>
               <h2 className="mt-2 text-2xl font-black text-white">Calendar Event Shift</h2>
-              <p className="mt-1 text-sm text-slate-400">Klik tanggal awal dan tanggal akhir dalam satu kalender untuk filter range.</p>
+              <p className="mt-1 text-sm text-slate-400">
+                Jadwal untuk {activeBranchName}. Klik tanggal awal dan tanggal akhir dalam satu kalender untuk filter range.
+              </p>
             </div>
             <div className="w-full lg:w-[360px]" data-tour="users-schedule-filter">
               <DateRangePicker
