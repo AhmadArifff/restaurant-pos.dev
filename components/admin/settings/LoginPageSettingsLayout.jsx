@@ -37,7 +37,7 @@ export default function LoginPageSettingsLayout() {
   return (
     <div className="h-full bg-slate-950 p-6 overflow-y-auto">
       <div className="max-w-[1500px] mx-auto">
-        <div className="mb-6">
+        <div data-tour="login-settings-header" className="mb-6">
           <h1 className="text-3xl font-bold text-cream mb-2">Login Page Settings</h1>
           <p className="text-slate-400">
             Kelola text dan gambar halaman login. Default mengikuti tampilan saat ini, lalu otomatis memakai data database jika tersedia.
@@ -59,8 +59,9 @@ export default function LoginPageSettingsLayout() {
           </div>
         )}
 
-        <div className="flex flex-wrap gap-3 mb-6">
+        <div data-tour="login-settings-actions" className="flex flex-wrap gap-3 mb-6">
           <button
+            data-tour="login-save-button"
             onClick={saveSettings}
             disabled={!isDirty || isSaving}
             className="px-4 py-2 bg-yellow-500 text-slate-950 font-semibold rounded hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
@@ -68,6 +69,7 @@ export default function LoginPageSettingsLayout() {
             {isSaving ? 'Saving...' : 'Save Changes'}
           </button>
           <button
+            data-tour="login-reset-button"
             onClick={resetSettings}
             disabled={isSaving}
             className="px-4 py-2 bg-slate-800 text-cream border border-slate-600 rounded hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
@@ -87,21 +89,27 @@ export default function LoginPageSettingsLayout() {
           )}
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-[620px_minmax(0,1fr)] gap-6">
-          <div className="bg-slate-900 rounded-lg p-6 border border-slate-800 space-y-4">
+        <div data-tour="login-settings-workspace" className="grid grid-cols-1 xl:grid-cols-[620px_minmax(0,1fr)] gap-6">
+          <div data-tour="login-settings-form-panel" className="bg-slate-900 rounded-lg p-6 border border-slate-800 space-y-4">
+            <div data-tour="login-hero-images-section">
             <AccordionSection title="Hero Images" defaultOpen>
+              <div data-tour="login-media-toggle">
               <VisibilityToggle
                 enabled={settings.media?.enabled}
                 onChange={(value) => updateNestedSetting('media.enabled', value)}
                 title="Hero images aktif"
                 description="Nonaktifkan untuk menyembunyikan background dan floating image di login page."
               />
+              </div>
+              <div data-tour="login-background-image-field">
               <ImageUpload
                 label="Background Image"
                 value={settings.media?.backgroundImage}
                 onChange={(value) => updateNestedSetting('media.backgroundImage', value)}
               />
+              </div>
 
+              <div data-tour="login-floating-images-field">
               <DynamicArray
                 label="Floating Images"
                 items={floatingImages}
@@ -143,21 +151,29 @@ export default function LoginPageSettingsLayout() {
                 )}
                 addButtonLabel="+ Add Floating Image"
               />
+              </div>
             </AccordionSection>
+            </div>
 
+            <div data-tour="login-hero-text-section">
             <AccordionSection title="Hero Text">
+              <div data-tour="login-hero-toggle">
               <VisibilityToggle
                 enabled={settings.hero?.enabled}
                 onChange={(value) => updateNestedSetting('hero.enabled', value)}
                 title="Hero text aktif"
                 description="Nonaktifkan untuk menyembunyikan badge, judul, deskripsi, dan statistik di panel kiri login page."
               />
+              </div>
+              <div data-tour="login-hero-badge-field">
               <TextInput
                 label="Badge Text"
                 value={settings.hero?.badge}
                 onChange={(value) => updateNestedSetting('hero.badge', value)}
                 maxLength={80}
               />
+              </div>
+              <div data-tour="login-hero-title-fields">
               <TextInput
                 label="Title Line 1"
                 value={settings.hero?.titleTop}
@@ -170,6 +186,8 @@ export default function LoginPageSettingsLayout() {
                 onChange={(value) => updateNestedSetting('hero.titleAccent', value)}
                 maxLength={60}
               />
+              </div>
+              <div data-tour="login-hero-description-field">
               <TextArea
                 label="Description"
                 value={settings.hero?.description}
@@ -177,7 +195,9 @@ export default function LoginPageSettingsLayout() {
                 rows={3}
                 maxLength={240}
               />
+              </div>
 
+              <div data-tour="login-hero-stats-field">
               <DynamicArray
                 label="Stats"
                 items={stats}
@@ -210,27 +230,37 @@ export default function LoginPageSettingsLayout() {
                 )}
                 addButtonLabel="+ Add Stat"
               />
+              </div>
             </AccordionSection>
+            </div>
 
+            <div data-tour="login-brand-form-section">
             <AccordionSection title="Brand & Form Text">
+              <div data-tour="login-brand-toggle">
               <VisibilityToggle
                 enabled={settings.brand?.enabled}
                 onChange={(value) => updateNestedSetting('brand.enabled', value)}
                 title="Brand header aktif"
                 description="Nonaktifkan untuk menyembunyikan logo dan nama toko di atas form login."
               />
+              </div>
+              <div data-tour="login-form-toggle">
               <VisibilityToggle
                 enabled={settings.form?.enabled}
                 onChange={(value) => updateNestedSetting('form.enabled', value)}
                 title="Form login aktif"
                 description="Nonaktifkan hanya jika halaman login sementara tidak ingin menampilkan form masuk."
               />
+              </div>
+              <div data-tour="login-brand-subtitle-field">
               <TextInput
                 label="Brand Subtitle"
                 value={settings.brand?.subtitle}
                 onChange={(value) => updateNestedSetting('brand.subtitle', value)}
                 maxLength={50}
               />
+              </div>
+              <div data-tour="login-form-title-fields">
               <TextInput
                 label="Form Title"
                 value={settings.form?.title}
@@ -243,6 +273,8 @@ export default function LoginPageSettingsLayout() {
                 onChange={(value) => updateNestedSetting('form.titleAccent', value)}
                 maxLength={40}
               />
+              </div>
+              <div data-tour="login-form-subtitle-field">
               <TextArea
                 label="Form Subtitle"
                 value={settings.form?.subtitle}
@@ -250,6 +282,8 @@ export default function LoginPageSettingsLayout() {
                 rows={2}
                 maxLength={180}
               />
+              </div>
+              <div data-tour="login-form-input-labels">
               <TextInput label="Email Label" value={settings.form?.emailLabel} onChange={(value) => updateNestedSetting('form.emailLabel', value)} maxLength={30} />
               <TextInput label="Email Placeholder" value={settings.form?.emailPlaceholder} onChange={(value) => updateNestedSetting('form.emailPlaceholder', value)} maxLength={80} />
               <TextInput label="Password Label" value={settings.form?.passwordLabel} onChange={(value) => updateNestedSetting('form.passwordLabel', value)} maxLength={30} />
@@ -260,35 +294,47 @@ export default function LoginPageSettingsLayout() {
               <TextInput label="Loading Button" value={settings.form?.loadingLabel} onChange={(value) => updateNestedSetting('form.loadingLabel', value)} maxLength={50} />
               <TextInput label="Divider Text" value={settings.form?.dividerText} onChange={(value) => updateNestedSetting('form.dividerText', value)} maxLength={50} />
               <TextInput label="Back Link Label" value={settings.form?.backLinkLabel} onChange={(value) => updateNestedSetting('form.backLinkLabel', value)} maxLength={70} />
+              </div>
             </AccordionSection>
+            </div>
 
+            <div data-tour="login-messages-footer-section">
             <AccordionSection title="Messages & Footer">
+              <div data-tour="login-footer-toggle">
               <VisibilityToggle
                 enabled={settings.footer?.enabled}
                 onChange={(value) => updateNestedSetting('footer.enabled', value)}
                 title="Footer login aktif"
                 description="Nonaktifkan untuk menyembunyikan teks footer dan versi di login page."
               />
+              </div>
+              <div data-tour="login-toast-fields">
               <TextInput label="Forgot Password Toast" value={settings.form?.forgotPasswordToast} onChange={(value) => updateNestedSetting('form.forgotPasswordToast', value)} maxLength={140} />
               <TextInput label="Success Toast" value={settings.form?.successToast} onChange={(value) => updateNestedSetting('form.successToast', value)} maxLength={100} hint="Gunakan {name} untuk nama user." />
               <TextInput label="Login Error Message" value={settings.form?.errorMessage} onChange={(value) => updateNestedSetting('form.errorMessage', value)} maxLength={120} />
+              </div>
+              <div data-tour="login-validation-fields">
               <TextInput label="Email Required" value={settings.validation?.emailRequired} onChange={(value) => updateNestedSetting('validation.emailRequired', value)} maxLength={80} />
               <TextInput label="Email Invalid" value={settings.validation?.emailInvalid} onChange={(value) => updateNestedSetting('validation.emailInvalid', value)} maxLength={80} />
               <TextInput label="Password Required" value={settings.validation?.passwordRequired} onChange={(value) => updateNestedSetting('validation.passwordRequired', value)} maxLength={80} />
               <TextInput label="Password Min Length" value={settings.validation?.passwordMinLength} onChange={(value) => updateNestedSetting('validation.passwordMinLength', value)} maxLength={80} />
+              </div>
+              <div data-tour="login-footer-fields">
               <TextInput label="Footer Text" value={settings.footer?.text} onChange={(value) => updateNestedSetting('footer.text', value)} maxLength={100} />
               <TextInput label="Footer Version" value={settings.footer?.version} onChange={(value) => updateNestedSetting('footer.version', value)} maxLength={80} />
+              </div>
             </AccordionSection>
+            </div>
           </div>
 
-          <div className="bg-slate-900 rounded-lg p-4 border border-slate-800">
+          <div data-tour="login-preview-panel" className="bg-slate-900 rounded-lg p-4 border border-slate-800">
             <div className="flex items-center justify-between mb-4 px-2">
               <h2 className="text-xl font-semibold text-cream">Login Preview</h2>
               <span className="text-xs text-slate-400">Live data preview</span>
             </div>
-            <div className="overflow-hidden rounded border border-slate-700 bg-[#0D0A06]">
+            <div data-tour="login-preview-frame" className="overflow-hidden rounded border border-slate-700 bg-[#0D0A06]">
               <div className="grid md:grid-cols-2 min-h-[620px]">
-                <div className="relative hidden md:flex flex-col justify-end p-8 overflow-hidden">
+                <div data-tour="login-preview-left-panel" className="relative hidden md:flex flex-col justify-end p-8 overflow-hidden">
                   {settings.media?.enabled !== false && settings.media?.backgroundImage && (
                     <img
                       src={settings.media.backgroundImage}
@@ -318,7 +364,7 @@ export default function LoginPageSettingsLayout() {
                   </div>
                   )}
                 </div>
-                <div className="flex items-center justify-center p-8 bg-[#1A1409]">
+                <div data-tour="login-preview-form-panel" className="flex items-center justify-center p-8 bg-[#1A1409]">
                   <div className="w-full max-w-sm">
                     {settings.brand?.enabled !== false && (
                       <p className="text-xs uppercase tracking-[0.25em] text-yellow-400 mb-2">{settings.brand?.subtitle}</p>

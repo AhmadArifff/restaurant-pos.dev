@@ -1176,6 +1176,213 @@ const TUTORIALS = [
     ],
   },
   {
+    id: 'login-page-settings',
+    title: 'Login Page',
+    route: '/admin/login-page-settings',
+    roles: ['admin'],
+    description: 'Pelajari gambar hero, floating image, teks hero, brand form login, pesan validasi, footer, preview, dan aksi simpan.',
+    steps: [
+      {
+        selector: '[data-tour="login-settings-header"]',
+        title: 'Login Page Settings sebagai kumpulan komponen',
+        body: 'React components adalah building block utama aplikasi React: bagian kecil yang mandiri dan bisa dipakai ulang, mirip Lego. Di menu login page ini, action bar, accordion form, upload gambar, input text, toggle section, dan preview digabung menjadi workflow pengaturan halaman login.',
+        details: ['Halaman ini mengatur tampilan login admin dan kasir.', 'Default mengikuti desain login saat ini.', 'Jika data database tersedia, halaman login memakai data tersebut.', 'Tutorial hanya memandu field dan tidak menyimpan otomatis.'],
+      },
+      {
+        selector: '[data-tour="login-settings-actions"]',
+        title: 'Action Bar Login Page',
+        body: 'Action bar mengontrol penyimpanan dan reset konfigurasi login page.',
+        details: ['Save Changes menyimpan perubahan ke database.', 'Reset to Default mengembalikan konfigurasi default.', 'Status unsaved memberi tahu ada draft yang belum disimpan.', 'Status saved menampilkan waktu penyimpanan terakhir.'],
+      },
+      {
+        selector: '[data-tour="login-save-button"]',
+        title: 'Save Changes',
+        body: 'Tombol ini menyimpan perubahan login page ke backend dan database.',
+        details: ['Tombol aktif saat ada perubahan.', 'Tutorial tidak menekan tombol ini.', 'Klik hanya setelah preview sudah sesuai.', 'Semua group form disimpan sebagai satu konfigurasi login page.'],
+      },
+      {
+        selector: '[data-tour="login-reset-button"]',
+        title: 'Reset to Default',
+        body: 'Reset mengembalikan konfigurasi login page ke default.',
+        details: ['Gunakan jika draft sudah terlalu jauh dari desain awal.', 'Reset tidak perlu pindah halaman.', 'Setelah reset, preview ikut berubah.', 'Pastikan tidak ada perubahan penting sebelum reset.'],
+      },
+      {
+        selector: '[data-tour="login-settings-workspace"]',
+        title: 'Workspace Login Page',
+        body: 'Workspace dibagi menjadi form settings di kiri dan live preview di kanan.',
+        details: ['Panel kiri berisi accordion untuk tiap area login.', 'Panel kanan menampilkan simulasi halaman login.', 'Perubahan form langsung terlihat di preview.', 'Layout tetap responsif pada layar kecil.'],
+      },
+      {
+        selector: '[data-tour="login-hero-images-section"]',
+        title: 'Hero Images',
+        body: 'Accordion ini mengatur visual utama halaman login.',
+        details: ['Background image mengisi panel kiri login.', 'Floating images menambahkan aksen visual makanan.', 'Toggle bisa menyembunyikan semua media login.', 'Gambar bisa upload file valid atau memakai URL asset online.'],
+      },
+      {
+        selector: '[data-tour="login-media-toggle"]',
+        title: 'Toggle Hero Images',
+        body: 'Toggle ini menentukan apakah background dan floating image tampil di halaman login.',
+        details: ['Aktif berarti media tampil di panel kiri.', 'Nonaktif menyembunyikan media visual.', 'Teks hero masih bisa tampil jika hero text aktif.', 'Gunakan saat ingin login page lebih sederhana.'],
+      },
+      {
+        selector: '[data-tour="login-background-image-field"]',
+        title: 'Background Image',
+        body: 'Field ini menentukan gambar latar panel kiri login page.',
+        details: ['Bisa upload gambar dari perangkat.', 'Bisa memakai URL online jika tersedia.', 'Preview membantu melihat rasio dan cropping.', 'Gunakan gambar terang/gelap yang tetap cocok dengan overlay.'],
+      },
+      {
+        selector: '[data-tour="login-floating-images-field"]',
+        title: 'Floating Images',
+        body: 'Floating images adalah gambar kecil dekoratif di area login.',
+        details: ['Maksimal 4 gambar.', 'Setiap item punya src dan alt text.', 'Alt text menjaga aksesibilitas.', 'Gunakan gambar produk yang bersih agar login page terasa premium.'],
+      },
+      {
+        selector: '[data-tour="login-hero-text-section"]',
+        actions: ['login-open-hero-text'],
+        title: 'Hero Text',
+        body: 'Accordion ini mengatur copywriting panel kiri login.',
+        details: ['Badge memberi konteks kecil di atas headline.', 'Title top dan accent membentuk headline utama.', 'Description menjelaskan value brand.', 'Stats menampilkan angka singkat seperti cabang atau rating.'],
+      },
+      {
+        selector: '[data-tour="login-hero-toggle"]',
+        actions: ['login-open-hero-text'],
+        title: 'Toggle Hero Text',
+        body: 'Toggle ini menentukan apakah badge, headline, deskripsi, dan statistik tampil.',
+        details: ['Aktif membuat panel kiri lebih informatif.', 'Nonaktif menyembunyikan copywriting hero.', 'Media tetap bisa tampil jika media aktif.', 'Cocok untuk mode login yang lebih minimal.'],
+      },
+      {
+        selector: '[data-tour="login-hero-badge-field"]',
+        actions: ['login-open-hero-text'],
+        title: 'Badge Text',
+        body: 'Badge adalah teks kecil yang tampil sebelum headline.',
+        details: ['Gunakan untuk tagline singkat.', 'Contoh: Authentic Middle Eastern Cuisine.', 'Maksimal 80 karakter.', 'Badge membantu memberi identitas sebelum user membaca title.'],
+      },
+      {
+        selector: '[data-tour="login-hero-title-fields"]',
+        actions: ['login-open-hero-text', 'login-demo-hero-text-fill'],
+        title: 'Title Hero',
+        body: 'Title line dan accent membentuk headline besar di panel kiri login.',
+        details: ['Title Line 1 adalah teks utama.', 'Title Accent memberi penekanan visual.', 'Tutorial mengisi contoh teks demo jika field tersedia.', 'Perubahan langsung terlihat di preview kiri.'],
+      },
+      {
+        selector: '[data-tour="login-hero-description-field"]',
+        actions: ['login-open-hero-text', 'login-demo-hero-text-fill'],
+        title: 'Description Hero',
+        body: 'Description menjelaskan pengalaman atau value toko di halaman login.',
+        details: ['Gunakan kalimat singkat dan profesional.', 'Maksimal 240 karakter.', 'Teks terlalu panjang membuat panel login padat.', 'Preview kiri membantu membaca panjang teks.'],
+      },
+      {
+        selector: '[data-tour="login-hero-stats-field"]',
+        actions: ['login-open-hero-text'],
+        title: 'Stats Hero',
+        body: 'Stats menampilkan angka singkat di panel kiri login.',
+        details: ['Maksimal 4 stat.', 'Setiap stat punya value dan label.', 'Cocok untuk jumlah cabang, rating, atau tahun pengalaman.', 'Gunakan angka yang mudah diverifikasi.'],
+      },
+      {
+        selector: '[data-tour="login-brand-form-section"]',
+        actions: ['login-open-brand-form'],
+        title: 'Brand & Form Text',
+        body: 'Accordion ini mengatur teks brand dan semua label form login.',
+        details: ['Brand header mengatur subtitle di atas form.', 'Form login mengatur judul, subtitle, label, placeholder, tombol, dan link.', 'Teks ini langsung dipakai halaman login publik.', 'Gunakan bahasa yang jelas untuk admin dan kasir.'],
+      },
+      {
+        selector: '[data-tour="login-brand-toggle"]',
+        actions: ['login-open-brand-form'],
+        title: 'Toggle Brand Header',
+        body: 'Toggle brand menentukan apakah subtitle brand tampil di atas form login.',
+        details: ['Aktif membuat login terasa branded.', 'Nonaktif menyederhanakan form.', 'Logo dan nama toko tetap berasal dari pengaturan website.', 'Subtitle membantu menjelaskan konteks dashboard.'],
+      },
+      {
+        selector: '[data-tour="login-form-toggle"]',
+        actions: ['login-open-brand-form'],
+        title: 'Toggle Form Login',
+        body: 'Toggle form menentukan apakah form masuk tampil di login page.',
+        details: ['Biasanya form harus aktif.', 'Nonaktif hanya untuk kebutuhan maintenance khusus.', 'Jika nonaktif, preview menampilkan pesan form dinonaktifkan.', 'Jangan matikan form jika user masih harus login.'],
+      },
+      {
+        selector: '[data-tour="login-brand-subtitle-field"]',
+        actions: ['login-open-brand-form'],
+        title: 'Brand Subtitle',
+        body: 'Brand subtitle adalah teks kecil di atas judul form login.',
+        details: ['Contoh: Admin Dashboard.', 'Teks ini membantu user tahu area yang dibuka.', 'Maksimal 50 karakter.', 'Gunakan label yang konsisten dengan sidebar admin.'],
+      },
+      {
+        selector: '[data-tour="login-form-title-fields"]',
+        actions: ['login-open-brand-form', 'login-demo-form-text-fill'],
+        title: 'Form Title',
+        body: 'Form title dan accent membentuk judul utama form login.',
+        details: ['Title menjelaskan aksi masuk.', 'Accent memberi penekanan visual.', 'Tutorial mengisi contoh teks demo jika field tersedia.', 'Perubahan terlihat di preview form kanan.'],
+      },
+      {
+        selector: '[data-tour="login-form-subtitle-field"]',
+        actions: ['login-open-brand-form', 'login-demo-form-text-fill'],
+        title: 'Form Subtitle',
+        body: 'Subtitle form memberi instruksi singkat sebelum user mengisi email dan password.',
+        details: ['Gunakan kalimat ramah dan jelas.', 'Maksimal 180 karakter.', 'Jangan terlalu panjang agar form tetap rapi.', 'Subtitle membantu mengurangi kebingungan user baru.'],
+      },
+      {
+        selector: '[data-tour="login-form-input-labels"]',
+        actions: ['login-open-brand-form'],
+        title: 'Label, Placeholder, dan Tombol',
+        body: 'Bagian ini mengatur semua teks kecil di form login.',
+        details: ['Email label dan placeholder memandu input email.', 'Password label dan placeholder memandu input password.', 'Remember, forgot password, submit, loading, divider, dan back link bisa disesuaikan.', 'Teks yang jelas membuat login terasa profesional.'],
+      },
+      {
+        selector: '[data-tour="login-messages-footer-section"]',
+        actions: ['login-open-messages-footer'],
+        title: 'Messages & Footer',
+        body: 'Accordion ini mengatur toast, validasi, pesan error, dan footer halaman login.',
+        details: ['Toast forgot password memberi informasi saat link lupa password diklik.', 'Success toast memakai token {name}.', 'Validation messages muncul saat input tidak valid.', 'Footer memberi teks legal dan versi aplikasi.'],
+      },
+      {
+        selector: '[data-tour="login-footer-toggle"]',
+        actions: ['login-open-messages-footer'],
+        title: 'Toggle Footer Login',
+        body: 'Toggle footer menentukan apakah teks footer dan versi tampil di bawah form.',
+        details: ['Aktif memberi konteks versi aplikasi.', 'Nonaktif menyembunyikan footer.', 'Footer membantu audit versi di production.', 'Gunakan teks singkat agar tidak memenuhi form.'],
+      },
+      {
+        selector: '[data-tour="login-toast-fields"]',
+        actions: ['login-open-messages-footer'],
+        title: 'Toast dan Error Message',
+        body: 'Field ini mengatur pesan interaksi login.',
+        details: ['Forgot Password Toast muncul saat fitur lupa password ditekan.', 'Success Toast muncul setelah login sukses.', 'Login Error Message muncul saat kredensial salah.', 'Pesan tidak boleh menampilkan exception code production.'],
+      },
+      {
+        selector: '[data-tour="login-validation-fields"]',
+        actions: ['login-open-messages-footer'],
+        title: 'Validation Messages',
+        body: 'Validation messages mengatur pesan ketika email atau password tidak valid.',
+        details: ['Email Required muncul saat email kosong.', 'Email Invalid muncul saat format email salah.', 'Password Required muncul saat password kosong.', 'Password Min Length muncul saat password kurang panjang.'],
+      },
+      {
+        selector: '[data-tour="login-footer-fields"]',
+        actions: ['login-open-messages-footer'],
+        title: 'Footer Text dan Version',
+        body: 'Footer memberi informasi kecil di bawah form login.',
+        details: ['Footer text bisa berisi copyright.', 'Footer version membantu identifikasi release.', 'Teks ini tampil hanya jika footer aktif.', 'Gunakan bahasa singkat agar login tetap bersih.'],
+      },
+      {
+        selector: '[data-tour="login-preview-panel"]',
+        title: 'Login Preview',
+        body: 'Preview kanan menampilkan simulasi halaman login berdasarkan draft settings.',
+        details: ['Preview tidak menyimpan data.', 'Gambar, teks hero, form, dan footer berubah mengikuti input.', 'Gunakan preview sebelum Save Changes.', 'Preview membantu mendeteksi gambar kosong atau teks terlalu panjang.'],
+      },
+      {
+        selector: '[data-tour="login-preview-left-panel"]',
+        title: 'Preview Panel Kiri',
+        body: 'Panel kiri preview menunjukkan background, hero copy, dan statistik.',
+        details: ['Background mengikuti Hero Images.', 'Hero text mengikuti accordion Hero Text.', 'Jika media atau hero dinonaktifkan, tampilannya menyesuaikan.', 'Bagian ini hanya terlihat pada layout desktop.'],
+      },
+      {
+        selector: '[data-tour="login-preview-form-panel"]',
+        title: 'Preview Form Login',
+        body: 'Panel kanan preview menunjukkan form login yang akan dilihat user.',
+        details: ['Brand subtitle, title, label, placeholder, dan tombol mengikuti form settings.', 'Footer muncul di bawah form jika aktif.', 'Jika form dinonaktifkan, preview memberi pesan khusus.', 'Cek bagian ini sebelum menyimpan perubahan.'],
+      },
+    ],
+  },
+  {
     id: 'landing-page-settings',
     title: 'Landing Page',
     route: '/admin/landing-page-settings',
@@ -2105,6 +2312,61 @@ export default function FloatingTutorialButton() {
           .find((button) => (button.textContent || '').trim() === targetLabel);
         periodButton?.click();
         const timer = window.setTimeout(() => runActions(index + 1, 0), 620);
+        actionTimers.push(timer);
+        return;
+      }
+
+      if (action.startsWith('login-open-')) {
+        const targetMap = {
+          'login-open-hero-text': 'login-hero-text-section',
+          'login-open-brand-form': 'login-brand-form-section',
+          'login-open-messages-footer': 'login-messages-footer-section',
+        };
+        const wrapper = document.querySelector(`[data-tour="${targetMap[action]}"]`);
+        if (!wrapper && attempt < 24) {
+          const timer = window.setTimeout(() => runActions(index, attempt + 1), 160);
+          actionTimers.push(timer);
+          return;
+        }
+        if (wrapper && !wrapper.querySelector('.accordion-content')) {
+          wrapper.querySelector('button')?.click();
+          const timer = window.setTimeout(() => runActions(index, attempt + 1), 260);
+          actionTimers.push(timer);
+          return;
+        }
+        const timer = window.setTimeout(() => runActions(index + 1, 0), 220);
+        actionTimers.push(timer);
+        return;
+      }
+
+      if (action === 'login-demo-hero-text-fill') {
+        const titleInputs = document.querySelectorAll('[data-tour="login-hero-title-fields"] input');
+        const description = document.querySelector('[data-tour="login-hero-description-field"] textarea');
+        if ((!titleInputs.length || !description) && attempt < 24) {
+          const timer = window.setTimeout(() => runActions(index, attempt + 1), 160);
+          actionTimers.push(timer);
+          return;
+        }
+        setInputValue(titleInputs[0], 'Masuk ke');
+        setInputValue(titleInputs[1], 'Sultan Kebab');
+        setInputValue(description, 'Kelola kasir, stok, pembayaran, dan laporan bisnis dari satu dashboard operasional.');
+        const timer = window.setTimeout(() => runActions(index + 1, 0), 420);
+        actionTimers.push(timer);
+        return;
+      }
+
+      if (action === 'login-demo-form-text-fill') {
+        const titleInputs = document.querySelectorAll('[data-tour="login-form-title-fields"] input');
+        const subtitle = document.querySelector('[data-tour="login-form-subtitle-field"] textarea');
+        if ((!titleInputs.length || !subtitle) && attempt < 24) {
+          const timer = window.setTimeout(() => runActions(index, attempt + 1), 160);
+          actionTimers.push(timer);
+          return;
+        }
+        setInputValue(titleInputs[0], 'Welcome');
+        setInputValue(titleInputs[1], 'Back');
+        setInputValue(subtitle, 'Masuk dengan akun admin atau kasir untuk mulai mengelola operasional.');
+        const timer = window.setTimeout(() => runActions(index + 1, 0), 420);
         actionTimers.push(timer);
         return;
       }
