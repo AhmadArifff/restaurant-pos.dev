@@ -21,6 +21,7 @@ import {
 import { useSearchParams } from 'next/navigation';
 const MONTHS = ['Jan','Feb','Mar','Apr','Mei','Jun',
                 'Jul','Agu','Sep','Okt','Nov','Des'];
+const MASTER_STOCK_PAGE_SIZE = 8;
 
 const UNIT_GROUPS = [
   { label: 'Bahan Utama',  units: ['Kilogram','Gram','Kiloan','Butir','Buah','Ikat','Lembar','Pak','Kaleng'] },
@@ -588,6 +589,8 @@ function AdminStockPage({ successModal, setSuccessModal }) {
   const [dailyLoading, setDailyLoading] = useState(false);
   const [requestsLoading, setRequestsLoading] = useState(false);
   const [trendLoading, setTrendLoading] = useState(true);
+  const [masterExpanded, setMasterExpanded] = useState(false);
+  const [masterPage, setMasterPage] = useState(0);
 
   // Gudang
   const [summary,  setSummary]  = useState([]);
@@ -726,8 +729,19 @@ function AdminStockPage({ successModal, setSuccessModal }) {
       stock_from_main: !!sum, // Track if this came from main_stock (reliable) or is pending
     };
   });
+  const masterPageCount = Math.max(1, Math.ceil(stockItemsWithSummary.length / MASTER_STOCK_PAGE_SIZE));
+  const visibleMasterItems = masterExpanded
+    ? stockItemsWithSummary
+    : stockItemsWithSummary.slice(
+        masterPage * MASTER_STOCK_PAGE_SIZE,
+        masterPage * MASTER_STOCK_PAGE_SIZE + MASTER_STOCK_PAGE_SIZE
+      );
 
   const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (masterPage >= masterPageCount) setMasterPage(0);
+  }, [masterPage, masterPageCount]);
 
   useEffect(() => {
     const fromPos     = searchParams.get('from') === 'pos';
@@ -1010,6 +1024,26 @@ function AdminStockPage({ successModal, setSuccessModal }) {
               </div>
             : (
               <div data-tour="stock-master-table" className="bg-slate-800/80 rounded-2xl border border-slate-700/60 overflow-hidden">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-700/50 bg-slate-900/35 px-4 py-3">
+                  <div>
+                    <p className="text-sm font-bold text-white">
+                      {masterExpanded ? 'Semua bahan baku' : `Bahan baku ${masterPage * MASTER_STOCK_PAGE_SIZE + 1}-${Math.min((masterPage + 1) * MASTER_STOCK_PAGE_SIZE, stockItemsWithSummary.length)}`}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {stockItemsWithSummary.length} total bahan baku tersimpan
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMasterExpanded((current) => !current);
+                      setMasterPage(0);
+                    }}
+                    className="rounded-xl border border-orange-500/30 bg-orange-500/10 px-4 py-2 text-xs font-black text-orange-300 transition-all hover:bg-orange-500/20"
+                  >
+                    {masterExpanded ? 'Hide ke 8 bahan' : 'Expand semua'}
+                  </button>
+                </div>
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
@@ -1020,8 +1054,8 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                       </tr>
                     </thead>
                     <tbody>
-                      {stockItemsWithSummary.map((item, i) => (
-                        <tr key={item.id} className={trC(i)}>
+                      {visibleMasterItems.map((item, i) => (
+                        <tr key={item.id} className={trC(masterExpanded ? i : masterPage * MASTER_STOCK_PAGE_SIZE + i)}>
                           <td className={`${tdC} text-white font-semibold`}>{item.name}</td>
                           <td className={`${tdC} text-slate-400`}>{item.unit}</td>
                           <td className={`${tdC} text-slate-400`}>{item.min_stock} {item.unit}</td>
@@ -1106,6 +1140,39 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                     </tbody>
                   </table>
                 </div>
+                {!masterExpanded && masterPageCount > 1 && (
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-700/50 bg-slate-900/35 px-4 py-3">
+                    <button
+                      type="button"
+                      onClick={() => setMasterPage((page) => (page === 0 ? masterPageCount - 1 : page - 1))}
+                      className="rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-bold text-slate-300 transition-all hover:border-orange-500/40 hover:text-white"
+                    >
+                      Sebelumnya
+                    </button>
+                    <div className="flex flex-wrap items-center justify-center gap-2">
+                      {Array.from({ length: masterPageCount }).map((_, pageIndex) => (
+                        <button
+                          key={pageIndex}
+                          type="button"
+                          onClick={() => setMasterPage(pageIndex)}
+                          aria-label={`Lihat bahan baku halaman ${pageIndex + 1}`}
+                          className={`h-2.5 rounded-full transition-all ${
+                            masterPage === pageIndex
+                              ? 'w-8 bg-orange-400 shadow-lg shadow-orange-500/30'
+                              : 'w-2.5 bg-slate-600 hover:bg-slate-400'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setMasterPage((page) => (page + 1) % masterPageCount)}
+                      className="rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-bold text-slate-300 transition-all hover:border-orange-500/40 hover:text-white"
+                    >
+                      Berikutnya
+                    </button>
+                  </div>
+                )}
               </div>
             )
           }
