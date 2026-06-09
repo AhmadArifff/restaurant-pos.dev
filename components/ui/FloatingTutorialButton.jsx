@@ -1513,6 +1513,29 @@ export default function FloatingTutorialButton() {
       element.dispatchEvent(new Event('change', { bubbles: true }));
     };
 
+    const stockTutorialDummy = {
+      masterName: 'Daging Cincang Bumbu Tutorial',
+      fallbackStockKeywords: ['Daging Cincang Bumbu', 'Daging', 'Kebab'],
+      unit: 'gram',
+      minStock: '5000',
+      purchaseQty: '2500',
+      purchaseCost: '78',
+      purchaseNote: 'Pembelian bahan demo untuk Adana Kebab Platter',
+      recipeMenuKeywords: ['Adana Kebab Platter', 'Adana', 'Kebab'],
+      recipeQty: '2',
+      manualQty: '160',
+      manualNote: 'Stok untuk Adana Kebab Platter demo tutorial',
+    };
+
+    const findOptionByText = (select, keywords = []) => {
+      if (!select) return null;
+      const options = Array.from(select.options || []).filter((option) => option.value);
+      return options.find((option) => {
+        const label = `${option.textContent || ''} ${option.value || ''}`.toLowerCase();
+        return keywords.some((keyword) => label.includes(String(keyword).toLowerCase()));
+      }) || options[0] || null;
+    };
+
     const pollTarget = (attempt = 0) => {
       if (cancelled) return;
       const found = updateHighlight();
@@ -1762,10 +1785,9 @@ export default function FloatingTutorialButton() {
       }
 
       if (action === 'stock-demo-master-fill') {
-        const suffix = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).replace(/\D/g, '');
-        setInputValue(document.querySelector('[data-tour="stock-master-name-field"] input'), `Bahan Tutorial ${suffix}`);
-        setInputValue(document.querySelector('[data-tour="stock-master-unit-field"] select'), 'gram');
-        setInputValue(document.querySelector('[data-tour="stock-master-min-field"] input'), '10');
+        setInputValue(document.querySelector('[data-tour="stock-master-name-field"] input'), stockTutorialDummy.masterName);
+        setInputValue(document.querySelector('[data-tour="stock-master-unit-field"] select'), stockTutorialDummy.unit);
+        setInputValue(document.querySelector('[data-tour="stock-master-min-field"] input'), stockTutorialDummy.minStock);
         const timer = window.setTimeout(() => runActions(index + 1, 0), 360);
         actionTimers.push(timer);
         return;
@@ -1773,14 +1795,22 @@ export default function FloatingTutorialButton() {
 
       if (action === 'stock-demo-purchase-fill') {
         const purchaseSelect = document.querySelector('[data-tour="stock-purchase-select-field"] select');
-        const firstPurchaseValue = purchaseSelect
-          ? Array.from(purchaseSelect.options).find((option) => option.value)?.value || ''
-          : '';
-        if (firstPurchaseValue) setInputValue(purchaseSelect, firstPurchaseValue);
+        if ((!purchaseSelect || !Array.from(purchaseSelect.options || []).some((option) => option.value)) && attempt < 24) {
+          const timer = window.setTimeout(() => runActions(index, attempt + 1), 160);
+          actionTimers.push(timer);
+          return;
+        }
+        const purchaseOption = findOptionByText(purchaseSelect, [
+          stockTutorialDummy.masterName,
+          ...stockTutorialDummy.fallbackStockKeywords,
+        ]);
+        if (purchaseOption?.value && purchaseSelect.value !== purchaseOption.value) {
+          setInputValue(purchaseSelect, purchaseOption.value);
+        }
         const purchaseInputs = document.querySelectorAll('[data-tour="stock-purchase-qty-cost-field"] input');
-        setInputValue(purchaseInputs[0], '10');
-        setInputValue(purchaseInputs[1], '1000');
-        setInputValue(document.querySelector('[data-tour="stock-purchase-note-field"] input'), 'Pembelian stok demo tutorial');
+        setInputValue(purchaseInputs[0], stockTutorialDummy.purchaseQty);
+        setInputValue(purchaseInputs[1], stockTutorialDummy.purchaseCost);
+        setInputValue(document.querySelector('[data-tour="stock-purchase-note-field"] input'), stockTutorialDummy.purchaseNote);
         const timer = window.setTimeout(() => runActions(index + 1, 0), 520);
         actionTimers.push(timer);
         return;
@@ -1806,11 +1836,19 @@ export default function FloatingTutorialButton() {
         }
 
         if (select) {
+          const recipeOption = findOptionByText(select, stockTutorialDummy.recipeMenuKeywords);
           const nextValue = action === 'stock-demo-recipe-clear'
             ? ''
-            : Array.from(select.options).find((option) => option.value)?.value || '';
+            : recipeOption?.value || '';
           if (select.value !== nextValue) {
             setInputValue(select, nextValue);
+          }
+        }
+
+        if (action === 'stock-demo-recipe-first') {
+          const qtyInput = document.querySelector('[data-tour="stock-recipe-menu-qty"] input');
+          if (qtyInput && qtyInput.value !== stockTutorialDummy.recipeQty) {
+            setInputValue(qtyInput, stockTutorialDummy.recipeQty);
           }
         }
 
@@ -1828,16 +1866,24 @@ export default function FloatingTutorialButton() {
         }
 
         if (select) {
-          const nextValue = Array.from(select.options).find((option) => option.value)?.value || '';
+          const manualOption = findOptionByText(select, [
+            stockTutorialDummy.masterName,
+            ...stockTutorialDummy.fallbackStockKeywords,
+          ]);
+          const nextValue = manualOption?.value || '';
           if (nextValue && select.value !== nextValue) {
             setInputValue(select, nextValue);
           }
         }
 
         const qtyInput = document.querySelector('[data-tour="stock-out-manual-qty"] input');
-        if (qtyInput && qtyInput.value !== '1') {
-          setInputValue(qtyInput, '1');
+        if (qtyInput && qtyInput.value !== stockTutorialDummy.manualQty) {
+          setInputValue(qtyInput, stockTutorialDummy.manualQty);
         }
+        setInputValue(
+          document.querySelector('[data-tour="stock-out-manual-note"] input, [data-tour="stock-out-manual-note"] textarea'),
+          stockTutorialDummy.manualNote
+        );
 
         const timer = window.setTimeout(() => runActions(index + 1, 0), 520);
         actionTimers.push(timer);
