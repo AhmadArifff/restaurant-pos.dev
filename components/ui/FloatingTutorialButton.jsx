@@ -1242,14 +1242,14 @@ const TUTORIALS = [
         actions: ['users-open-schedule-modal'],
         title: 'Pilih Kasir',
         body: 'Dropdown ini memilih kasir yang akan dijadwalkan.',
-        details: ['Daftar diambil dari semua user role kasir.', 'Jika kasir belum ada, buat akun kasir dulu.', 'Satu kasir bisa berpindah cabang di tanggal berbeda.', 'Jika tanggalnya sama, sistem menolak penempatan ganda antar cabang.'],
+        details: ['Daftar diambil dari semua user role kasir.', 'Kasir yang sudah ditempatkan di cabang lain pada tanggal yang sama otomatis disabled.', 'Satu kasir bisa berpindah cabang di tanggal berbeda.', 'Backend tetap memvalidasi ulang saat jadwal disimpan.'],
       },
       {
         selector: '[data-tour="users-schedule-date-field"]',
         actions: ['users-open-schedule-modal'],
         title: 'Tanggal Shift',
         body: 'Tanggal menentukan hari kerja shift tersebut.',
-        details: ['Jika form dibuka dari tombol + Shift di kalender, tanggal otomatis mengikuti hari itu.', 'Tanggal tetap bisa diubah manual.', 'Tanggal dipakai untuk filter range jadwal.', 'Gunakan tanggal yang sesuai operasional cabang.'],
+        details: ['Jika form dibuka dari tombol + Shift di kalender, tanggal otomatis mengikuti hari itu.', 'Tanggal tetap bisa diubah manual.', 'Saat tanggal berubah, sistem mengecek penempatan kasir di semua cabang.', 'Gunakan tanggal yang sesuai operasional cabang.'],
       },
       {
         selector: '[data-tour="users-schedule-time-field"]',
@@ -1284,7 +1284,7 @@ const TUTORIALS = [
         actions: ['users-open-schedule-modal'],
         title: 'Simpan Jadwal',
         body: 'Tombol ini menyimpan jadwal ke database lewat backend.',
-        details: ['Tutorial tidak menekan tombol ini otomatis.', 'Klik hanya jika data jadwal sudah benar.', 'Setelah sukses, kalender cabang aktif memuat ulang data range aktif.', 'Jika kasir sudah punya jadwal di cabang lain pada tanggal yang sama, sistem menampilkan pesan validasi.'],
+        details: ['Tutorial tidak menekan tombol ini otomatis.', 'Tombol nonaktif jika kasir terpilih sudah punya penempatan pada tanggal yang sama.', 'Setelah sukses, kalender cabang aktif memuat ulang data range aktif.', 'Jika ada race condition, backend tetap menolak penempatan ganda.'],
       },
       {
         selector: '[data-tour="users-table-section"]',

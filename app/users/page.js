@@ -79,6 +79,8 @@ export default function UsersPage() {
   const [scheduleSaving, setScheduleSaving] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
   const [scheduleLoading, setScheduleLoading] = useState(true);
+  const [conflictLoading, setConflictLoading] = useState(false);
+  const [scheduleConflicts, setScheduleConflicts] = useState([]);
   const [message, setMessage] = useState(null);
   const [dateRange, setDateRange] = useState({
     start: todayKey,
@@ -96,6 +98,12 @@ export default function UsersPage() {
     return acc;
   }, {}), [schedules]);
   const activeSchedules = schedules.filter((schedule) => schedule.status === 'scheduled');
+  const conflictByUser = useMemo(() => scheduleConflicts.reduce((acc, schedule) => {
+    if (editingSchedule && Number(schedule.id) === Number(editingSchedule.id)) return acc;
+    acc[Number(schedule.user_id)] = schedule;
+    return acc;
+  }, {}), [editingSchedule, scheduleConflicts]);
+  const selectedConflict = scheduleForm.user_id ? conflictByUser[Number(scheduleForm.user_id)] : null;
 
   const showFeedback = (type, title, detail) => {
     setMessage({ type, title, detail });
@@ -142,6 +150,35 @@ export default function UsersPage() {
     loadSchedules();
   }, [dateRange.start, dateRange.end, activeBranchId]);
 
+  useEffect(() => {
+    if (!scheduleModal || !scheduleForm.work_date) {
+      setScheduleConflicts([]);
+      return;
+    }
+
+    let cancelled = false;
+    const loadConflicts = async () => {
+      setConflictLoading(true);
+      try {
+        const response = await getCashierSchedules({
+          date_from: scheduleForm.work_date,
+          date_to: scheduleForm.work_date,
+          include_all_branches_for_conflict: 1,
+        });
+        if (!cancelled) setScheduleConflicts(response.data || []);
+      } catch {
+        if (!cancelled) setScheduleConflicts([]);
+      } finally {
+        if (!cancelled) setConflictLoading(false);
+      }
+    };
+
+    loadConflicts();
+    return () => {
+      cancelled = true;
+    };
+  }, [scheduleModal, scheduleForm.work_date]);
+
   const openScheduleModal = (schedule = null, day = null) => {
     setEditingSchedule(schedule);
     setScheduleForm(schedule ? {
@@ -178,6 +215,14 @@ export default function UsersPage() {
 
   const handleScheduleSubmit = async (event) => {
     event.preventDefault();
+    if (selectedConflict) {
+      showFeedback(
+        'error',
+        'Kasir Sudah Dijadwalkan',
+        `Kasir ini sudah ditempatkan di ${selectedConflict.branch_name || 'cabang lain'} pada tanggal ${formatDate(scheduleForm.work_date)}.`
+      );
+      return;
+    }
     setScheduleSaving(true);
     try {
       const payload = {
@@ -496,9 +541,31 @@ export default function UsersPage() {
                 >
                   <option value="">Pilih kasir</option>
                   {cashiers.map((cashier) => (
-                    <option key={cashier.id} value={cashier.id}>{cashier.name}</option>
+                    <option
+                      key={cashier.id}
+                      value={cashier.id}
+                      disabled={Boolean(conflictByUser[Number(cashier.id)])}
+                    >
+                      {cashier.name}
+                      {conflictByUser[Number(cashier.id)]
+                        ? ` - sudah di ${conflictByUser[Number(cashier.id)].branch_name || 'cabang lain'}`
+                        : ''}
+                    </option>
                   ))}
                 </select>
+                {conflictLoading && (
+                  <p className="mt-2 text-xs font-semibold text-sky-300">Mengecek penempatan kasir pada tanggal ini...</p>
+                )}
+                {selectedConflict && (
+                  <p className="mt-2 rounded-xl border border-red-500/25 bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-200">
+                    Kasir ini sudah ditempatkan di {selectedConflict.branch_name || 'cabang lain'} pada {formatDate(scheduleForm.work_date)}.
+                  </p>
+                )}
+                {!selectedConflict && scheduleConflicts.length > 0 && (
+                  <p className="mt-2 text-xs font-semibold text-slate-500">
+                    Beberapa kasir dinonaktifkan karena sudah punya penempatan pada tanggal ini.
+                  </p>
+                )}
               </div>
               <div data-tour="users-schedule-date-field">
                 <label className="text-sm font-semibold text-slate-400">Tanggal</label>
@@ -564,7 +631,7 @@ export default function UsersPage() {
                 <button type="button" onClick={() => setScheduleModal(false)} className="flex-1 rounded-xl bg-slate-800 py-3 text-white transition hover:bg-slate-700">
                   Batal
                 </button>
-                <button type="submit" disabled={scheduleSaving} className="flex-1 rounded-xl bg-orange-500 py-3 font-black text-white transition hover:bg-orange-600 disabled:opacity-50" data-tour="users-schedule-save-button">
+                <button type="submit" disabled={scheduleSaving || Boolean(selectedConflict)} className="flex-1 rounded-xl bg-orange-500 py-3 font-black text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50" data-tour="users-schedule-save-button">
                   {scheduleSaving ? 'Menyimpan...' : editingSchedule ? 'Update Jadwal' : 'Simpan Jadwal'}
                 </button>
               </div>
