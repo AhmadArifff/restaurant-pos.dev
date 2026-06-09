@@ -271,7 +271,7 @@ export default function ReportsPage() {
   return (
     <AdminLayout>
       <div className="max-w-7xl mx-auto space-y-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div data-tour="reports-header" className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-yellow-400 text-xs uppercase tracking-[0.22em] font-bold">Business Intelligence</p>
             <h1 className="text-white text-2xl font-bold mt-2">Laporan & Evaluasi Bisnis</h1>
@@ -280,13 +280,13 @@ export default function ReportsPage() {
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div data-tour="reports-controls" className="flex flex-wrap gap-2">
             {refreshing && (
               <span className="rounded-full border border-sky-500/25 bg-sky-500/10 px-3 py-2 text-xs font-bold text-sky-200">
                 Sinkronisasi laporan...
               </span>
             )}
-            <div className="flex rounded-lg overflow-hidden border border-slate-700 bg-slate-900">
+            <div data-tour="reports-period-toggle" className="flex rounded-lg overflow-hidden border border-slate-700 bg-slate-900">
               {['daily', 'monthly'].map((item) => (
                 <button
                   key={item}
@@ -301,16 +301,17 @@ export default function ReportsPage() {
             </div>
 
             {period === 'daily' && (
-              <select value={month} onChange={(e) => setMonth(Number(e.target.value))} className="bg-slate-900 text-white border border-slate-700 rounded-lg px-3 py-2 text-sm outline-none">
+              <select data-tour="reports-month-select" value={month} onChange={(e) => setMonth(Number(e.target.value))} className="bg-slate-900 text-white border border-slate-700 rounded-lg px-3 py-2 text-sm outline-none">
                 {MONTHS.map((item, index) => <option key={item} value={index + 1}>{item}</option>)}
               </select>
             )}
 
-            <select value={year} onChange={(e) => setYear(Number(e.target.value))} className="bg-slate-900 text-white border border-slate-700 rounded-lg px-3 py-2 text-sm outline-none">
+            <select data-tour="reports-year-select" value={year} onChange={(e) => setYear(Number(e.target.value))} className="bg-slate-900 text-white border border-slate-700 rounded-lg px-3 py-2 text-sm outline-none">
               {years.map((item) => <option key={item} value={item}>{item}</option>)}
             </select>
 
             <button
+              data-tour="reports-export-pdf"
               onClick={handleDownloadPdf}
               disabled={!analysis || pdfLoading}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold transition"
@@ -327,7 +328,7 @@ export default function ReportsPage() {
           <SectionSkeleton />
         ) : analysis ? (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-4">
+            <div data-tour="reports-summary-cards" className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-4">
               <MetricCard label="Total Omzet" value={formatCurrency(analysis.summary.revenue)} helper={analysis.range.label} />
               <MetricCard label="Gross Profit" value={formatCurrency(analysis.summary.gross_profit)} helper={`HPP ${formatCurrency(analysis.summary.hpp)}`} tone="green" />
               <MetricCard label="Margin" value={formatCurrency(analysis.summary.gross_profit)} helper={`${analysis.summary.margin_pct}% gross margin`} tone={analysis.summary.margin_pct >= 45 ? 'green' : 'red'} />
@@ -337,7 +338,7 @@ export default function ReportsPage() {
             </div>
 
             {analysis.discounts?.by_type?.length > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div data-tour="reports-discount-cards" className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {analysis.discounts.by_type.map((item) => (
                   <div key={item.type} className="rounded-lg border border-slate-800 bg-slate-900 p-4">
                     <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{item.type === 'review_reward' ? 'Reward Review' : item.type === 'voucher' ? 'Voucher' : 'Bundle'}</p>
@@ -349,7 +350,7 @@ export default function ReportsPage() {
             )}
 
             <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.45fr)_minmax(360px,0.75fr)] gap-6">
-              <div className="bg-slate-900 border border-slate-800 rounded-lg p-5">
+              <div data-tour="reports-trend-chart" className="bg-slate-900 border border-slate-800 rounded-lg p-5">
                 <div className="flex items-center justify-between mb-5">
                   <h2 className="text-white font-bold">Tren Omzet dan Margin</h2>
                   <span className="text-slate-500 text-xs">{analysis.series.length} titik data</span>
@@ -359,7 +360,7 @@ export default function ReportsPage() {
                 ) : <AnimatedLineChart rows={analysis.series} />}
               </div>
 
-              <div className="bg-slate-900 border border-slate-800 rounded-lg p-5">
+              <div data-tour="reports-insights" className="bg-slate-900 border border-slate-800 rounded-lg p-5">
                 <h2 className="text-white font-bold mb-4">Insight Evaluasi</h2>
                 <div className="space-y-3">
                   {analysis.insights.map((insight, index) => (
@@ -376,7 +377,7 @@ export default function ReportsPage() {
             </div>
 
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-              <div className="bg-slate-900 border border-slate-800 rounded-lg p-5">
+              <div data-tour="reports-best-products" className="bg-slate-900 border border-slate-800 rounded-lg p-5">
                 <h2 className="text-white font-bold mb-4">Produk Penggerak Omzet</h2>
                 <div className="space-y-4">
                   {analysis.best_products.map((product, index) => (
@@ -398,7 +399,7 @@ export default function ReportsPage() {
                 </div>
               </div>
 
-              <div className="bg-slate-900 border border-slate-800 rounded-lg p-5">
+              <div data-tour="reports-cashier-performance" className="bg-slate-900 border border-slate-800 rounded-lg p-5">
                 <h2 className="text-white font-bold mb-4">Performa Kasir</h2>
                 <div className="space-y-3">
                   {analysis.cashier_performance.map((cashier, index) => (
@@ -414,7 +415,7 @@ export default function ReportsPage() {
                 </div>
               </div>
 
-              <div className="bg-slate-900 border border-slate-800 rounded-lg p-5">
+              <div data-tour="reports-payment-mix" className="bg-slate-900 border border-slate-800 rounded-lg p-5">
                 <h2 className="text-white font-bold mb-4">Metode Pembayaran</h2>
                 <div className="space-y-4">
                   {analysis.payment_mix.map((payment) => (
@@ -435,7 +436,7 @@ export default function ReportsPage() {
             </div>
 
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-              <div className="bg-slate-900 border border-slate-800 rounded-lg p-5">
+              <div data-tour="reports-low-stock" className="bg-slate-900 border border-slate-800 rounded-lg p-5">
                 <h2 className="text-white font-bold mb-4">Risiko Stok Kritis</h2>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
@@ -462,7 +463,7 @@ export default function ReportsPage() {
                 </div>
               </div>
 
-              <div className="bg-slate-900 border border-slate-800 rounded-lg p-5">
+              <div data-tour="reports-attendance" className="bg-slate-900 border border-slate-800 rounded-lg p-5">
                 <h2 className="text-white font-bold mb-4">Aktivitas Karyawan</h2>
                 <div className="space-y-3">
                   {analysis.attendance_summary.map((staff) => (

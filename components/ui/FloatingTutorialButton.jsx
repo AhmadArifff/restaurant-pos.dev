@@ -1160,6 +1160,108 @@ const TUTORIALS = [
     ],
   },
   {
+    id: 'reports',
+    title: 'Laporan',
+    route: '/reports',
+    roles: ['admin'],
+    description: 'Pelajari filter laporan, export PDF, metrik omzet, diskon, chart, insight, produk, kasir, payment, stok kritis, dan aktivitas staf.',
+    steps: [
+      {
+        selector: '[data-tour="reports-header"]',
+        title: 'Laporan sebagai kumpulan komponen',
+        body: 'React components adalah building block utama aplikasi React: bagian kecil yang mandiri dan bisa dipakai ulang, mirip Lego. Di menu laporan ini, header, filter periode, kartu metrik, chart, insight, tabel ringkasan, dan export PDF digabung menjadi workflow evaluasi bisnis.',
+        details: ['Judul menjelaskan halaman Business Intelligence.', 'Deskripsi memberi konteks untuk admin, owner, dan investor.', 'Data laporan mengikuti cabang dan periode yang sedang aktif.', 'Tutorial memakai data yang tampil saat ini tanpa mengubah logic laporan.'],
+      },
+      {
+        selector: '[data-tour="reports-controls"]',
+        title: 'Filter dan Aksi Laporan',
+        body: 'Kontrol kanan atas menentukan periode data dan aksi export laporan.',
+        details: ['Sinkronisasi laporan muncul saat data sedang dimuat ulang.', 'Toggle Harian/Bulanan mengubah bentuk analisis.', 'Bulan dan tahun memilih periode laporan.', 'Export PDF membuat dokumen analisis bisnis dari data yang sedang tampil.'],
+      },
+      {
+        selector: '[data-tour="reports-period-toggle"]',
+        actions: ['reports-demo-daily'],
+        title: 'Mode Harian dan Bulanan',
+        body: 'Toggle ini menentukan apakah laporan membaca data harian dalam satu bulan atau rangkuman bulanan dalam satu tahun.',
+        details: ['Harian cocok untuk melihat detail per tanggal.', 'Bulanan cocok untuk evaluasi tren per bulan.', 'Perubahan mode memuat ulang data dari backend.', 'Tutorial menjaga mode valid dan tidak menyimpan perubahan ke database.'],
+      },
+      {
+        selector: '[data-tour="reports-month-select"]',
+        actions: ['reports-demo-daily'],
+        title: 'Pilih Bulan',
+        body: 'Dropdown bulan muncul saat mode Harian aktif.',
+        details: ['Bulan menentukan tanggal mana yang masuk ke chart harian.', 'Jika bulan berubah, kartu metrik dan chart ikut refresh.', 'Gunakan bulan ramai untuk membaca pola transaksi detail.', 'Dropdown ini tidak muncul pada mode Bulanan.'],
+      },
+      {
+        selector: '[data-tour="reports-year-select"]',
+        title: 'Pilih Tahun',
+        body: 'Dropdown tahun memilih tahun transaksi yang dianalisis.',
+        details: ['Daftar tahun berasal dari histori transaksi.', 'Jika hanya ada satu tahun, pilihan tetap stabil.', 'Tahun dipakai untuk mode Harian maupun Bulanan.', 'Mengubah tahun memuat ulang laporan tanpa pindah halaman.'],
+      },
+      {
+        selector: '[data-tour="reports-export-pdf"]',
+        title: 'Export PDF',
+        body: 'Tombol ini membuat file PDF laporan bisnis dari periode yang sedang dipilih.',
+        details: ['Export memakai data analisis yang sudah dimuat.', 'Tombol nonaktif jika data belum siap atau PDF sedang dibuat.', 'PDF cocok untuk owner, investor, atau arsip bulanan.', 'Tutorial tidak menekan tombol ini agar tidak otomatis mengunduh file.'],
+      },
+      {
+        selector: '[data-tour="reports-summary-cards"]',
+        title: 'Kartu Metrik Utama',
+        body: 'Kartu ini memberi ringkasan performa bisnis pada periode aktif.',
+        details: ['Total Omzet membaca pendapatan.', 'Gross Profit dan Margin membaca profit dari HPP.', 'Transaksi dan AOV membaca volume order.', 'Growth membandingkan periode sebelumnya.', 'Distribusi Diskon membaca dampak reward, voucher, dan bundle.'],
+      },
+      {
+        selector: '[data-tour="reports-discount-cards"]',
+        title: 'Distribusi Diskon per Jenis',
+        body: 'Bagian ini memecah nilai diskon berdasarkan tipe program.',
+        details: ['Reward Review menunjukkan potongan dari voucher review.', 'Voucher menunjukkan promo kode sosial media atau input kasir.', 'Bundle menunjukkan potongan paket menu.', 'Jumlah klaim membantu membaca efektivitas promo.'],
+      },
+      {
+        selector: '[data-tour="reports-trend-chart"]',
+        title: 'Tren Omzet dan Margin',
+        body: 'Chart ini memvisualkan pergerakan omzet dan margin pada periode yang dipilih.',
+        details: ['Garis kuning membaca omzet.', 'Garis hijau putus-putus membaca margin.', 'Tooltip muncul saat hover titik data.', 'Jumlah titik data mengikuti mode Harian atau Bulanan.'],
+      },
+      {
+        selector: '[data-tour="reports-insights"]',
+        title: 'Insight Evaluasi',
+        body: 'Panel insight menerjemahkan angka laporan menjadi rekomendasi operasional.',
+        details: ['Badge Sehat, Risiko, Evaluasi, dan Info membantu prioritas.', 'Insight bisa membahas profit, stok, transaksi, atau diskon.', 'Gunakan bagian ini sebagai bahan keputusan manajemen.', 'Jika tidak ada masalah besar, insight tetap memberi konteks sehat.'],
+      },
+      {
+        selector: '[data-tour="reports-best-products"]',
+        title: 'Produk Penggerak Omzet',
+        body: 'Panel ini mengurutkan produk berdasarkan performa penjualan.',
+        details: ['Nomor urut menunjukkan ranking produk.', 'Progress bar membaca dominasi jumlah terjual.', 'Revenue dan margin membantu melihat kontribusi uang.', 'Produk terlaris bisa jadi dasar stok, promo, dan bundling.'],
+      },
+      {
+        selector: '[data-tour="reports-cashier-performance"]',
+        title: 'Performa Kasir',
+        body: 'Panel ini menunjukkan kontribusi tiap kasir pada periode laporan.',
+        details: ['Nama kasir tampil bersama jumlah transaksi.', 'AOV membaca rata-rata nilai transaksi kasir.', 'Revenue menunjukkan omzet yang diproses.', 'Data ini membantu evaluasi shift dan performa tim.'],
+      },
+      {
+        selector: '[data-tour="reports-payment-mix"]',
+        title: 'Metode Pembayaran',
+        body: 'Panel payment mix membaca metode bayar yang paling banyak dipakai pelanggan.',
+        details: ['Setiap metode menampilkan jumlah transaksi.', 'Progress bar membandingkan revenue antar metode.', 'Data ini membantu mengevaluasi QRIS, transfer, dan tunai.', 'Jika metode kosong, berarti belum ada transaksi pada periode itu.'],
+      },
+      {
+        selector: '[data-tour="reports-low-stock"]',
+        title: 'Risiko Stok Kritis',
+        body: 'Tabel stok kritis menunjukkan bahan yang mendekati atau melewati minimum stok.',
+        details: ['Bahan menampilkan nama ingredient.', 'Stok membaca saldo saat ini.', 'Minimum membaca batas alert.', 'Jika semua aman, tabel menampilkan pesan stok aman.'],
+      },
+      {
+        selector: '[data-tour="reports-attendance"]',
+        actions: ['reports-demo-monthly'],
+        title: 'Aktivitas Karyawan',
+        body: 'Panel aktivitas membaca kehadiran dan jam aktif staf pada periode laporan.',
+        details: ['Hari aktif menunjukkan banyaknya hari kerja.', 'Jam aktif membantu membaca durasi operasional.', 'Data ini berguna untuk evaluasi jadwal dan produktivitas.', 'Tutorial mengubah ke mode Bulanan sebagai contoh pembacaan periode lebih besar.'],
+      },
+    ],
+  },
+  {
     id: 'pos-history',
     title: 'Riwayat POS',
     route: '/pos/history',
@@ -1780,6 +1882,16 @@ export default function FloatingTutorialButton() {
         const cancelButton = document.querySelector('[data-tour="pos-history-delete-modal-actions"] button');
         cancelButton?.click();
         const timer = window.setTimeout(() => runActions(index + 1, 0), 360);
+        actionTimers.push(timer);
+        return;
+      }
+
+      if (action === 'reports-demo-daily' || action === 'reports-demo-monthly') {
+        const targetLabel = action === 'reports-demo-daily' ? 'Harian' : 'Bulanan';
+        const periodButton = Array.from(document.querySelectorAll('[data-tour="reports-period-toggle"] button'))
+          .find((button) => (button.textContent || '').trim() === targetLabel);
+        periodButton?.click();
+        const timer = window.setTimeout(() => runActions(index + 1, 0), 620);
         actionTimers.push(timer);
         return;
       }
