@@ -73,7 +73,7 @@ export default function LandingPageSettingsLayout() {
   return (
     <div className="h-full bg-slate-950 p-6 overflow-y-auto">
       <div className="max-w-[1700px] mx-auto">
-        <div className="mb-6">
+        <div data-tour="landing-settings-header" className="mb-6">
           <h1 className="text-3xl font-bold text-cream mb-2">Landing Page Settings</h1>
           <p className="text-slate-400">Kelola semua 13 section landing page dengan preview lengkap.</p>
         </div>
@@ -93,8 +93,9 @@ export default function LandingPageSettingsLayout() {
           </div>
         )}
 
-        <div className="flex flex-wrap gap-3 mb-6">
+        <div data-tour="landing-settings-actions" className="flex flex-wrap gap-3 mb-6">
           <button
+            data-tour="landing-save-button"
             onClick={handleSave}
             disabled={!isDirty || isSaving}
             className="px-4 py-2 bg-yellow-500 text-slate-950 font-semibold rounded hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
@@ -102,6 +103,7 @@ export default function LandingPageSettingsLayout() {
             {isSaving ? 'Saving...' : 'Save Changes'}
           </button>
           <button
+            data-tour="landing-reset-button"
             onClick={resetSettings}
             disabled={!isDirty || isSaving}
             className="px-4 py-2 bg-slate-800 text-cream border border-slate-600 rounded hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
@@ -109,6 +111,7 @@ export default function LandingPageSettingsLayout() {
             Reset
           </button>
           <button
+            data-tour="landing-fullscreen-button"
             onClick={() => setIsPreviewFullscreen(true)}
             className="px-4 py-2 bg-slate-800 text-cream border border-slate-600 rounded hover:bg-slate-700 transition"
           >
@@ -127,11 +130,12 @@ export default function LandingPageSettingsLayout() {
           )}
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-[560px_minmax(0,1fr)] gap-6">
-          <div className="bg-slate-900 rounded-lg p-6 border border-slate-800">
+        <div data-tour="landing-workspace" className="grid grid-cols-1 xl:grid-cols-[560px_minmax(0,1fr)] gap-6">
+          <div data-tour="landing-section-form-panel" className="bg-slate-900 rounded-lg p-6 border border-slate-800">
             <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-700">
               <h2 className="text-xl font-semibold text-cream">Section Form</h2>
               <select
+                data-tour="landing-section-select"
                 value={expandedSection}
                 onChange={(e) => setExpandedSection(e.target.value)}
                 className="bg-slate-800 text-cream px-3 py-2 rounded border border-slate-600 text-sm"
@@ -146,36 +150,41 @@ export default function LandingPageSettingsLayout() {
 
             {SettingsComponent && (
               <div className="space-y-4">
-                <VisibilityToggle
-                  enabled={settings?.[expandedSection]?.enabled}
-                  onChange={(value) => updateNestedSetting(expandedSection, 'enabled', value)}
-                  title={`${currentSection?.title || 'Section'} aktif`}
-                  description="Nonaktifkan jika section ini tidak ingin ditampilkan di landing page dan preview publik."
-                />
-                <SettingsComponent />
+                <div data-tour="landing-visibility-toggle">
+                  <VisibilityToggle
+                    enabled={settings?.[expandedSection]?.enabled}
+                    onChange={(value) => updateNestedSetting(expandedSection, 'enabled', value)}
+                    title={`${currentSection?.title || 'Section'} aktif`}
+                    description="Nonaktifkan jika section ini tidak ingin ditampilkan di landing page dan preview publik."
+                  />
+                </div>
+                <div data-tour="landing-active-section-form" data-active-section={expandedSection}>
+                  <SettingsComponent />
+                </div>
               </div>
             )}
           </div>
 
-          <div className="bg-slate-900 rounded-lg p-4 border border-slate-800">
+          <div data-tour="landing-preview-panel" className="bg-slate-900 rounded-lg p-4 border border-slate-800">
             <div className="flex items-center justify-between mb-4 px-2">
               <h2 className="text-xl font-semibold text-cream">Full Landing Preview</h2>
               <span className="text-xs text-slate-400">
                 Highlight: {currentSection?.title || '-'}
               </span>
             </div>
-            <div className="h-[78vh] overflow-y-auto rounded border border-slate-700">
+            <div data-tour="landing-preview-frame" className="h-[78vh] overflow-y-auto rounded border border-slate-700">
               <LandingPageFullPreview settings={settings} highlightedSection={expandedSection} />
             </div>
           </div>
         </div>
 
-        <div className="mt-10 bg-slate-900 rounded-lg p-6 border border-slate-800">
+        <div data-tour="landing-all-sections" className="mt-10 bg-slate-900 rounded-lg p-6 border border-slate-800">
           <h2 className="text-xl font-semibold text-cream mb-6">All Sections</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
             {SETTINGS_SECTIONS.map((section) => (
               <button
                 key={section.id}
+                data-tour="landing-section-card"
                 onClick={() => setExpandedSection(section.id)}
                 className={`text-left px-4 py-3 rounded transition ${
                   expandedSection === section.id
@@ -202,7 +211,7 @@ export default function LandingPageSettingsLayout() {
       </div>
 
       {isPreviewFullscreen && (
-        <div className="fixed inset-0 z-[9999] bg-black/85 p-4 md:p-6">
+        <div data-tour="landing-fullscreen-modal" className="fixed inset-0 z-[9999] bg-black/85 p-4 md:p-6">
           <div className="h-full max-w-[1800px] mx-auto bg-slate-950 border border-slate-700 rounded-lg overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700">
               <h3 className="text-cream font-semibold">Landing Page Full Screen Preview</h3>

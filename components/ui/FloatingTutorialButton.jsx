@@ -1160,6 +1160,172 @@ const TUTORIALS = [
     ],
   },
   {
+    id: 'landing-page-settings',
+    title: 'Landing Page',
+    route: '/admin/landing-page-settings',
+    roles: ['admin'],
+    description: 'Pelajari section landing page, toggle tampil/nonaktif, form content, upload asset, menu tabs dari produk, preview, dan aksi simpan.',
+    steps: [
+      {
+        selector: '[data-tour="landing-settings-header"]',
+        title: 'Landing Page Settings sebagai kumpulan komponen',
+        body: 'React components adalah building block utama aplikasi React: bagian kecil yang mandiri dan bisa dipakai ulang, mirip Lego. Di menu landing page ini, header, action bar, section form, visibility toggle, preview, dan daftar section digabung menjadi workflow pengelolaan website publik.',
+        details: ['Halaman ini mengelola semua section landing page.', 'Data yang disimpan akan memengaruhi halaman publik.', 'Preview kanan membantu melihat hasil sebelum disimpan.', 'Tutorial memakai draft form dan tidak menyimpan otomatis.'],
+      },
+      {
+        selector: '[data-tour="landing-settings-actions"]',
+        title: 'Action Bar Landing Page',
+        body: 'Action bar adalah pusat kontrol perubahan landing page.',
+        details: ['Save Changes menyimpan semua draft section ke backend.', 'Reset mengembalikan draft ke data terakhir tersimpan.', 'Full Screen Preview membuka preview besar.', 'Status unsaved dan saved memberi informasi kondisi draft.'],
+      },
+      {
+        selector: '[data-tour="landing-save-button"]',
+        title: 'Save Changes',
+        body: 'Tombol ini menyimpan perubahan landing page ke database.',
+        details: ['Tombol aktif hanya jika ada perubahan.', 'Saat diklik, semua perubahan section disimpan sekaligus.', 'Tutorial tidak menekan tombol ini agar data produksi tidak berubah otomatis.', 'Gunakan setelah preview sudah sesuai.'],
+      },
+      {
+        selector: '[data-tour="landing-reset-button"]',
+        title: 'Reset Draft',
+        body: 'Reset membatalkan perubahan yang belum disimpan.',
+        details: ['Cocok dipakai jika salah mengubah konten.', 'Reset mengambil kembali data terakhir dari store.', 'Tombol nonaktif saat tidak ada perubahan.', 'Gunakan dengan hati-hati karena draft lokal hilang.'],
+      },
+      {
+        selector: '[data-tour="landing-fullscreen-button"]',
+        title: 'Full Screen Preview',
+        body: 'Tombol ini membuka preview landing page dalam layar penuh.',
+        details: ['Berguna untuk cek komposisi seperti halaman publik.', 'Preview tetap memakai draft yang sedang diedit.', 'Gunakan untuk cek section panjang seperti menu, gallery, dan testimonials.', 'Tutup preview untuk kembali ke form.'],
+      },
+      {
+        selector: '[data-tour="landing-workspace"]',
+        title: 'Workspace Dua Panel',
+        body: 'Workspace dibagi menjadi form section di kiri dan preview landing page di kanan.',
+        details: ['Panel kiri dipakai untuk mengedit data.', 'Panel kanan memperlihatkan hasil visual.', 'Layout responsif menjadi satu kolom di layar kecil.', 'Perubahan form langsung tercermin di preview.'],
+      },
+      {
+        selector: '[data-tour="landing-section-select"]',
+        title: 'Pilih Section',
+        body: 'Dropdown ini menentukan section mana yang sedang diedit.',
+        details: ['Ada 13 section seperti Header, Hero, Menu Tabs, CTA, dan Footer.', 'Saat section berubah, form dan highlight preview ikut berubah.', 'Gunakan dropdown untuk kerja cepat tanpa scroll ke daftar section.', 'Tutorial akan berpindah ke beberapa section contoh.'],
+      },
+      {
+        selector: '[data-tour="landing-visibility-toggle"]',
+        title: 'Toggle Tampil atau Nonaktif',
+        body: 'Toggle ini mengatur apakah section aktif tampil di landing page publik.',
+        details: ['Aktif tampil berarti section muncul di preview dan halaman publik.', 'Nonaktif disembunyikan berarti section tidak dirender.', 'Cocok untuk menunda campaign atau section yang belum siap.', 'Status juga terlihat di daftar All Sections.'],
+      },
+      {
+        selector: '[data-tour="landing-active-section-form"]',
+        actions: ['landing-select-hero'],
+        title: 'Form Section Aktif',
+        body: 'Form section berisi field yang spesifik untuk section yang dipilih.',
+        details: ['Hero punya background, title, subtitle, tombol, dan statistik.', 'Gallery punya daftar gambar.', 'Testimonials punya review dan avatar.', 'Setiap form memakai komponen input yang reusable.'],
+      },
+      {
+        selector: '[data-tour="landing-preview-panel"]',
+        title: 'Panel Preview',
+        body: 'Preview kanan menampilkan landing page lengkap berdasarkan draft saat ini.',
+        details: ['Section aktif diberi highlight agar mudah dicocokkan dengan form.', 'Preview membantu mendeteksi gambar kosong atau layout berantakan.', 'Scroll preview untuk mengecek section bawah.', 'Preview tidak menyimpan data, hanya menampilkan draft.'],
+      },
+      {
+        selector: '[data-tour="landing-preview-frame"]',
+        title: 'Frame Landing Page',
+        body: 'Frame ini adalah area scroll landing page publik di dalam admin.',
+        details: ['Header, hero, menu, experience, gallery, testimonials, CTA, dan footer tampil di sini.', 'Jika section nonaktif, preview menampilkan status nonaktif atau menyembunyikan section sesuai logic.', 'Gunakan frame ini sebelum klik Save Changes.', 'Frame membantu cek asset online dan upload Supabase.'],
+      },
+      {
+        selector: '[data-tour="landing-menu-tabs-content"]',
+        actions: ['landing-select-menuTabs'],
+        title: 'Menu Tabs Section Content',
+        body: 'Bagian ini mengatur judul dan deskripsi section menu di landing page.',
+        details: ['Section Label menjadi label kecil di atas title.', 'Title dan Highlight membentuk heading utama.', 'Description menjelaskan katalog menu.', 'Konten ini tampil di section Menu Lengkap pada landing page.'],
+      },
+      {
+        selector: '[data-tour="landing-menu-tabs-categories"]',
+        actions: ['landing-select-menuTabs'],
+        title: 'Categories & Items Menu Tabs',
+        body: 'Bagian ini menghubungkan kategori landing page dengan data kategori dan produk.',
+        details: ['Category ID adalah ID internal landing page.', 'Category Label bisa di-load dari data kategori produk.', 'Items bisa otomatis terisi dari produk sesuai kategori.', 'Alur ini menjaga menu landing page selaras dengan menu produk.'],
+      },
+      {
+        selector: '[data-tour="landing-menu-tabs-category-id"]',
+        actions: ['landing-select-menuTabs'],
+        title: 'Category ID',
+        body: 'Category ID adalah identifier untuk tab menu di landing page.',
+        details: ['Isi ID singkat dan stabil seperti kebab atau drinks.', 'ID dipakai untuk tab aktif dan mapping item.', 'ID berbeda dengan ID kategori database.', 'Jangan sering diganti jika landing page sudah dipakai.'],
+      },
+      {
+        selector: '[data-tour="landing-menu-tabs-category-label"]',
+        actions: ['landing-select-menuTabs'],
+        title: 'Category Label',
+        body: 'Category Label adalah nama tab yang dilihat pengunjung.',
+        details: ['Label bisa diisi manual.', 'Label juga bisa di-load dari kategori produk.', 'Gunakan nama yang singkat dan mudah dipahami.', 'Contoh: Kebab & Shawarma, Minuman, Dessert.'],
+      },
+      {
+        selector: '[data-tour="landing-menu-tabs-load-products"]',
+        actions: ['landing-select-menuTabs'],
+        title: 'Load dari Produk',
+        body: 'Dropdown ini mengambil kategori dan produk dari menu Produk.',
+        details: ['Pilih kategori produk untuk auto-load item.', 'Name, Order Name, Image, Description, dan Price terisi dari data produk.', 'Description memakai bahan resep dengan format angka rapi.', 'Ini mengurangi input manual dan menjaga landing page konsisten.'],
+      },
+      {
+        selector: '[data-tour="landing-menu-tabs-item-row"]',
+        actions: ['landing-select-menuTabs', 'landing-demo-menu-tabs-fill'],
+        title: 'Item Menu Landing Page',
+        body: 'Satu item adalah satu menu yang tampil di tab kategori landing page.',
+        details: ['Item ID otomatis berurutan.', 'Name dan Order Name berasal dari produk.', 'Image bisa dari upload Supabase atau URL online.', 'Price tampil sebagai harga menu publik.'],
+      },
+      {
+        selector: '[data-tour="landing-menu-tabs-item-image"]',
+        actions: ['landing-select-menuTabs'],
+        title: 'Gambar Item Menu',
+        body: 'Field gambar menentukan visual menu di section Menu Tabs.',
+        details: ['Bisa upload gambar valid.', 'Bisa memakai URL asset online.', 'Preview membantu melihat gambar sebelum disimpan.', 'Validasi ekstensi mencegah file gambar yang tidak didukung.'],
+      },
+      {
+        selector: '[data-tour="landing-menu-tabs-item-tag"]',
+        actions: ['landing-select-menuTabs', 'landing-demo-menu-tabs-fill'],
+        title: 'Tag Menu',
+        body: 'Tag adalah label kecil seperti Popular, New, atau Spicy yang tampil di kartu menu.',
+        details: ['Tag membantu highlight menu unggulan.', 'Tag Class tetap bisa dipakai untuk style lama.', 'Tutorial mengisi contoh tag jika field tersedia.', 'Kosongkan tag jika tidak ingin badge muncul.'],
+      },
+      {
+        selector: '[data-tour="landing-menu-tabs-item-tag-color"]',
+        actions: ['landing-select-menuTabs', 'landing-demo-menu-tabs-fill'],
+        title: 'Warna Tag',
+        body: 'Warna tag membuat badge menu lebih fleksibel untuk campaign.',
+        details: ['Color picker memilih warna visual.', 'Input Tag Color menerima kode hex.', 'Kosongkan untuk memakai warna dari Tag Class.', 'Gunakan warna yang kontras tapi tetap selaras dengan tema.'],
+      },
+      {
+        selector: '[data-tour="landing-menu-tabs-item-description"]',
+        actions: ['landing-select-menuTabs'],
+        title: 'Description dari Resep',
+        body: 'Description menjelaskan bahan atau cerita singkat menu.',
+        details: ['Saat load dari produk, description bisa berasal dari bahan resep.', 'Qty ingredient diformat pendek, tidak penuh nol desimal.', 'Text ini tampil di kartu menu landing page.', 'Gunakan maksimal teks yang mudah dibaca pengunjung.'],
+      },
+      {
+        selector: '[data-tour="landing-menu-tabs-item-price"]',
+        actions: ['landing-select-menuTabs'],
+        title: 'Harga Item',
+        body: 'Price adalah harga yang tampil di landing page.',
+        details: ['Saat load dari produk, harga mengikuti data produk.', 'Format memakai Rupiah agar konsisten.', 'Harga di landing page sebaiknya sama dengan POS dan order pelanggan.', 'Jika harga berubah di produk, reload category agar sinkron.'],
+      },
+      {
+        selector: '[data-tour="landing-all-sections"]',
+        title: 'All Sections',
+        body: 'Daftar ini memberi akses cepat ke semua section landing page.',
+        details: ['Klik kartu section untuk berpindah form.', 'Badge Aktif atau Nonaktif membaca visibility tiap section.', 'Grid ini membantu kerja cepat saat editing banyak section.', 'Section yang dipilih diberi warna kuning.'],
+      },
+      {
+        selector: '[data-tour="landing-section-card"]',
+        actions: ['landing-select-cta'],
+        title: 'Kartu Section',
+        body: 'Kartu section adalah shortcut untuk memilih area landing page yang ingin diedit.',
+        details: ['Contoh tutorial berpindah ke CTA Section.', 'Kartu tidak menyimpan data, hanya mengganti form aktif.', 'Status section tetap terlihat di badge.', 'Gunakan kartu untuk review urutan semua section.'],
+      },
+    ],
+  },
+  {
     id: 'reports',
     title: 'Laporan',
     route: '/reports',
@@ -1892,6 +2058,37 @@ export default function FloatingTutorialButton() {
           .find((button) => (button.textContent || '').trim() === targetLabel);
         periodButton?.click();
         const timer = window.setTimeout(() => runActions(index + 1, 0), 620);
+        actionTimers.push(timer);
+        return;
+      }
+
+      if (action.startsWith('landing-select-')) {
+        const sectionId = action.replace('landing-select-', '');
+        const select = document.querySelector('[data-tour="landing-section-select"]');
+        if (!select && attempt < 24) {
+          const timer = window.setTimeout(() => runActions(index, attempt + 1), 160);
+          actionTimers.push(timer);
+          return;
+        }
+        if (select && select.value !== sectionId) {
+          setInputValue(select, sectionId);
+        }
+        const timer = window.setTimeout(() => runActions(index + 1, 0), 620);
+        actionTimers.push(timer);
+        return;
+      }
+
+      if (action === 'landing-demo-menu-tabs-fill') {
+        const tagInput = document.querySelector('[data-tour="landing-menu-tabs-item-tag"] input');
+        const tagColorInputs = document.querySelectorAll('[data-tour="landing-menu-tabs-item-tag-color"] input');
+        if (!tagInput && attempt < 24) {
+          const timer = window.setTimeout(() => runActions(index, attempt + 1), 160);
+          actionTimers.push(timer);
+          return;
+        }
+        setInputValue(tagInput, 'Popular');
+        tagColorInputs.forEach((input) => setInputValue(input, '#C9A84C'));
+        const timer = window.setTimeout(() => runActions(index + 1, 0), 420);
         actionTimers.push(timer);
         return;
       }

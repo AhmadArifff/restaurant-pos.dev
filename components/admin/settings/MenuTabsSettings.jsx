@@ -126,6 +126,7 @@ export default function MenuTabsSettings() {
 
   return (
     <div className="space-y-6">
+      <div data-tour="landing-menu-tabs-content">
       <AccordionSection title="Section Content" defaultOpen={true}>
         <TextInput
           label="Section Label"
@@ -153,7 +154,9 @@ export default function MenuTabsSettings() {
           maxLength={320}
         />
       </AccordionSection>
+      </div>
 
+      <div data-tour="landing-menu-tabs-categories">
       <AccordionSection title="Categories & Items">
         <div className="rounded-xl border border-yellow-500/20 bg-yellow-500/10 p-3 text-xs leading-6 text-yellow-100">
           Isi <b>Category ID</b> untuk ID landing page, lalu pilih <b>Category Label</b> dari kategori produk.
@@ -176,19 +179,23 @@ export default function MenuTabsSettings() {
           onRemove={(idx) => removeArrayItem('menuTabs', 'categories', idx)}
           renderItem={(category, cIdx) => (
             <div className="space-y-3">
+              <div data-tour="landing-menu-tabs-category-id">
               <TextInput
                 label="Category ID"
                 value={category.id}
                 onChange={(val) => updateNestedSetting('menuTabs', `categories.${cIdx}.id`, val)}
                 maxLength={40}
               />
+              </div>
+              <div data-tour="landing-menu-tabs-category-label">
               <TextInput
                 label="Category Label"
                 value={category.label}
                 onChange={(val) => updateNestedSetting('menuTabs', `categories.${cIdx}.label`, val)}
                 maxLength={80}
               />
-              <div className="form-group">
+              </div>
+              <div data-tour="landing-menu-tabs-load-products" className="form-group">
                 <label className="form-label">Load Category Label dari Produk</label>
                 <select
                   value={productCategories.find((item) => item.name === category.label)?.id || ''}
@@ -226,7 +233,7 @@ export default function MenuTabsSettings() {
                 }
                 onRemove={(iIdx) => removeArrayItem('menuTabs', `categories.${cIdx}.items`, iIdx)}
                 renderItem={(item, iIdx) => (
-                  <div className="space-y-2">
+                  <div data-tour="landing-menu-tabs-item-row" className="space-y-2">
                     <div className="grid grid-cols-2 gap-3">
                       <TextInput
                         label="Item ID"
@@ -260,6 +267,7 @@ export default function MenuTabsSettings() {
                       }
                       maxLength={80}
                     />
+                    <div data-tour="landing-menu-tabs-item-image">
                     <ImageUpload
                       label="Image"
                       value={item.image}
@@ -267,6 +275,8 @@ export default function MenuTabsSettings() {
                         updateNestedSetting('menuTabs', `categories.${cIdx}.items.${iIdx}.image`, val)
                       }
                     />
+                    </div>
+                    <div data-tour="landing-menu-tabs-item-tag">
                     <TextInput
                       label="Tag"
                       value={item.tag}
@@ -275,7 +285,8 @@ export default function MenuTabsSettings() {
                       }
                       maxLength={30}
                     />
-                    <div className="grid grid-cols-[56px_1fr] gap-3">
+                    </div>
+                    <div data-tour="landing-menu-tabs-item-tag-color" className="grid grid-cols-[56px_1fr] gap-3">
                       <div className="form-group">
                         <label className="form-label">Warna</label>
                         <input
@@ -298,6 +309,7 @@ export default function MenuTabsSettings() {
                         hint="Kosongkan untuk memakai warna dari Tag Class."
                       />
                     </div>
+                    <div data-tour="landing-menu-tabs-item-description">
                     <TextArea
                       label="Description"
                       value={item.description}
@@ -307,6 +319,8 @@ export default function MenuTabsSettings() {
                       rows={3}
                       maxLength={220}
                     />
+                    </div>
+                    <div data-tour="landing-menu-tabs-item-price">
                     <TextInput
                       label="Price"
                       value={item.price}
@@ -315,6 +329,7 @@ export default function MenuTabsSettings() {
                       }
                       maxLength={40}
                     />
+                    </div>
                   </div>
                 )}
                 addButtonLabel="+ Add Item"
@@ -326,6 +341,7 @@ export default function MenuTabsSettings() {
           maxItems={12}
         />
       </AccordionSection>
+      </div>
     </div>
   );
 }
