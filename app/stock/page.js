@@ -21,7 +21,8 @@ import {
 import { useSearchParams } from 'next/navigation';
 const MONTHS = ['Jan','Feb','Mar','Apr','Mei','Jun',
                 'Jul','Agu','Sep','Okt','Nov','Des'];
-const MASTER_STOCK_PAGE_SIZE = 8;
+const MASTER_TREND_CARD_PAGE_SIZE = 8;
+const MASTER_TABLE_PAGE_SIZE = 10;
 
 const UNIT_GROUPS = [
   { label: 'Bahan Utama',  units: ['Kilogram','Gram','Kiloan','Butir','Buah','Ikat','Lembar','Pak','Kaleng'] },
@@ -589,8 +590,9 @@ function AdminStockPage({ successModal, setSuccessModal }) {
   const [dailyLoading, setDailyLoading] = useState(false);
   const [requestsLoading, setRequestsLoading] = useState(false);
   const [trendLoading, setTrendLoading] = useState(true);
-  const [masterExpanded, setMasterExpanded] = useState(false);
-  const [masterPage, setMasterPage] = useState(0);
+  const [trendCardsExpanded, setTrendCardsExpanded] = useState(false);
+  const [trendCardPage, setTrendCardPage] = useState(0);
+  const [masterTablePage, setMasterTablePage] = useState(0);
 
   // Gudang
   const [summary,  setSummary]  = useState([]);
@@ -729,19 +731,28 @@ function AdminStockPage({ successModal, setSuccessModal }) {
       stock_from_main: !!sum, // Track if this came from main_stock (reliable) or is pending
     };
   });
-  const masterPageCount = Math.max(1, Math.ceil(stockItemsWithSummary.length / MASTER_STOCK_PAGE_SIZE));
-  const visibleMasterItems = masterExpanded
-    ? stockItemsWithSummary
-    : stockItemsWithSummary.slice(
-        masterPage * MASTER_STOCK_PAGE_SIZE,
-        masterPage * MASTER_STOCK_PAGE_SIZE + MASTER_STOCK_PAGE_SIZE
+  const trendCardPageCount = Math.max(1, Math.ceil(priceTrends.length / MASTER_TREND_CARD_PAGE_SIZE));
+  const visibleTrendCards = trendCardsExpanded
+    ? priceTrends
+    : priceTrends.slice(
+        trendCardPage * MASTER_TREND_CARD_PAGE_SIZE,
+        trendCardPage * MASTER_TREND_CARD_PAGE_SIZE + MASTER_TREND_CARD_PAGE_SIZE
       );
+  const masterTablePageCount = Math.max(1, Math.ceil(stockItemsWithSummary.length / MASTER_TABLE_PAGE_SIZE));
+  const visibleMasterItems = stockItemsWithSummary.slice(
+    masterTablePage * MASTER_TABLE_PAGE_SIZE,
+    masterTablePage * MASTER_TABLE_PAGE_SIZE + MASTER_TABLE_PAGE_SIZE
+  );
 
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    if (masterPage >= masterPageCount) setMasterPage(0);
-  }, [masterPage, masterPageCount]);
+    if (trendCardPage >= trendCardPageCount) setTrendCardPage(0);
+  }, [trendCardPage, trendCardPageCount]);
+
+  useEffect(() => {
+    if (masterTablePage >= masterTablePageCount) setMasterTablePage(0);
+  }, [masterTablePage, masterTablePageCount]);
 
   useEffect(() => {
     const fromPos     = searchParams.get('from') === 'pos';
@@ -981,8 +992,27 @@ function AdminStockPage({ successModal, setSuccessModal }) {
           </div>
 
           {priceTrends.length > 0 && (
-            <div data-tour="stock-master-trends" className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-              {priceTrends.map((trend) => {
+            <div data-tour="stock-master-trends" className="space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-700/50 bg-slate-800/50 px-4 py-3">
+                <div>
+                  <p className="text-sm font-bold text-white">
+                    {trendCardsExpanded ? 'Semua card tren harga' : `Card tren ${trendCardPage * MASTER_TREND_CARD_PAGE_SIZE + 1}-${Math.min((trendCardPage + 1) * MASTER_TREND_CARD_PAGE_SIZE, priceTrends.length)}`}
+                  </p>
+                  <p className="text-xs text-slate-500">{priceTrends.length} bahan punya riwayat harga</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTrendCardsExpanded((current) => !current);
+                    setTrendCardPage(0);
+                  }}
+                  className="rounded-xl border border-orange-500/30 bg-orange-500/10 px-4 py-2 text-xs font-black text-orange-300 transition-all hover:bg-orange-500/20"
+                >
+                  {trendCardsExpanded ? 'Hide ke 8 card' : 'Expand semua card'}
+                </button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+              {visibleTrendCards.map((trend) => {
                 const yearTrend = getPercentTrend(trend.year_change_percent);
                 const allTrend = getPercentTrend(trend.all_change_percent);
                 return (
@@ -1015,6 +1045,24 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                   </div>
                 );
               })}
+              </div>
+              {!trendCardsExpanded && trendCardPageCount > 1 && (
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  {Array.from({ length: trendCardPageCount }).map((_, pageIndex) => (
+                    <button
+                      key={pageIndex}
+                      type="button"
+                      onClick={() => setTrendCardPage(pageIndex)}
+                      aria-label={`Lihat card tren bahan halaman ${pageIndex + 1}`}
+                      className={`h-2.5 rounded-full transition-all ${
+                        trendCardPage === pageIndex
+                          ? 'w-8 bg-orange-400 shadow-lg shadow-orange-500/30'
+                          : 'w-2.5 bg-slate-600 hover:bg-slate-400'
+                      }`}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -1027,22 +1075,15 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-700/50 bg-slate-900/35 px-4 py-3">
                   <div>
                     <p className="text-sm font-bold text-white">
-                      {masterExpanded ? 'Semua bahan baku' : `Bahan baku ${masterPage * MASTER_STOCK_PAGE_SIZE + 1}-${Math.min((masterPage + 1) * MASTER_STOCK_PAGE_SIZE, stockItemsWithSummary.length)}`}
+                      Baris bahan baku {masterTablePage * MASTER_TABLE_PAGE_SIZE + 1}-{Math.min((masterTablePage + 1) * MASTER_TABLE_PAGE_SIZE, stockItemsWithSummary.length)}
                     </p>
                     <p className="text-xs text-slate-500">
-                      {stockItemsWithSummary.length} total bahan baku tersimpan
+                      {stockItemsWithSummary.length} total bahan baku tersimpan - 10 baris per halaman
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMasterExpanded((current) => !current);
-                      setMasterPage(0);
-                    }}
-                    className="rounded-xl border border-orange-500/30 bg-orange-500/10 px-4 py-2 text-xs font-black text-orange-300 transition-all hover:bg-orange-500/20"
-                  >
-                    {masterExpanded ? 'Hide ke 8 bahan' : 'Expand semua'}
-                  </button>
+                  <span className="rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-bold text-slate-300">
+                    Halaman {masterTablePage + 1}/{masterTablePageCount}
+                  </span>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full">
@@ -1055,7 +1096,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                     </thead>
                     <tbody>
                       {visibleMasterItems.map((item, i) => (
-                        <tr key={item.id} className={trC(masterExpanded ? i : masterPage * MASTER_STOCK_PAGE_SIZE + i)}>
+                        <tr key={item.id} className={trC(masterTablePage * MASTER_TABLE_PAGE_SIZE + i)}>
                           <td className={`${tdC} text-white font-semibold`}>{item.name}</td>
                           <td className={`${tdC} text-slate-400`}>{item.unit}</td>
                           <td className={`${tdC} text-slate-400`}>{item.min_stock} {item.unit}</td>
@@ -1140,24 +1181,24 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                     </tbody>
                   </table>
                 </div>
-                {!masterExpanded && masterPageCount > 1 && (
+                {masterTablePageCount > 1 && (
                   <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-700/50 bg-slate-900/35 px-4 py-3">
                     <button
                       type="button"
-                      onClick={() => setMasterPage((page) => (page === 0 ? masterPageCount - 1 : page - 1))}
+                      onClick={() => setMasterTablePage((page) => (page === 0 ? masterTablePageCount - 1 : page - 1))}
                       className="rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-bold text-slate-300 transition-all hover:border-orange-500/40 hover:text-white"
                     >
                       Sebelumnya
                     </button>
                     <div className="flex flex-wrap items-center justify-center gap-2">
-                      {Array.from({ length: masterPageCount }).map((_, pageIndex) => (
+                      {Array.from({ length: masterTablePageCount }).map((_, pageIndex) => (
                         <button
                           key={pageIndex}
                           type="button"
-                          onClick={() => setMasterPage(pageIndex)}
+                          onClick={() => setMasterTablePage(pageIndex)}
                           aria-label={`Lihat bahan baku halaman ${pageIndex + 1}`}
                           className={`h-2.5 rounded-full transition-all ${
-                            masterPage === pageIndex
+                            masterTablePage === pageIndex
                               ? 'w-8 bg-orange-400 shadow-lg shadow-orange-500/30'
                               : 'w-2.5 bg-slate-600 hover:bg-slate-400'
                           }`}
@@ -1166,7 +1207,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                     </div>
                     <button
                       type="button"
-                      onClick={() => setMasterPage((page) => (page + 1) % masterPageCount)}
+                      onClick={() => setMasterTablePage((page) => (page + 1) % masterTablePageCount)}
                       className="rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-bold text-slate-300 transition-all hover:border-orange-500/40 hover:text-white"
                     >
                       Berikutnya
