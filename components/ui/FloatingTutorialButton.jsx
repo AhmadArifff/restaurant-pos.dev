@@ -4,6 +4,22 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 
+const LANDING_SECTION_CHOICES = [
+  { id: 'header', title: 'Header', description: 'Logo, navigasi, dan identitas brand di bagian atas landing page.' },
+  { id: 'hero', title: 'Hero Section', description: 'Background utama, headline, subtitle, tombol CTA, dan statistik.' },
+  { id: 'marquee', title: 'Marquee Section', description: 'Teks berjalan atau highlight singkat untuk brand dan campaign.' },
+  { id: 'about', title: 'About Section', description: 'Cerita restoran, gambar, dan narasi value Sultan Kebab.' },
+  { id: 'bestsellers', title: 'Bestsellers Section', description: 'Menu unggulan yang tampil sebagai rekomendasi utama.' },
+  { id: 'menuTabs', title: 'Menu Tabs Section', description: 'Kategori dan item menu yang bisa di-load dari data produk.' },
+  { id: 'experience', title: 'Experience Section', description: 'Kartu pengalaman dengan gambar, judul, dan deskripsi layanan.' },
+  { id: 'gallery', title: 'Gallery Section', description: 'Kumpulan gambar visual restoran, produk, dan suasana.' },
+  { id: 'locations', title: 'Locations Section', description: 'Daftar cabang, alamat, kontak, dan informasi lokasi.' },
+  { id: 'testimonials', title: 'Testimonials Section', description: 'Review pelanggan, rating, avatar, dan animasi testimoni.' },
+  { id: 'cta', title: 'CTA Section', description: 'Ajakan akhir dengan gambar, logo, dan tombol aksi.' },
+  { id: 'footer', title: 'Footer Section', description: 'Footer brand, link, kontak, dan informasi legal.' },
+  { id: 'floatButton', title: 'Float Button Section', description: 'Tombol floating publik seperti WhatsApp atau order cepat.' },
+];
+
 const TUTORIALS = [
   {
     id: 'dashboard',
@@ -1216,11 +1232,24 @@ const TUTORIALS = [
       },
       {
         selector: '[data-tour="landing-active-section-form"]',
-        actions: ['landing-select-hero'],
+        actions: ['landing-select-current-section'],
         title: 'Form Section Aktif',
         body: 'Form section berisi field yang spesifik untuk section yang dipilih.',
         details: ['Hero punya background, title, subtitle, tombol, dan statistik.', 'Gallery punya daftar gambar.', 'Testimonials punya review dan avatar.', 'Setiap form memakai komponen input yang reusable.'],
       },
+      ...LANDING_SECTION_CHOICES.map((section, index) => ({
+        selector: '[data-tour="landing-active-section-form"]',
+        actions: [`landing-select-${section.id}`],
+        landingSections: [section.id],
+        title: `Demo ${index + 1}. ${section.title}`,
+        body: `Tutorial ini memilih ${section.title} sebagai section yang sedang diedit. ${section.description}`,
+        details: [
+          'Form kiri adalah tempat mengubah konten section ini.',
+          'Toggle aktif/nonaktif tetap berlaku untuk section yang dipilih.',
+          'Preview kanan langsung memberi gambaran hasil visualnya.',
+          'Data hanya tersimpan jika user menekan Save Changes.',
+        ],
+      })),
       {
         selector: '[data-tour="landing-preview-panel"]',
         title: 'Panel Preview',
@@ -1236,76 +1265,87 @@ const TUTORIALS = [
       {
         selector: '[data-tour="landing-menu-tabs-content"]',
         actions: ['landing-select-menuTabs'],
+        landingSections: ['menuTabs'],
         title: 'Menu Tabs Section Content',
         body: 'Bagian ini mengatur judul dan deskripsi section menu di landing page.',
         details: ['Section Label menjadi label kecil di atas title.', 'Title dan Highlight membentuk heading utama.', 'Description menjelaskan katalog menu.', 'Konten ini tampil di section Menu Lengkap pada landing page.'],
       },
       {
         selector: '[data-tour="landing-menu-tabs-categories"]',
-        actions: ['landing-select-menuTabs'],
+        actions: ['landing-select-menuTabs', 'landing-open-menu-tabs-categories'],
+        landingSections: ['menuTabs'],
         title: 'Categories & Items Menu Tabs',
         body: 'Bagian ini menghubungkan kategori landing page dengan data kategori dan produk.',
         details: ['Category ID adalah ID internal landing page.', 'Category Label bisa di-load dari data kategori produk.', 'Items bisa otomatis terisi dari produk sesuai kategori.', 'Alur ini menjaga menu landing page selaras dengan menu produk.'],
       },
       {
         selector: '[data-tour="landing-menu-tabs-category-id"]',
-        actions: ['landing-select-menuTabs'],
+        actions: ['landing-select-menuTabs', 'landing-open-menu-tabs-categories'],
+        landingSections: ['menuTabs'],
         title: 'Category ID',
         body: 'Category ID adalah identifier untuk tab menu di landing page.',
         details: ['Isi ID singkat dan stabil seperti kebab atau drinks.', 'ID dipakai untuk tab aktif dan mapping item.', 'ID berbeda dengan ID kategori database.', 'Jangan sering diganti jika landing page sudah dipakai.'],
       },
       {
         selector: '[data-tour="landing-menu-tabs-category-label"]',
-        actions: ['landing-select-menuTabs'],
+        actions: ['landing-select-menuTabs', 'landing-open-menu-tabs-categories'],
+        landingSections: ['menuTabs'],
         title: 'Category Label',
         body: 'Category Label adalah nama tab yang dilihat pengunjung.',
         details: ['Label bisa diisi manual.', 'Label juga bisa di-load dari kategori produk.', 'Gunakan nama yang singkat dan mudah dipahami.', 'Contoh: Kebab & Shawarma, Minuman, Dessert.'],
       },
       {
         selector: '[data-tour="landing-menu-tabs-load-products"]',
-        actions: ['landing-select-menuTabs'],
+        actions: ['landing-select-menuTabs', 'landing-open-menu-tabs-categories'],
+        landingSections: ['menuTabs'],
         title: 'Load dari Produk',
         body: 'Dropdown ini mengambil kategori dan produk dari menu Produk.',
         details: ['Pilih kategori produk untuk auto-load item.', 'Name, Order Name, Image, Description, dan Price terisi dari data produk.', 'Description memakai bahan resep dengan format angka rapi.', 'Ini mengurangi input manual dan menjaga landing page konsisten.'],
       },
       {
         selector: '[data-tour="landing-menu-tabs-item-row"]',
-        actions: ['landing-select-menuTabs', 'landing-demo-menu-tabs-fill'],
+        actions: ['landing-select-menuTabs', 'landing-open-menu-tabs-categories', 'landing-demo-menu-tabs-fill'],
+        landingSections: ['menuTabs'],
         title: 'Item Menu Landing Page',
         body: 'Satu item adalah satu menu yang tampil di tab kategori landing page.',
         details: ['Item ID otomatis berurutan.', 'Name dan Order Name berasal dari produk.', 'Image bisa dari upload Supabase atau URL online.', 'Price tampil sebagai harga menu publik.'],
       },
       {
         selector: '[data-tour="landing-menu-tabs-item-image"]',
-        actions: ['landing-select-menuTabs'],
+        actions: ['landing-select-menuTabs', 'landing-open-menu-tabs-categories'],
+        landingSections: ['menuTabs'],
         title: 'Gambar Item Menu',
         body: 'Field gambar menentukan visual menu di section Menu Tabs.',
         details: ['Bisa upload gambar valid.', 'Bisa memakai URL asset online.', 'Preview membantu melihat gambar sebelum disimpan.', 'Validasi ekstensi mencegah file gambar yang tidak didukung.'],
       },
       {
         selector: '[data-tour="landing-menu-tabs-item-tag"]',
-        actions: ['landing-select-menuTabs', 'landing-demo-menu-tabs-fill'],
+        actions: ['landing-select-menuTabs', 'landing-open-menu-tabs-categories', 'landing-demo-menu-tabs-fill'],
+        landingSections: ['menuTabs'],
         title: 'Tag Menu',
         body: 'Tag adalah label kecil seperti Popular, New, atau Spicy yang tampil di kartu menu.',
         details: ['Tag membantu highlight menu unggulan.', 'Tag Class tetap bisa dipakai untuk style lama.', 'Tutorial mengisi contoh tag jika field tersedia.', 'Kosongkan tag jika tidak ingin badge muncul.'],
       },
       {
         selector: '[data-tour="landing-menu-tabs-item-tag-color"]',
-        actions: ['landing-select-menuTabs', 'landing-demo-menu-tabs-fill'],
+        actions: ['landing-select-menuTabs', 'landing-open-menu-tabs-categories', 'landing-demo-menu-tabs-fill'],
+        landingSections: ['menuTabs'],
         title: 'Warna Tag',
         body: 'Warna tag membuat badge menu lebih fleksibel untuk campaign.',
         details: ['Color picker memilih warna visual.', 'Input Tag Color menerima kode hex.', 'Kosongkan untuk memakai warna dari Tag Class.', 'Gunakan warna yang kontras tapi tetap selaras dengan tema.'],
       },
       {
         selector: '[data-tour="landing-menu-tabs-item-description"]',
-        actions: ['landing-select-menuTabs'],
+        actions: ['landing-select-menuTabs', 'landing-open-menu-tabs-categories'],
+        landingSections: ['menuTabs'],
         title: 'Description dari Resep',
         body: 'Description menjelaskan bahan atau cerita singkat menu.',
         details: ['Saat load dari produk, description bisa berasal dari bahan resep.', 'Qty ingredient diformat pendek, tidak penuh nol desimal.', 'Text ini tampil di kartu menu landing page.', 'Gunakan maksimal teks yang mudah dibaca pengunjung.'],
       },
       {
         selector: '[data-tour="landing-menu-tabs-item-price"]',
-        actions: ['landing-select-menuTabs'],
+        actions: ['landing-select-menuTabs', 'landing-open-menu-tabs-categories'],
+        landingSections: ['menuTabs'],
         title: 'Harga Item',
         body: 'Price adalah harga yang tampil di landing page.',
         details: ['Saat load dari produk, harga mengikuti data produk.', 'Format memakai Rupiah agar konsisten.', 'Harga di landing page sebaiknya sama dengan POS dan order pelanggan.', 'Jika harga berubah di produk, reload category agar sinkron.'],
@@ -1636,6 +1676,8 @@ export default function FloatingTutorialButton() {
   const [open, setOpen] = useState(false);
   const [activeTutorialId, setActiveTutorialId] = useState(null);
   const [pendingTutorialId, setPendingTutorialId] = useState(null);
+  const [landingSectionChooserOpen, setLandingSectionChooserOpen] = useState(false);
+  const [landingSectionChoice, setLandingSectionChoice] = useState(null);
   const [stepIndex, setStepIndex] = useState(0);
   const [highlight, setHighlight] = useState(null);
   const [stepReady, setStepReady] = useState(false);
@@ -1650,13 +1692,18 @@ export default function FloatingTutorialButton() {
   const activeSteps = useMemo(() => (
     (activeTutorial?.steps || [])
       .filter((step) => !step.roles || step.roles.includes(user?.role))
+      .filter((step) => {
+        if (activeTutorial?.id !== 'landing-page-settings') return true;
+        if (!step.landingSections?.length) return true;
+        return step.landingSections.includes(landingSectionChoice?.id);
+      })
       .map((step, index) => ({ ...step, _originalIndex: index }))
       .sort((a, b) => {
         if (activeTutorial?.id !== 'stock') return a._originalIndex - b._originalIndex;
         const orderDiff = getStockStepOrder(a.selector) - getStockStepOrder(b.selector);
         return orderDiff || a._originalIndex - b._originalIndex;
       })
-  ), [activeTutorial, user?.role]);
+  ), [activeTutorial, landingSectionChoice?.id, user?.role]);
   const activeStep = activeSteps[stepIndex];
 
   useEffect(() => {
@@ -2063,7 +2110,9 @@ export default function FloatingTutorialButton() {
       }
 
       if (action.startsWith('landing-select-')) {
-        const sectionId = action.replace('landing-select-', '');
+        const sectionId = action === 'landing-select-current-section'
+          ? landingSectionChoice?.id || 'hero'
+          : action.replace('landing-select-', '');
         const select = document.querySelector('[data-tour="landing-section-select"]');
         if (!select && attempt < 24) {
           const timer = window.setTimeout(() => runActions(index, attempt + 1), 160);
@@ -2074,6 +2123,24 @@ export default function FloatingTutorialButton() {
           setInputValue(select, sectionId);
         }
         const timer = window.setTimeout(() => runActions(index + 1, 0), 620);
+        actionTimers.push(timer);
+        return;
+      }
+
+      if (action === 'landing-open-menu-tabs-categories') {
+        const wrapper = document.querySelector('[data-tour="landing-menu-tabs-categories"]');
+        if (!wrapper && attempt < 24) {
+          const timer = window.setTimeout(() => runActions(index, attempt + 1), 160);
+          actionTimers.push(timer);
+          return;
+        }
+        if (wrapper && !wrapper.querySelector('.accordion-content')) {
+          wrapper.querySelector('button')?.click();
+          const timer = window.setTimeout(() => runActions(index, attempt + 1), 260);
+          actionTimers.push(timer);
+          return;
+        }
+        const timer = window.setTimeout(() => runActions(index + 1, 0), 220);
         actionTimers.push(timer);
         return;
       }
@@ -2231,7 +2298,7 @@ export default function FloatingTutorialButton() {
       window.removeEventListener('resize', updateHighlight);
       window.removeEventListener('scroll', updateHighlight, true);
     };
-  }, [activeStep, open, pathname]);
+  }, [activeStep, landingSectionChoice?.id, open, pathname]);
 
   if (!user || availableTutorials.length === 0) return null;
 
@@ -2310,6 +2377,33 @@ export default function FloatingTutorialButton() {
   };
 
   const startTutorial = (tutorial) => {
+    if (tutorial.id === 'landing-page-settings') {
+      setActiveTutorialId(null);
+      setPendingTutorialId(null);
+      setLandingSectionChoice(null);
+      setLandingSectionChooserOpen(true);
+      setStepIndex(0);
+      setHighlight(null);
+      setOpen(true);
+      return;
+    }
+    setActiveTutorialId(null);
+    setPendingTutorialId(tutorial.id);
+    setLandingSectionChooserOpen(false);
+    setLandingSectionChoice(null);
+    setStepIndex(0);
+    setHighlight(null);
+    setOpen(true);
+    if (pathname !== tutorial.route) {
+      router.push(tutorial.route);
+    }
+  };
+
+  const startLandingSectionTutorial = (section) => {
+    const tutorial = availableTutorials.find((item) => item.id === 'landing-page-settings');
+    if (!tutorial) return;
+    setLandingSectionChoice(section);
+    setLandingSectionChooserOpen(false);
     setActiveTutorialId(null);
     setPendingTutorialId(tutorial.id);
     setStepIndex(0);
@@ -2324,11 +2418,14 @@ export default function FloatingTutorialButton() {
     setOpen(false);
     setHighlight(null);
     setPendingTutorialId(null);
+    setLandingSectionChooserOpen(false);
   };
 
   const finishTutorial = () => {
     setActiveTutorialId(null);
     setPendingTutorialId(null);
+    setLandingSectionChooserOpen(false);
+    setLandingSectionChoice(null);
     setStepIndex(0);
     setHighlight(null);
     setOpen(true);
@@ -2377,7 +2474,11 @@ export default function FloatingTutorialButton() {
               <div>
                 <p className="text-[11px] font-black uppercase tracking-[0.22em] text-amber-300">Tutorial Assistant</p>
                 <h2 className="mt-1 text-lg font-black text-white">
-                  {activeTutorial ? activeTutorial.title : 'Pilih Tutorial'}
+                  {activeTutorial
+                    ? activeTutorial.title
+                    : landingSectionChooserOpen
+                      ? 'Pilih Section Landing Page'
+                      : 'Pilih Tutorial'}
                 </h2>
               </div>
               <button
@@ -2448,6 +2549,43 @@ export default function FloatingTutorialButton() {
                   {stepIndex >= activeSteps.length - 1 ? 'Selesai' : 'Lanjut'}
                 </button>
               </div>
+              </div>
+            </div>
+          ) : landingSectionChooserOpen ? (
+            <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-6">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.22em] text-amber-300">Landing Page</p>
+                  <h3 className="mt-2 text-2xl font-black text-white">Mau demo section yang mana?</h3>
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
+                    Pilih salah satu dari 13 section. Sistem akan membuka halaman Landing Page Settings, memilih section itu di dropdown, lalu memandu field dan preview yang relevan.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setLandingSectionChooserOpen(false)}
+                  className="rounded-2xl border border-white/10 px-4 py-3 text-sm font-black text-slate-300 transition hover:border-amber-400/50 hover:text-amber-200"
+                >
+                  Kembali
+                </button>
+              </div>
+
+              <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {LANDING_SECTION_CHOICES.map((section, index) => (
+                  <button
+                    key={section.id}
+                    type="button"
+                    onClick={() => startLandingSectionTutorial(section)}
+                    disabled={Boolean(pendingTutorialId)}
+                    className="group min-h-36 w-full rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.055] to-white/[0.015] p-5 text-left transition hover:-translate-y-0.5 hover:border-amber-400/60 hover:bg-amber-500/10 disabled:cursor-wait disabled:opacity-55"
+                  >
+                    <span className="inline-flex rounded-full bg-amber-400/12 px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em] text-amber-200">
+                      Section {index + 1}/13
+                    </span>
+                    <span className="mt-4 block text-lg font-black text-white transition group-hover:text-amber-100">{section.title}</span>
+                    <span className="mt-2 block text-sm leading-6 text-slate-400">{section.description}</span>
+                  </button>
+                ))}
               </div>
             </div>
           ) : (
