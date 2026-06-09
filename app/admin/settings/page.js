@@ -228,8 +228,8 @@ export default function SettingsPage() {
 
   return (
     <AdminLayout>
-      <div className="max-w-4xl mx-auto pb-8">
-        <div className="mb-8 flex flex-wrap items-start justify-between gap-3">
+      <div className="max-w-4xl mx-auto pb-8" data-tour="settings-page">
+        <div className="mb-8 flex flex-wrap items-start justify-between gap-3" data-tour="settings-header">
           <div>
             <h1 className="text-white text-2xl font-bold">Pengaturan Website</h1>
             <p className="text-slate-400 text-sm mt-2">
@@ -237,28 +237,31 @@ export default function SettingsPage() {
             </p>
           </div>
           {refreshing && (
-            <span className="rounded-full border border-sky-500/25 bg-sky-500/10 px-3 py-1.5 text-xs font-bold text-sky-200">
+            <span
+              className="rounded-full border border-sky-500/25 bg-sky-500/10 px-3 py-1.5 text-xs font-bold text-sky-200"
+              data-tour="settings-sync-badge"
+            >
               Sinkronisasi pengaturan...
             </span>
           )}
         </div>
 
         {error && (
-          <div className="mb-4 p-4 bg-red-500/15 border-l-4 border-red-500 rounded-lg shadow-lg">
+          <div className="mb-4 p-4 bg-red-500/15 border-l-4 border-red-500 rounded-lg shadow-lg" data-tour="settings-feedback">
             <p className="text-red-200 text-sm">{error}</p>
           </div>
         )}
         {success && (
-          <div className="mb-4 p-4 bg-green-500/15 border-l-4 border-green-500 rounded-lg shadow-lg">
+          <div className="mb-4 p-4 bg-green-500/15 border-l-4 border-green-500 rounded-lg shadow-lg" data-tour="settings-feedback">
             <p className="text-green-200 text-sm">{success}</p>
           </div>
         )}
 
-        <div className="space-y-6">
-          <div className="bg-slate-800/80 rounded-2xl p-6 border border-slate-700/60">
+        <div className="space-y-6" data-tour="settings-form">
+          <div className="bg-slate-800/80 rounded-2xl p-6 border border-slate-700/60" data-tour="settings-store-section">
             <h2 className="text-white font-bold text-lg mb-4">Informasi Toko</h2>
             <div className="space-y-5">
-              <div>
+              <div data-tour="settings-store-name-field">
                 <div className="flex justify-between items-center mb-2">
                   <label className="block text-slate-400 text-sm font-medium">Nama Toko (Sidebar Admin)</label>
                   <span className="text-xs text-slate-500">{(settings.store_name || '').length}/50</span>
@@ -275,7 +278,7 @@ export default function SettingsPage() {
                 {fieldErrors.store_name && <p className="text-red-400 text-xs mt-1.5">{fieldErrors.store_name}</p>}
               </div>
 
-              <div>
+              <div data-tour="settings-browser-title-field">
                 <div className="flex justify-between items-center mb-2">
                   <label className="block text-slate-400 text-sm font-medium">Judul Tab Browser (teks di samping favicon)</label>
                   <span className="text-xs text-slate-500">{(settings.browser_title || '').length}/60</span>
@@ -294,10 +297,10 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          <div className="bg-slate-800/80 rounded-2xl p-6 border border-slate-700/60">
+          <div className="bg-slate-800/80 rounded-2xl p-6 border border-slate-700/60" data-tour="settings-branding-section">
             <h2 className="text-white font-bold text-lg mb-4">Branding</h2>
             <div className="space-y-5">
-              <div>
+              <div data-tour="settings-logo-field">
                 <label className="block text-slate-400 text-sm font-medium mb-2">Logo Toko</label>
                 <div className="flex gap-4">
                   <div className="flex-1">
@@ -326,7 +329,7 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              <div>
+              <div data-tour="settings-favicon-field">
                 <label className="block text-slate-400 text-sm font-medium mb-2">Favicon</label>
                 <div className="flex gap-4">
                   <div className="flex-1">
@@ -357,14 +360,17 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          <div className="bg-slate-800/80 rounded-2xl p-6 border border-slate-700/60">
+          <div className="bg-slate-800/80 rounded-2xl p-6 border border-slate-700/60" data-tour="settings-theme-section">
             <h2 className="text-white font-bold text-lg mb-1">Tema Warna</h2>
             <p className="text-slate-400 text-sm mb-4">
               Total warna tema saat ini: <span className="text-white font-semibold">{THEME_FIELDS.length}</span>
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5" data-tour="settings-theme-grid">
               {THEME_FIELDS.map((field) => (
-                <div key={field.key}>
+                <div
+                  key={field.key}
+                  data-tour={field.key === 'gold' ? 'settings-theme-primary-field' : undefined}
+                >
                   <label className="block text-slate-400 text-sm font-medium mb-2">{field.label}</label>
                   <div className="flex gap-3 items-center">
                     <input
@@ -383,10 +389,11 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex gap-3" data-tour="settings-actions">
             <button
               onClick={handleSaveSettings}
               disabled={saving || hasFieldError}
+              data-tour="settings-save-button"
               className={`flex-1 px-6 py-3 font-semibold rounded-lg transition-all ${
                 saving || hasFieldError ? 'bg-orange-500/50 text-white/70 cursor-not-allowed' : 'bg-orange-500 hover:bg-orange-600 text-white'
               }`}
@@ -396,8 +403,10 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Favicon Debugger */}
-        <FaviconDebugger />      </div>
+        <div data-tour="settings-favicon-debugger">
+          <FaviconDebugger />
+        </div>
+      </div>
     </AdminLayout>
   );
 }
