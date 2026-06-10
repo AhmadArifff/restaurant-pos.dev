@@ -993,7 +993,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
 
           {priceTrends.length > 0 && (
             <div data-tour="stock-master-trends" className="space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-700/50 bg-slate-800/50 px-4 py-3">
+              <div data-tour="stock-master-trend-controls" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-700/50 bg-slate-800/50 px-4 py-3">
                 <div>
                   <p className="text-sm font-bold text-white">
                     {trendCardsExpanded ? 'Semua card tren harga' : `Card tren ${trendCardPage * MASTER_TREND_CARD_PAGE_SIZE + 1}-${Math.min((trendCardPage + 1) * MASTER_TREND_CARD_PAGE_SIZE, priceTrends.length)}`}
@@ -1002,6 +1002,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                 </div>
                 <button
                   type="button"
+                  data-tour-action="stock-master-trend-toggle"
                   onClick={() => {
                     setTrendCardsExpanded((current) => !current);
                     setTrendCardPage(0);
@@ -1011,7 +1012,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                   {trendCardsExpanded ? 'Hide ke 8 card' : 'Expand semua card'}
                 </button>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+              <div data-tour="stock-master-trend-cards" className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
               {visibleTrendCards.map((trend) => {
                 const yearTrend = getPercentTrend(trend.year_change_percent);
                 const allTrend = getPercentTrend(trend.all_change_percent);
@@ -1047,7 +1048,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
               })}
               </div>
               {!trendCardsExpanded && trendCardPageCount > 1 && (
-                <div className="flex flex-wrap items-center justify-center gap-2">
+                <div data-tour="stock-master-trend-pagination" className="flex flex-wrap items-center justify-center gap-2">
                   {Array.from({ length: trendCardPageCount }).map((_, pageIndex) => (
                     <button
                       key={pageIndex}
@@ -1072,7 +1073,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
               </div>
             : (
               <div data-tour="stock-master-table" className="bg-slate-800/80 rounded-2xl border border-slate-700/60 overflow-hidden">
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-700/50 bg-slate-900/35 px-4 py-3">
+                <div data-tour="stock-master-table-summary" className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-700/50 bg-slate-900/35 px-4 py-3">
                   <div>
                     <p className="text-sm font-bold text-white">
                       Baris bahan baku {masterTablePage * MASTER_TABLE_PAGE_SIZE + 1}-{Math.min((masterTablePage + 1) * MASTER_TABLE_PAGE_SIZE, stockItemsWithSummary.length)}
@@ -1182,7 +1183,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                   </table>
                 </div>
                 {masterTablePageCount > 1 && (
-                  <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-700/50 bg-slate-900/35 px-4 py-3">
+                  <div data-tour="stock-master-table-pagination" className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-700/50 bg-slate-900/35 px-4 py-3">
                     <button
                       type="button"
                       onClick={() => setMasterTablePage((page) => (page === 0 ? masterTablePageCount - 1 : page - 1))}
