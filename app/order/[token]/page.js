@@ -1532,9 +1532,9 @@ export default function CustomerOrderPage() {
                   }}
                   className="flex min-h-[150px] cursor-pointer overflow-hidden rounded-3xl border border-[#C9A84C]/16 bg-[#1A1409] transition hover:border-[#C9A84C]/35 sm:block sm:min-h-0 sm:rounded-[1.6rem]"
                 >
-                  <div className="h-auto w-20 shrink-0 overflow-hidden bg-[#241C0E] min-[380px]:w-24 sm:h-44 sm:w-full">
+                  <div className="h-[150px] w-20 shrink-0 overflow-hidden bg-[#241C0E] min-[380px]:w-24 sm:h-44 sm:w-full">
                     {product.image_url ? (
-                      <img src={resolveAssetUrl(product.image_url)} alt={product.name} className="h-full w-full object-cover" />
+                      <img src={resolveAssetUrl(product.image_url)} alt={product.name} className="h-full w-full object-cover object-center" />
                     ) : (
                       <div className="grid h-full place-items-center text-5xl">K</div>
                     )}
@@ -1792,12 +1792,12 @@ export default function CustomerOrderPage() {
                   className="absolute inset-0 overflow-hidden rounded-[2rem] border border-[#C9A84C]/25 bg-[#1A1409] shadow-2xl shadow-black/60 [backface-visibility:hidden]"
                   onClick={() => setProductDetailFlipped(true)}
                 >
-                  <div className="relative grid aspect-[4/3] place-items-center bg-[#0D0A06]">
+                  <div className="relative grid aspect-[4/3] place-items-center overflow-hidden bg-[#0D0A06]">
                     {selectedProduct.image_url ? (
                       <img
                         src={resolveAssetUrl(selectedProduct.image_url)}
                         alt={selectedProduct.name}
-                        className="h-full w-full object-contain"
+                        className="h-full w-full object-cover object-center"
                       />
                     ) : (
                       <div className="grid h-full w-full place-items-center text-7xl">K</div>
@@ -1820,7 +1820,7 @@ export default function CustomerOrderPage() {
                       </span>
                     </div>
                     <p className="text-sm leading-6 text-[#EDE0C4]/70">
-                      Gambar ditampilkan utuh supaya detail menu tetap jelas meskipun resolusi foto berbeda.
+                      Foto menu memakai frame seragam dengan fokus tengah agar tampilan katalog tetap rapi.
                     </p>
                     <div className="grid grid-cols-[1fr_auto] gap-3">
                       <button
