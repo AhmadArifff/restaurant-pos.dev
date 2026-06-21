@@ -2176,6 +2176,62 @@ function getStockStepOrder(selector) {
   return index === -1 ? STOCK_STEP_ORDER.length : index;
 }
 
+const TUTOR_BUTTON_SIZE = 64;
+const TUTOR_BUTTON_MARGIN = 12;
+const TUTOR_BUTTON_STORAGE_KEY = 'pos-tutorial-button-position-v2';
+const LEGACY_TUTOR_BUTTON_STORAGE_KEY = 'pos-tutorial-button-position-v1';
+
+function getTutorialViewport() {
+  if (typeof window === 'undefined') return { width: 0, height: 0 };
+  return {
+    width: window.innerWidth,
+    height: window.innerHeight,
+  };
+}
+
+function clampTutorialButtonPosition(position, viewport = getTutorialViewport()) {
+  return {
+    x: clamp(
+      Number(position?.x) || TUTOR_BUTTON_MARGIN,
+      TUTOR_BUTTON_MARGIN,
+      Math.max(TUTOR_BUTTON_MARGIN, viewport.width - TUTOR_BUTTON_SIZE - TUTOR_BUTTON_MARGIN)
+    ),
+    y: clamp(
+      Number(position?.y) || TUTOR_BUTTON_MARGIN,
+      TUTOR_BUTTON_MARGIN,
+      Math.max(TUTOR_BUTTON_MARGIN, viewport.height - TUTOR_BUTTON_SIZE - TUTOR_BUTTON_MARGIN)
+    ),
+  };
+}
+
+function createTutorialButtonAnchor(position, viewport = getTutorialViewport()) {
+  const safePosition = clampTutorialButtonPosition(position, viewport);
+  const distanceLeft = safePosition.x;
+  const distanceRight = viewport.width - safePosition.x - TUTOR_BUTTON_SIZE;
+  const distanceTop = safePosition.y;
+  const distanceBottom = viewport.height - safePosition.y - TUTOR_BUTTON_SIZE;
+
+  return {
+    horizontal: distanceLeft <= distanceRight ? 'left' : 'right',
+    offsetX: Math.max(TUTOR_BUTTON_MARGIN, Math.min(distanceLeft, distanceRight)),
+    vertical: distanceTop <= distanceBottom ? 'top' : 'bottom',
+    offsetY: Math.max(TUTOR_BUTTON_MARGIN, Math.min(distanceTop, distanceBottom)),
+  };
+}
+
+function resolveTutorialButtonAnchor(anchor, viewport = getTutorialViewport()) {
+  const offsetX = Math.max(TUTOR_BUTTON_MARGIN, Number(anchor?.offsetX) || TUTOR_BUTTON_MARGIN);
+  const offsetY = Math.max(TUTOR_BUTTON_MARGIN, Number(anchor?.offsetY) || TUTOR_BUTTON_MARGIN);
+  return clampTutorialButtonPosition({
+    x: anchor?.horizontal === 'left'
+      ? offsetX
+      : viewport.width - TUTOR_BUTTON_SIZE - offsetX,
+    y: anchor?.vertical === 'top'
+      ? offsetY
+      : viewport.height - TUTOR_BUTTON_SIZE - offsetY,
+  }, viewport);
+}
+
 export default function FloatingTutorialButton() {
   const user = useAuthStore((state) => state.user);
   const pathname = usePathname();
@@ -2190,6 +2246,7 @@ export default function FloatingTutorialButton() {
   const [stepReady, setStepReady] = useState(false);
   const [buttonPos, setButtonPos] = useState(null);
   const dragRef = useRef(null);
+  const buttonAnchorRef = useRef(null);
 
   const availableTutorials = useMemo(() => (
     TUTORIALS.filter((tutorial) => !tutorial.roles || tutorial.roles.includes(user?.role))
@@ -2265,28 +2322,42 @@ export default function FloatingTutorialButton() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
-    const storageKey = 'pos-tutorial-button-position-v1';
-    const setSafePosition = () => {
-      const fallback = {
-        x: window.innerWidth - 176,
-        y: window.innerHeight - 88,
+    const readInitialAnchor = () => {
+      const viewport = getTutorialViewport();
+      const fallbackPosition = {
+        x: viewport.width - 176,
+        y: viewport.height - 88,
       };
-      let saved = null;
       try {
-        saved = JSON.parse(window.localStorage.getItem(storageKey));
+        const savedAnchor = JSON.parse(window.localStorage.getItem(TUTOR_BUTTON_STORAGE_KEY));
+        if (savedAnchor?.horizontal && savedAnchor?.vertical) return savedAnchor;
       } catch {
-        saved = null;
+        // Fall through to the legacy position or the default placement.
       }
-      const source = saved || fallback;
-      setButtonPos({
-        x: clamp(Number(source.x || fallback.x), 12, window.innerWidth - 76),
-        y: clamp(Number(source.y || fallback.y), 12, window.innerHeight - 76),
-      });
+      try {
+        const legacyPosition = JSON.parse(window.localStorage.getItem(LEGACY_TUTOR_BUTTON_STORAGE_KEY));
+        if (legacyPosition && Number.isFinite(Number(legacyPosition.x)) && Number.isFinite(Number(legacyPosition.y))) {
+          return createTutorialButtonAnchor(legacyPosition, viewport);
+        }
+      } catch {
+        // Use the default placement.
+      }
+      return createTutorialButtonAnchor(fallbackPosition, viewport);
     };
 
-    setSafePosition();
-    window.addEventListener('resize', setSafePosition);
-    return () => window.removeEventListener('resize', setSafePosition);
+    buttonAnchorRef.current = readInitialAnchor();
+    const syncPositionToViewport = () => {
+      if (dragRef.current) return;
+      setButtonPos(resolveTutorialButtonAnchor(buttonAnchorRef.current));
+    };
+
+    syncPositionToViewport();
+    window.addEventListener('resize', syncPositionToViewport);
+    window.visualViewport?.addEventListener('resize', syncPositionToViewport);
+    return () => {
+      window.removeEventListener('resize', syncPositionToViewport);
+      window.visualViewport?.removeEventListener('resize', syncPositionToViewport);
+    };
   }, []);
 
   useEffect(() => {
@@ -2988,10 +3059,10 @@ export default function FloatingTutorialButton() {
     const dx = event.clientX - drag.startX;
     const dy = event.clientY - drag.startY;
     if (Math.abs(dx) + Math.abs(dy) > 4) drag.moved = true;
-    setButtonPos({
-      x: clamp(drag.originX + dx, 12, window.innerWidth - 76),
-      y: clamp(drag.originY + dy, 12, window.innerHeight - 76),
-    });
+    setButtonPos(clampTutorialButtonPosition({
+      x: drag.originX + dx,
+      y: drag.originY + dy,
+    }));
   };
 
   const handlePointerUp = (event) => {
@@ -2999,12 +3070,14 @@ export default function FloatingTutorialButton() {
     if (!drag || drag.pointerId !== event.pointerId) return;
     event.currentTarget.releasePointerCapture?.(event.pointerId);
     if (typeof window !== 'undefined') {
-      const next = {
-        x: clamp(drag.originX + event.clientX - drag.startX, 12, window.innerWidth - 76),
-        y: clamp(drag.originY + event.clientY - drag.startY, 12, window.innerHeight - 76),
-      };
+      const next = clampTutorialButtonPosition({
+        x: drag.originX + event.clientX - drag.startX,
+        y: drag.originY + event.clientY - drag.startY,
+      });
+      const anchor = createTutorialButtonAnchor(next);
+      buttonAnchorRef.current = anchor;
       setButtonPos(next);
-      window.localStorage.setItem('pos-tutorial-button-position-v1', JSON.stringify(next));
+      window.localStorage.setItem(TUTOR_BUTTON_STORAGE_KEY, JSON.stringify(anchor));
     }
   };
 
