@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { useAuthStore } from '@/store/authStore';
 import SuccessModal from '@/components/stock/SuccessModal';
@@ -23,6 +23,7 @@ const MONTHS = ['Jan','Feb','Mar','Apr','Mei','Jun',
                 'Jul','Agu','Sep','Okt','Nov','Des'];
 const MASTER_TREND_CARD_PAGE_SIZE = 8;
 const MASTER_TABLE_PAGE_SIZE = 10;
+const STOCK_IN_PREVIEW_LIMIT = 10;
 
 const UNIT_GROUPS = [
   { label: 'Bahan Utama',  units: ['Kilogram','Gram','Kiloan','Butir','Buah','Ikat','Lembar','Pak','Kaleng'] },
@@ -40,6 +41,13 @@ function fmtQty(val) {
   const n = Number(val || 0);
   return n % 1 === 0 ? String(Math.round(n)) : n.toFixed(2);
 }
+
+const normalizeSearch = (value) => String(value || '').toLowerCase().trim();
+const rowMatchesSearch = (row, query, fields = []) => {
+  const normalized = normalizeSearch(query);
+  if (!normalized) return true;
+  return fields.some((field) => normalizeSearch(row?.[field]).includes(normalized));
+};
 
 function getRequestedQtyFromIngredient(ingredient) {
   const qty = Number(
@@ -593,6 +601,10 @@ function AdminStockPage({ successModal, setSuccessModal }) {
   const [trendCardsExpanded, setTrendCardsExpanded] = useState(false);
   const [trendCardPage, setTrendCardPage] = useState(0);
   const [masterTablePage, setMasterTablePage] = useState(0);
+  const [masterSearch, setMasterSearch] = useState('');
+  const [warehouseSearch, setWarehouseSearch] = useState('');
+  const [requestSearch, setRequestSearch] = useState('');
+  const [stockInExpanded, setStockInExpanded] = useState(false);
 
   // Gudang
   const [summary,  setSummary]  = useState([]);
@@ -731,15 +743,21 @@ function AdminStockPage({ successModal, setSuccessModal }) {
       stock_from_main: !!sum, // Track if this came from main_stock (reliable) or is pending
     };
   });
-  const trendCardPageCount = Math.max(1, Math.ceil(priceTrends.length / MASTER_TREND_CARD_PAGE_SIZE));
+  const filteredStockItemsWithSummary = useMemo(() => stockItemsWithSummary.filter((item) => rowMatchesSearch(item, masterSearch, [
+    'name', 'unit', 'status',
+  ])), [stockItemsWithSummary, masterSearch]);
+  const filteredPriceTrends = useMemo(() => priceTrends.filter((trend) => rowMatchesSearch(trend, masterSearch, [
+    'name', 'unit',
+  ])), [priceTrends, masterSearch]);
+  const trendCardPageCount = Math.max(1, Math.ceil(filteredPriceTrends.length / MASTER_TREND_CARD_PAGE_SIZE));
   const visibleTrendCards = trendCardsExpanded
-    ? priceTrends
-    : priceTrends.slice(
+    ? filteredPriceTrends
+    : filteredPriceTrends.slice(
         trendCardPage * MASTER_TREND_CARD_PAGE_SIZE,
         trendCardPage * MASTER_TREND_CARD_PAGE_SIZE + MASTER_TREND_CARD_PAGE_SIZE
       );
-  const masterTablePageCount = Math.max(1, Math.ceil(stockItemsWithSummary.length / MASTER_TABLE_PAGE_SIZE));
-  const visibleMasterItems = stockItemsWithSummary.slice(
+  const masterTablePageCount = Math.max(1, Math.ceil(filteredStockItemsWithSummary.length / MASTER_TABLE_PAGE_SIZE));
+  const visibleMasterItems = filteredStockItemsWithSummary.slice(
     masterTablePage * MASTER_TABLE_PAGE_SIZE,
     masterTablePage * MASTER_TABLE_PAGE_SIZE + MASTER_TABLE_PAGE_SIZE
   );
@@ -753,6 +771,11 @@ function AdminStockPage({ successModal, setSuccessModal }) {
   useEffect(() => {
     if (masterTablePage >= masterTablePageCount) setMasterTablePage(0);
   }, [masterTablePage, masterTablePageCount]);
+
+  useEffect(() => {
+    setMasterTablePage(0);
+    setTrendCardPage(0);
+  }, [masterSearch]);
 
   useEffect(() => {
     const fromPos     = searchParams.get('from') === 'pos';
@@ -933,6 +956,26 @@ function AdminStockPage({ successModal, setSuccessModal }) {
   const inData   = monthly.filter(r => r.type==='in');
   // const outData  = daily.length > 0 ? daily : monthly.filter(r => r.type==='out');
   const outData = daily;
+  const filteredSummary = summary.filter((row) => rowMatchesSearch(row, warehouseSearch, ['name', 'unit']));
+  const searchedInData = inData.filter((row) => rowMatchesSearch(row, warehouseSearch, [
+    'item_name', 'unit', 'note', 'created_by_name',
+  ]));
+  const filteredInRows = filterItemId
+    ? searchedInData.filter((row) => row.item_name === filterItemId)
+    : searchedInData;
+  const visibleStockInRows = stockInExpanded ? filteredInRows : filteredInRows.slice(0, STOCK_IN_PREVIEW_LIMIT);
+  const searchedOutData = outData.filter((row) => rowMatchesSearch(row, warehouseSearch, [
+    'item_name', 'unit', 'note', 'branch_name', 'stock_owner_name', 'target_user_name', 'created_by_name', 'admin_name', 'request_status', 'type',
+  ]));
+  const filteredRequests = requests.filter((req) => {
+    const requestFieldsMatch = rowMatchesSearch(req, requestSearch, [
+      'user_name', 'status', 'note', 'approved_by_name', 'created_by_admin_name',
+    ]);
+    const itemMatch = (req.items || []).some((item) => rowMatchesSearch(item, requestSearch, [
+      'item_name', 'unit', 'note',
+    ]));
+    return requestFieldsMatch || itemMatch;
+  });
   const selectedBranchName = user?.branch_name || (selectedBranchId ? `Cabang #${selectedBranchId}` : 'Cabang aktif');
   const masterInitialLoading = (masterLoading && stockItems.length === 0)
     || (summaryLoading && summary.length === 0)
@@ -973,10 +1016,16 @@ function AdminStockPage({ successModal, setSuccessModal }) {
         <div data-tour="stock-master" className="space-y-4">
           <div data-tour="stock-master-actions" className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-slate-300 text-sm font-semibold">{stockItems.length} bahan baku</p>
+              <p className="text-slate-300 text-sm font-semibold">{filteredStockItemsWithSummary.length} bahan baku</p>
               <p className="text-slate-600 text-xs mt-0.5">Stok & harga dikelola di Stok Gudang → Catat Pembelian</p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
+              <input
+                value={masterSearch}
+                onChange={(e) => setMasterSearch(e.target.value)}
+                placeholder="Cari bahan baku..."
+                className="w-full rounded-xl border border-slate-600 bg-slate-800 px-3 py-2 text-xs font-semibold text-white outline-none placeholder:text-slate-500 focus:border-orange-500/60 sm:w-56"
+              />
               <select
                 value={trendYear}
                 onChange={e => setTrendYear(Number(e.target.value))}
@@ -991,14 +1040,14 @@ function AdminStockPage({ successModal, setSuccessModal }) {
             </div>
           </div>
 
-          {priceTrends.length > 0 && (
+          {filteredPriceTrends.length > 0 && (
             <div data-tour="stock-master-trends" className="space-y-3">
               <div data-tour="stock-master-trend-controls" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-700/50 bg-slate-800/50 px-4 py-3">
                 <div>
                   <p className="text-sm font-bold text-white">
-                    {trendCardsExpanded ? 'Semua card tren harga' : `Card tren ${trendCardPage * MASTER_TREND_CARD_PAGE_SIZE + 1}-${Math.min((trendCardPage + 1) * MASTER_TREND_CARD_PAGE_SIZE, priceTrends.length)}`}
+                    {trendCardsExpanded ? 'Semua card tren harga' : `Card tren ${trendCardPage * MASTER_TREND_CARD_PAGE_SIZE + 1}-${Math.min((trendCardPage + 1) * MASTER_TREND_CARD_PAGE_SIZE, filteredPriceTrends.length)}`}
                   </p>
-                  <p className="text-xs text-slate-500">{priceTrends.length} bahan punya riwayat harga</p>
+                  <p className="text-xs text-slate-500">{filteredPriceTrends.length} bahan punya riwayat harga</p>
                 </div>
                 <button
                   type="button"
@@ -1067,7 +1116,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
             </div>
           )}
 
-          {stockItems.length === 0
+          {filteredStockItemsWithSummary.length === 0
             ? <div data-tour="stock-master-table" className="bg-slate-800/60 rounded-2xl border border-slate-700/40 py-12">
                 <EmptyState icon="📦" title="Belum ada bahan baku" sub="Tambahkan bahan baku terlebih dahulu" />
               </div>
@@ -1076,10 +1125,10 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                 <div data-tour="stock-master-table-summary" className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-700/50 bg-slate-900/35 px-4 py-3">
                   <div>
                     <p className="text-sm font-bold text-white">
-                      Baris bahan baku {masterTablePage * MASTER_TABLE_PAGE_SIZE + 1}-{Math.min((masterTablePage + 1) * MASTER_TABLE_PAGE_SIZE, stockItemsWithSummary.length)}
+                      Baris bahan baku {masterTablePage * MASTER_TABLE_PAGE_SIZE + 1}-{Math.min((masterTablePage + 1) * MASTER_TABLE_PAGE_SIZE, filteredStockItemsWithSummary.length)}
                     </p>
                     <p className="text-xs text-slate-500">
-                      {stockItemsWithSummary.length} total bahan baku tersimpan - 10 baris per halaman
+                      {filteredStockItemsWithSummary.length} total bahan baku tersimpan - 10 baris per halaman
                     </p>
                   </div>
                   <span className="rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-bold text-slate-300">
@@ -1231,6 +1280,15 @@ function AdminStockPage({ successModal, setSuccessModal }) {
             <SubTab data-tour-action="stock-subtab-summary" active={mainTab==='summary'} onClick={() => setMainTab('summary')}>📊 Saldo Stok</SubTab>
             <SubTab data-tour-action="stock-subtab-in" active={mainTab==='in'}      onClick={() => setMainTab('in')}>📥 Pemasukan</SubTab>
             <SubTab data-tour-action="stock-subtab-out" active={mainTab==='out'}     onClick={() => setMainTab('out')}>📤 Pengeluaran</SubTab>
+            <input
+              value={warehouseSearch}
+              onChange={(e) => {
+                setWarehouseSearch(e.target.value);
+                setStockInExpanded(false);
+              }}
+              placeholder="Cari stok gudang..."
+              className="w-full rounded-xl border border-slate-600 bg-slate-800 px-3 py-2 text-xs font-semibold text-white outline-none placeholder:text-slate-500 focus:border-orange-500/60 sm:w-56"
+            />
             {mainTab === 'in' && (
               <button
                 data-tour-action="stock-open-purchase-modal"
@@ -1274,9 +1332,9 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                       </tr>
                     </thead>
                     <tbody>
-                      {summary.length===0
+                      {filteredSummary.length===0
                         ? <tr><td colSpan={6}><EmptyState title="Belum ada data stok" sub="Catat pembelian di tab Pemasukan" /></td></tr>
-                        : summary.map((row,i) => {
+                        : filteredSummary.map((row,i) => {
                           const cur = Number(row.current_stock);
                           return (
                             <tr key={row.id} className={trC(i)}>
@@ -1339,12 +1397,12 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                     <span className={`ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold ${
                       filterItemId === null ? 'bg-white/20 text-white' : 'bg-slate-600 text-slate-300'
                     }`}>
-                      {inData.length}
+                      {searchedInData.length}
                     </span>
                   </button>
 
-                  {[...new Map(inData.map(r => [r.item_name, r.item_name])).values()].map(name => {
-                    const count    = inData.filter(r => r.item_name === name).length;
+                  {[...new Map(searchedInData.map(r => [r.item_name, r.item_name])).values()].map(name => {
+                    const count    = searchedInData.filter(r => r.item_name === name).length;
                     const isActive = filterItemId === name;
                     return (
                       <button key={name} onClick={() => setFilterItemId(isActive ? null : name)}
@@ -1377,12 +1435,9 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                     </thead>
                     <tbody>
                       {(() => {
-                        const filtered = filterItemId
-                          ? inData.filter(r => r.item_name === filterItemId)
-                          : inData;
-                        if (filtered.length === 0)
+                        if (filteredInRows.length === 0)
                           return <tr><td colSpan={9}><EmptyState title="Belum ada pemasukan bulan ini" /></td></tr>;
-                        return filtered.map((row, i) => (
+                        return visibleStockInRows.map((row, i) => (
                           <tr key={row.id} className={trC(i)}>
                             <td className={`${tdC} text-slate-400 text-xs whitespace-nowrap`}>
                               {new Date(row.created_at).toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' })}
@@ -1438,6 +1493,20 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                     </tbody>
                   </table>
                 </div>
+                {filteredInRows.length > STOCK_IN_PREVIEW_LIMIT && (
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-700/50 bg-slate-900/35 px-4 py-3">
+                    <p className="text-xs text-slate-500">
+                      Menampilkan {visibleStockInRows.length} dari {filteredInRows.length} data pemasukan
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setStockInExpanded((current) => !current)}
+                      className="rounded-xl border border-blue-500/30 bg-blue-500/10 px-4 py-2 text-xs font-black text-blue-300 transition-all hover:bg-blue-500/20"
+                    >
+                      {stockInExpanded ? 'Hide ke 10 data' : 'Expand semua data'}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1488,7 +1557,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                     {f.label}
                   </button>
                 ))}
-                <span className="text-slate-600 text-xs ml-1">{outData.length} data</span>
+                <span className="text-slate-600 text-xs ml-1">{searchedOutData.length} data</span>
               </div>
 
               <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-3 flex gap-2.5">
@@ -1510,9 +1579,9 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                       </tr>
                     </thead>
                     <tbody>
-                      {outData.length === 0
+                      {searchedOutData.length === 0
                         ? <tr><td colSpan={11}><EmptyState title="Tidak ada data pengeluaran" /></td></tr>
-                        : outData.map((row, i) => {
+                        : searchedOutData.map((row, i) => {
                           const isPending  = row.type === 'pending_out' && row.request_status === 'pending';
                           const isRejected = row.type === 'pending_out' && row.request_status === 'rejected';
                           const isTx       = row.type === 'transaction';
@@ -1615,6 +1684,12 @@ function AdminStockPage({ successModal, setSuccessModal }) {
         ) : (
         <div data-tour="stock-requests" className="space-y-4">
           <div data-tour="stock-request-filters" className="flex flex-wrap gap-3 items-center">
+            <input
+              value={requestSearch}
+              onChange={(e) => setRequestSearch(e.target.value)}
+              placeholder="Cari pengajuan..."
+              className="w-full rounded-xl border border-slate-600 bg-slate-800 px-3 py-2 text-xs font-semibold text-white outline-none placeholder:text-slate-500 focus:border-orange-500/60 sm:w-56"
+            />
             <span className="text-slate-500 text-xs">Dari:</span>
             <input type="date" value={reqDateFrom2}
               onChange={e => setReqDateFrom2(e.target.value)}
@@ -1635,14 +1710,14 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                 </button>
               ))}
             </div>
-            <span className="text-slate-600 text-xs">{requests.length} pengajuan</span>
+            <span className="text-slate-600 text-xs">{filteredRequests.length} pengajuan</span>
           </div>
 
-          {requests.length===0
+          {filteredRequests.length===0
             ? <div data-tour="stock-request-list" className="bg-slate-800/60 rounded-2xl border border-slate-700/40 py-12">
                 <EmptyState icon="📋" title="Tidak ada pengajuan" sub="Kasir belum mengajukan stok" />
               </div>
-            : requests.map(req => (
+            : filteredRequests.map(req => (
               <div key={req.id} data-tour="stock-request-list" className="bg-slate-800/80 rounded-2xl border border-slate-700/60 overflow-hidden">
                 <div className="flex flex-wrap items-start justify-between gap-3 p-4 border-b border-slate-700/40">
                   <div>
@@ -2497,6 +2572,8 @@ function KasirStockPage({ successModal, setSuccessModal }) {
   const [requestsLoading, setRequestsLoading] = useState(false);
   const [productOptions, setProductOptions] = useState([]);
   const [outMenuSelections, setOutMenuSelections] = useState([createEmptyRecipeSelection()]);
+  const [warehouseSearch, setWarehouseSearch] = useState('');
+  const [requestSearch, setRequestSearch] = useState('');
 
   const hasOutMenuSelection = hasRecipeProductSelection(outMenuSelections);
   const hasOutRecipeSelection = getRecipeSelectionDetails(productOptions, outMenuSelections).length > 0;
@@ -2665,6 +2742,19 @@ function KasirStockPage({ successModal, setSuccessModal }) {
 
   // Tampilkan hanya pengeluaran yang diapprove dan milik user ini
   const outData = daily;
+  const filteredSummary = summary.filter((row) => rowMatchesSearch(row, warehouseSearch, ['name', 'unit']));
+  const searchedOutData = outData.filter((row) => rowMatchesSearch(row, warehouseSearch, [
+    'item_name', 'unit', 'note', 'branch_name', 'stock_owner_name', 'target_user_name', 'created_by_name', 'admin_name', 'request_status', 'type',
+  ]));
+  const filteredRequests = requests.filter((req) => {
+    const requestFieldsMatch = rowMatchesSearch(req, requestSearch, [
+      'status', 'note', 'approved_by_name',
+    ]);
+    const itemMatch = (req.items || []).some((item) => rowMatchesSearch(item, requestSearch, [
+      'item_name', 'unit', 'note',
+    ]));
+    return requestFieldsMatch || itemMatch;
+  });
   const warehouseInitialLoading = (mainTab === 'summary' && summaryLoading && summary.length === 0)
     || (mainTab === 'out' && dailyLoading && daily.length === 0);
   const requestsInitialLoading = requestsLoading && requests.length === 0;
@@ -2696,6 +2786,12 @@ function KasirStockPage({ successModal, setSuccessModal }) {
           <div data-tour="stock-warehouse-tabs" className="flex flex-wrap items-center gap-2">
             <SubTab data-tour-action="stock-subtab-summary" active={mainTab==='summary'} onClick={() => setMainTab('summary')}>📊 Saldo Stok</SubTab>
             <SubTab data-tour-action="stock-subtab-out" active={mainTab==='out'}     onClick={() => setMainTab('out')}>📤 Pengeluaran</SubTab>
+            <input
+              value={warehouseSearch}
+              onChange={(e) => setWarehouseSearch(e.target.value)}
+              placeholder="Cari stok gudang..."
+              className="w-full rounded-xl border border-slate-600 bg-slate-800 px-3 py-2 text-xs font-semibold text-white outline-none placeholder:text-slate-500 focus:border-orange-500/60 sm:w-56"
+            />
           </div>
 
           {/* ── Saldo Stok ── */}
@@ -2718,9 +2814,9 @@ function KasirStockPage({ successModal, setSuccessModal }) {
                       </tr>
                     </thead>
                     <tbody>
-                      {summary.length === 0
+                      {filteredSummary.length === 0
                         ? <tr><td colSpan={6}><EmptyState title="Belum ada data stok" /></td></tr>
-                        : summary.map((row, i) => {
+                        : filteredSummary.map((row, i) => {
                             const cur = Number(row.current_stock);
                             return (
                               <tr key={row.id} className={trC(i)}>
@@ -2806,7 +2902,7 @@ function KasirStockPage({ successModal, setSuccessModal }) {
                     {f.label}
                   </button>
                 ))}
-                <span className="text-slate-600 text-xs ml-1">{outData.length} data</span>
+                <span className="text-slate-600 text-xs ml-1">{searchedOutData.length} data</span>
               </div>
 
               <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-3 flex gap-2.5">
@@ -2827,9 +2923,9 @@ function KasirStockPage({ successModal, setSuccessModal }) {
                       </tr>
                     </thead>
                     <tbody>
-                      {outData.length === 0
+                      {searchedOutData.length === 0
                         ? <tr><td colSpan={11}><EmptyState title="Tidak ada data pengeluaran pada periode ini" /></td></tr>
-                        : outData.map((row, i) => {
+                        : searchedOutData.map((row, i) => {
                           const isPending  = row.type === 'pending_out' && row.request_status === 'pending';
                           const isRejected = row.type === 'pending_out' && row.request_status === 'rejected';
                           const isTx       = row.type === 'transaction';
@@ -2918,6 +3014,12 @@ function KasirStockPage({ successModal, setSuccessModal }) {
         ) : (
         <div data-tour="stock-requests" className="space-y-4">
           <div data-tour="stock-request-filters" className="flex flex-wrap gap-3 items-center">
+            <input
+              value={requestSearch}
+              onChange={(e) => setRequestSearch(e.target.value)}
+              placeholder="Cari pengajuan..."
+              className="w-full rounded-xl border border-slate-600 bg-slate-800 px-3 py-2 text-xs font-semibold text-white outline-none placeholder:text-slate-500 focus:border-orange-500/60 sm:w-56"
+            />
             <span className="text-slate-500 text-xs">Dari:</span>
             <input type="date" value={reqDateFrom}
               onChange={e => setReqDateFrom(e.target.value)}
@@ -2938,14 +3040,14 @@ function KasirStockPage({ successModal, setSuccessModal }) {
                 </button>
               ))}
             </div>
-            <span className="text-slate-600 text-xs">{requests.length} pengajuan</span>
+            <span className="text-slate-600 text-xs">{filteredRequests.length} pengajuan</span>
           </div>
 
-          {requests.length === 0
+          {filteredRequests.length === 0
             ? <div data-tour="stock-request-list" className="bg-slate-800/60 rounded-2xl border border-slate-700/40 py-12">
                 <EmptyState icon="📋" title="Tidak ada pengajuan" sub="Belum ada pengajuan pengeluaran" />
               </div>
-            : requests.map(req => (
+            : filteredRequests.map(req => (
               <div key={req.id} data-tour="stock-request-list" className={`bg-slate-800/80 rounded-2xl border overflow-hidden ${
                 req.status==='approved' ? 'border-green-500/30' :
                 req.status==='rejected' ? 'border-red-500/30' : 'border-slate-700/60'
