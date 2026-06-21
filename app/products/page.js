@@ -436,9 +436,9 @@ export default function ProductsPage() {
 
       {/* Modal Tambah/Edit Produk */}
       {modal && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-hidden bg-black/60 p-4 sm:items-center">
-          <div data-tour="product-modal" className="max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl border border-slate-700 bg-slate-800 p-6 shadow-2xl shadow-black/40">
-            <h2 className="sticky top-0 z-10 -mx-6 -mt-6 mb-5 border-b border-slate-700 bg-slate-800 px-6 py-5 text-xl font-bold text-white">
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-hidden bg-black/60 p-4">
+          <div data-tour="product-modal" className="my-auto max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl border border-slate-700 bg-slate-800 p-6 shadow-2xl shadow-black/40">
+            <h2 className="mb-5 text-xl font-bold text-white">
               {editing ? 'Edit Produk' : 'Tambah Produk'}
             </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -667,7 +667,7 @@ export default function ProductsPage() {
                   )}
               </div>
 
-              <div data-tour="product-form-actions" className="sticky bottom-0 z-10 -mx-6 -mb-6 flex gap-3 border-t border-slate-700 bg-slate-800/95 px-6 pb-6 pt-4 backdrop-blur">
+              <div data-tour="product-form-actions" className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setModal(false)}
                   className="flex-1 bg-slate-700 hover:bg-slate-600 text-white rounded-xl py-3 transition-colors">
                   Batal

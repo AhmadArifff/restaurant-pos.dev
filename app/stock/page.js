@@ -9,6 +9,7 @@ import {
   StockRequestSkeleton,
   StockWarehouseSkeleton,
 } from '@/components/ui/SectionSkeleton';
+import DateRangePicker from '@/components/ui/DateRangePicker';
 import {
   getStockItems, createStockItem, updateStockItem, deleteStockItem,
   getMainStockSummary, getMainStockMonthly, getMainStockDaily, getMainStockPriceTrends,
@@ -19,11 +20,24 @@ import {
 } from '@/lib/api';
 // Di AdminStockPage — tambah useEffect untuk baca query params dari POS
 import { useSearchParams } from 'next/navigation';
-const MONTHS = ['Jan','Feb','Mar','Apr','Mei','Jun',
-                'Jul','Agu','Sep','Okt','Nov','Des'];
 const MASTER_TREND_CARD_PAGE_SIZE = 8;
 const MASTER_TABLE_PAGE_SIZE = 10;
 const STOCK_IN_PREVIEW_LIMIT = 10;
+const STOCK_IN_FILTER_PAGE_SIZE = 10;
+
+const toLocalDateKey = (date = new Date()) => {
+  const value = date instanceof Date ? date : new Date(date);
+  if (Number.isNaN(value.getTime())) return '';
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, '0');
+  const day = String(value.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const getCurrentMonthStartKey = () => {
+  const now = new Date();
+  return toLocalDateKey(new Date(now.getFullYear(), now.getMonth(), 1));
+};
 
 const UNIT_GROUPS = [
   { label: 'Bahan Utama',  units: ['Kilogram','Gram','Kiloan','Butir','Buah','Ikat','Lembar','Pak','Kaleng'] },
@@ -605,6 +619,8 @@ function AdminStockPage({ successModal, setSuccessModal }) {
   const [warehouseSearch, setWarehouseSearch] = useState('');
   const [requestSearch, setRequestSearch] = useState('');
   const [stockInExpanded, setStockInExpanded] = useState(false);
+  const [stockInFilterExpanded, setStockInFilterExpanded] = useState(false);
+  const [stockInFilterPage, setStockInFilterPage] = useState(0);
 
   // Gudang
   const [summary,  setSummary]  = useState([]);
@@ -615,10 +631,12 @@ function AdminStockPage({ successModal, setSuccessModal }) {
   const [daily,    setDaily]    = useState([]);
   const [selMonth, setSelMonth] = useState(new Date().getMonth() + 1);
   const [selYear,  setSelYear]  = useState(new Date().getFullYear());
-  const [selDate,  setSelDate]  = useState(new Date().toISOString().split('T')[0]);
+  const [stockInDateFrom, setStockInDateFrom] = useState(getCurrentMonthStartKey);
+  const [stockInDateTo, setStockInDateTo] = useState(() => toLocalDateKey());
+  const [selDate,  setSelDate]  = useState(() => toLocalDateKey());
 
   // ✅ FIX: pindahkan selDateTo ke SINI, sebelum loadDaily
-  const [selDateTo, setSelDateTo] = useState(new Date().toISOString().split('T')[0]);
+  const [selDateTo, setSelDateTo] = useState(() => toLocalDateKey());
 
   // Pembelian
   const [showPurchase, setShowPurchase] = useState(false);
@@ -807,8 +825,8 @@ function AdminStockPage({ successModal, setSuccessModal }) {
     getProducts().then(r => setProductOptions(Array.isArray(r.data) ? r.data : [])).catch(() => setProductOptions([]));
   }, []);
   // Ganti reqDate dengan range
-  const [reqDateFrom2,  setReqDateFrom2]  = useState(new Date().toISOString().split('T')[0]);
-  const [reqDateTo2,    setReqDateTo2]    = useState(new Date().toISOString().split('T')[0]);
+  const [reqDateFrom2,  setReqDateFrom2]  = useState(() => toLocalDateKey());
+  const [reqDateTo2,    setReqDateTo2]    = useState(() => toLocalDateKey());
 
   // Form pengeluaran manual
   const [showOutForm,   setShowOutForm]   = useState(false);
@@ -862,10 +880,15 @@ function AdminStockPage({ successModal, setSuccessModal }) {
   }, [trendYear]);
   const loadMonthly = useCallback(() => {
     setMonthlyLoading(true);
-    return getMainStockMonthly({ month: selMonth, year: selYear })
+    return getMainStockMonthly({
+      month: selMonth,
+      year: selYear,
+      date_from: stockInDateFrom || undefined,
+      date_to: stockInDateTo || undefined,
+    })
       .then(r => setMonthly(r.data))
       .finally(() => setMonthlyLoading(false));
-  }, [selMonth, selYear, selectedBranchId]);
+  }, [selMonth, selYear, stockInDateFrom, stockInDateTo, selectedBranchId]);
   // const loadDaily    = useCallback(() =>
   //   getMainStockDaily({ date: selDate }).then(r => setDaily(r.data)), [selDate]);
   // const loadRequests = useCallback(() =>
@@ -960,6 +983,14 @@ function AdminStockPage({ successModal, setSuccessModal }) {
   const searchedInData = inData.filter((row) => rowMatchesSearch(row, warehouseSearch, [
     'item_name', 'unit', 'note', 'created_by_name',
   ]));
+  const stockInFilterNames = [...new Map(searchedInData.map(r => [r.item_name, r.item_name])).values()];
+  const stockInFilterPageCount = Math.max(1, Math.ceil(stockInFilterNames.length / STOCK_IN_FILTER_PAGE_SIZE));
+  const visibleStockInFilterNames = stockInFilterExpanded
+    ? stockInFilterNames
+    : stockInFilterNames.slice(
+        stockInFilterPage * STOCK_IN_FILTER_PAGE_SIZE,
+        stockInFilterPage * STOCK_IN_FILTER_PAGE_SIZE + STOCK_IN_FILTER_PAGE_SIZE
+      );
   const filteredInRows = filterItemId
     ? searchedInData.filter((row) => row.item_name === filterItemId)
     : searchedInData;
@@ -992,6 +1023,17 @@ function AdminStockPage({ successModal, setSuccessModal }) {
     || (dailyLoading && daily.length > 0)
     || (requestsLoading && requests.length > 0)
   );
+
+  useEffect(() => {
+    if (stockInFilterPage >= stockInFilterPageCount) setStockInFilterPage(0);
+  }, [stockInFilterPage, stockInFilterPageCount]);
+
+  useEffect(() => {
+    setStockInExpanded(false);
+    setStockInFilterExpanded(false);
+    setStockInFilterPage(0);
+    setFilterItemId(null);
+  }, [warehouseSearch, stockInDateFrom, stockInDateTo]);
 
   return (
     <>
@@ -1374,17 +1416,26 @@ function AdminStockPage({ successModal, setSuccessModal }) {
           {/* Pemasukan */}
           {mainTab === 'in' && (
             <div data-tour="stock-in" className="space-y-3">
-              <div data-tour="stock-in-filters" className="flex flex-wrap gap-2 items-center">
-                <select value={selMonth} onChange={e => { setSelMonth(Number(e.target.value)); setFilterItemId(null); }}
-                  className="bg-slate-700 border border-slate-600 text-white text-xs rounded-xl px-3 py-2 outline-none">
-                  {MONTHS.map((m, i) => <option key={i} value={i+1}>{m}</option>)}
-                </select>
-                <select value={selYear} onChange={e => { setSelYear(Number(e.target.value)); setFilterItemId(null); }}
-                  className="bg-slate-700 border border-slate-600 text-white text-xs rounded-xl px-3 py-2 outline-none">
-                  {[2024,2025,2026,2027].map(y => <option key={y} value={y}>{y}</option>)}
-                </select>
+              <div data-tour="stock-in-filters" className="grid gap-3 md:grid-cols-[minmax(0,380px)_1fr]">
+                <DateRangePicker
+                  label="Range pemasukan"
+                  value={{ start: stockInDateFrom, end: stockInDateTo }}
+                  onChange={({ start, end }) => {
+                    setStockInDateFrom(start);
+                    setStockInDateTo(end);
+                    if (start) {
+                      const date = new Date(`${start}T00:00:00`);
+                      if (!Number.isNaN(date.getTime())) {
+                        setSelMonth(date.getMonth() + 1);
+                        setSelYear(date.getFullYear());
+                      }
+                    }
+                  }}
+                  helperText="Klik tanggal awal pemasukan, lalu tanggal akhir"
+                />
 
                 {/* ── Tab filter bahan baku ── */}
+                <div className="space-y-2">
                 <div className="flex flex-wrap gap-1.5">
                   <button
                     onClick={() => setFilterItemId(null)}
@@ -1401,7 +1452,7 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                     </span>
                   </button>
 
-                  {[...new Map(searchedInData.map(r => [r.item_name, r.item_name])).values()].map(name => {
+                  {visibleStockInFilterNames.map(name => {
                     const count    = searchedInData.filter(r => r.item_name === name).length;
                     const isActive = filterItemId === name;
                     return (
@@ -1421,6 +1472,45 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                     );
                   })}
                 </div>
+                {stockInFilterNames.length > STOCK_IN_FILTER_PAGE_SIZE && (
+                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-700/50 bg-slate-900/35 px-3 py-2">
+                    <p className="text-xs text-slate-500">
+                      {stockInFilterExpanded
+                        ? `Semua ${stockInFilterNames.length} filter bahan tampil`
+                        : `Filter bahan ${stockInFilterPage * STOCK_IN_FILTER_PAGE_SIZE + 1}-${Math.min((stockInFilterPage + 1) * STOCK_IN_FILTER_PAGE_SIZE, stockInFilterNames.length)} dari ${stockInFilterNames.length}`}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      {!stockInFilterExpanded && stockInFilterPageCount > 1 && (
+                        <div className="flex items-center gap-1.5">
+                          {Array.from({ length: stockInFilterPageCount }).map((_, pageIndex) => (
+                            <button
+                              key={pageIndex}
+                              type="button"
+                              onClick={() => setStockInFilterPage(pageIndex)}
+                              aria-label={`Lihat filter pemasukan halaman ${pageIndex + 1}`}
+                              className={`h-2 rounded-full transition-all ${
+                                stockInFilterPage === pageIndex
+                                  ? 'w-7 bg-orange-400 shadow-lg shadow-orange-500/30'
+                                  : 'w-2 bg-slate-600 hover:bg-slate-400'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setStockInFilterExpanded((current) => !current);
+                          setStockInFilterPage(0);
+                        }}
+                        className="rounded-xl border border-orange-500/30 bg-orange-500/10 px-3 py-1.5 text-xs font-black text-orange-300 transition-all hover:bg-orange-500/20"
+                      >
+                        {stockInFilterExpanded ? 'Hide ke 10 filter' : 'Expand filter'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
               </div>
 
               <div data-tour="stock-in-table" className="bg-slate-800/80 rounded-2xl border border-slate-700/60 overflow-hidden">
@@ -1516,15 +1606,18 @@ function AdminStockPage({ successModal, setSuccessModal }) {
             <div data-tour="stock-out" className="space-y-3">
               {/* Filter date + tombol */}
               <div data-tour="stock-out-filters" className="flex flex-wrap gap-3 items-center justify-between">
+                <div className="w-full max-w-sm">
+                  <DateRangePicker
+                    label="Range pengeluaran"
+                    value={{ start: selDate, end: selDateTo || selDate }}
+                    onChange={({ start, end }) => {
+                      setSelDate(start);
+                      setSelDateTo(end || start);
+                    }}
+                    helperText="Klik tanggal awal pengeluaran, lalu tanggal akhir"
+                  />
+                </div>
                 <div className="flex flex-wrap gap-2 items-center">
-                  <span className="text-slate-500 text-xs">Dari:</span>
-                  <input type="date" value={selDate}
-                    onChange={e => setSelDate(e.target.value)}
-                    className="bg-slate-700 border border-slate-600 text-white text-xs rounded-xl px-3 py-2 outline-none" />
-                  <span className="text-slate-500 text-xs">Sampai:</span>
-                  <input type="date" value={selDateTo || selDate}
-                    onChange={e => setSelDateTo(e.target.value)}
-                    className="bg-slate-700 border border-slate-600 text-white text-xs rounded-xl px-3 py-2 outline-none" />
                   <button onClick={() => loadDaily()}
                     className="px-3 py-2 rounded-xl text-xs font-semibold bg-slate-700 text-slate-300
                       hover:bg-slate-600 hover:text-white border border-slate-600 transition-all">
@@ -1690,14 +1783,17 @@ function AdminStockPage({ successModal, setSuccessModal }) {
               placeholder="Cari pengajuan..."
               className="w-full rounded-xl border border-slate-600 bg-slate-800 px-3 py-2 text-xs font-semibold text-white outline-none placeholder:text-slate-500 focus:border-orange-500/60 sm:w-56"
             />
-            <span className="text-slate-500 text-xs">Dari:</span>
-            <input type="date" value={reqDateFrom2}
-              onChange={e => setReqDateFrom2(e.target.value)}
-              className="bg-slate-700 border border-slate-600 text-white text-xs rounded-xl px-3 py-2 outline-none" />
-            <span className="text-slate-500 text-xs">Sampai:</span>
-            <input type="date" value={reqDateTo2}
-              onChange={e => setReqDateTo2(e.target.value)}
-              className="bg-slate-700 border border-slate-600 text-white text-xs rounded-xl px-3 py-2 outline-none" />
+            <div className="w-full max-w-sm">
+              <DateRangePicker
+                label="Range pengajuan"
+                value={{ start: reqDateFrom2, end: reqDateTo2 }}
+                onChange={({ start, end }) => {
+                  setReqDateFrom2(start);
+                  setReqDateTo2(end || start);
+                }}
+                helperText="Klik tanggal awal pengajuan, lalu tanggal akhir"
+              />
+            </div>
             <div className="flex gap-1.5 flex-wrap">
               {STOCK_REQUEST_FILTERS.map(({ val, label }) => (
                 <button key={val || 'all'} onClick={() => setReqStatus(val)}
@@ -2556,13 +2652,13 @@ function KasirStockPage({ successModal, setSuccessModal }) {
 
   const [summary,   setSummary]  = useState([]);
   const [daily,     setDaily]    = useState([]);
-  const [selDate,   setSelDate]  = useState(new Date().toISOString().split('T')[0]);
-  const [selDateTo, setSelDateTo]= useState(new Date().toISOString().split('T')[0]);
+  const [selDate,   setSelDate]  = useState(() => toLocalDateKey());
+  const [selDateTo, setSelDateTo]= useState(() => toLocalDateKey());
 
   const [requests,    setRequests]   = useState([]);
   const [reqStatus,   setReqStatus]  = useState('');
-  const [reqDateFrom, setReqDateFrom]= useState(new Date().toISOString().split('T')[0]);
-  const [reqDateTo,   setReqDateTo]  = useState(new Date().toISOString().split('T')[0]);
+  const [reqDateFrom, setReqDateFrom]= useState(() => toLocalDateKey());
+  const [reqDateTo,   setReqDateTo]  = useState(() => toLocalDateKey());
 
   const [showOutForm, setShowOutForm] = useState(false);
   const [outItems,    setOutItems]    = useState([{ stock_item_id:'', qty:'', note:'' }]);
@@ -2859,13 +2955,18 @@ function KasirStockPage({ successModal, setSuccessModal }) {
           {mainTab === 'out' && (
             <div data-tour="stock-out" className="space-y-3">
               <div data-tour="stock-out-filters" className="flex flex-wrap gap-3 items-center justify-between">
+                <div className="w-full max-w-sm">
+                  <DateRangePicker
+                    label="Range pengeluaran"
+                    value={{ start: selDate, end: selDateTo || selDate }}
+                    onChange={({ start, end }) => {
+                      setSelDate(start);
+                      setSelDateTo(end || start);
+                    }}
+                    helperText="Klik tanggal awal pengeluaran, lalu tanggal akhir"
+                  />
+                </div>
                 <div className="flex flex-wrap gap-2 items-center">
-                  <span className="text-slate-500 text-xs">Dari:</span>
-                  <input type="date" value={selDate} onChange={e => setSelDate(e.target.value)}
-                    className="bg-slate-700 border border-slate-600 text-white text-xs rounded-xl px-3 py-2 outline-none" />
-                  <span className="text-slate-500 text-xs">Sampai:</span>
-                  <input type="date" value={selDateTo} onChange={e => setSelDateTo(e.target.value)}
-                    className="bg-slate-700 border border-slate-600 text-white text-xs rounded-xl px-3 py-2 outline-none" />
                   <button onClick={() => loadDaily()}
                     className="px-3 py-2 rounded-xl text-xs font-semibold bg-slate-700 text-slate-300
                       hover:bg-slate-600 hover:text-white border border-slate-600 transition-all">
@@ -3020,14 +3121,17 @@ function KasirStockPage({ successModal, setSuccessModal }) {
               placeholder="Cari pengajuan..."
               className="w-full rounded-xl border border-slate-600 bg-slate-800 px-3 py-2 text-xs font-semibold text-white outline-none placeholder:text-slate-500 focus:border-orange-500/60 sm:w-56"
             />
-            <span className="text-slate-500 text-xs">Dari:</span>
-            <input type="date" value={reqDateFrom}
-              onChange={e => setReqDateFrom(e.target.value)}
-              className="bg-slate-700 border border-slate-600 text-white text-xs rounded-xl px-3 py-2 outline-none" />
-            <span className="text-slate-500 text-xs">Sampai:</span>
-            <input type="date" value={reqDateTo}
-              onChange={e => setReqDateTo(e.target.value)}
-              className="bg-slate-700 border border-slate-600 text-white text-xs rounded-xl px-3 py-2 outline-none" />
+            <div className="w-full max-w-sm">
+              <DateRangePicker
+                label="Range pengajuan"
+                value={{ start: reqDateFrom, end: reqDateTo }}
+                onChange={({ start, end }) => {
+                  setReqDateFrom(start);
+                  setReqDateTo(end || start);
+                }}
+                helperText="Klik tanggal awal pengajuan, lalu tanggal akhir"
+              />
+            </div>
             <div className="flex gap-1.5 flex-wrap">
               {STOCK_REQUEST_FILTERS.map(({ val, label }) => (
                 <button key={val || 'all'} onClick={() => setReqStatus(val)}
