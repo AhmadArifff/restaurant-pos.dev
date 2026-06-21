@@ -204,12 +204,15 @@ export default function PaymentModal({
   ];
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 overflow-y-auto" data-tour="pos-payment-modal">
-      <div className="bg-slate-900 rounded-2xl w-full max-w-md border border-slate-700 my-4 overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/70 p-3 sm:p-4" data-tour="pos-payment-modal">
+      <div className="flex max-h-[calc(100vh-1.5rem)] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl shadow-black/50 sm:max-h-[calc(100vh-2rem)]">
 
         {/* Header */}
-        <div className="px-5 py-4 border-b border-slate-700 flex items-center justify-between">
-          <h2 className="text-white font-bold text-lg">Pembayaran</h2>
+        <div className="flex shrink-0 items-center justify-between border-b border-slate-700 px-4 py-3 sm:px-5 sm:py-4">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-300">Checkout Kasir</p>
+            <h2 className="mt-0.5 text-lg font-bold text-white">Pembayaran</h2>
+          </div>
           <button
             onClick={onClose}
             disabled={processing}
@@ -217,10 +220,10 @@ export default function PaymentModal({
           >×</button>
         </div>
 
-        <div className="px-5 py-4 space-y-5">
+        <div className="grid min-h-0 flex-1 content-start gap-4 overflow-y-auto px-4 py-4 sm:px-5 lg:grid-cols-[minmax(0,1.08fr)_minmax(320px,0.92fr)]">
 
           {/* Total Tagihan */}
-          <div className="bg-slate-800 rounded-xl p-4 flex justify-between items-center border border-slate-700" data-tour="pos-payment-total">
+          <div className="flex items-center justify-between rounded-xl border border-slate-700 bg-slate-800 p-4 lg:col-start-2 lg:row-start-1" data-tour="pos-payment-total">
             <div>
               <p className="text-slate-400 text-xs uppercase tracking-wide font-medium">Total Tagihan</p>
               <p className="text-orange-400 text-2xl font-black mt-0.5">
@@ -233,13 +236,13 @@ export default function PaymentModal({
               )}
             </div>
             <div className="text-right">
-              <p className="text-slate-400 text-xs">{itemCount} item</p>
+              <p className="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-xs font-bold text-slate-400">{itemCount} item</p>
             </div>
           </div>
 
           {/* Meja untuk status publik */}
           {tables.length > 0 && (
-            <div data-tour="pos-payment-table">
+            <div className="lg:col-start-1 lg:row-start-1" data-tour="pos-payment-table">
               <p className="text-slate-500 text-xs uppercase tracking-wide font-medium mb-2">Meja Pelanggan</p>
               <select
                 value={selectedTableId || ''}
@@ -269,7 +272,7 @@ export default function PaymentModal({
           )}
 
           {/* Voucher */}
-          <div className="rounded-xl border border-slate-700 bg-slate-800/60 p-3" data-tour="pos-payment-discount">
+          <div className="rounded-xl border border-slate-700 bg-slate-800/60 p-3 lg:col-start-1 lg:row-span-2" data-tour="pos-payment-discount">
             <p className="text-slate-500 text-xs uppercase tracking-wide font-medium mb-2">Voucher & Diskon</p>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <input
@@ -288,7 +291,7 @@ export default function PaymentModal({
                 className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-bold uppercase text-white outline-none focus:border-orange-500"
               />
             </div>
-            <div className="mt-2 rounded-lg bg-slate-900/70 px-3 py-2 text-xs" data-tour="pos-payment-discount-preview">
+            <div className="mt-2 max-h-[260px] overflow-y-auto rounded-lg bg-slate-900/70 px-3 py-2 text-xs lg:max-h-[230px]" data-tour="pos-payment-discount-preview">
               {discountLoading ? (
                 <span className="text-slate-400">Mengecek diskon...</span>
               ) : discountPreview?.error ? (
@@ -336,7 +339,7 @@ export default function PaymentModal({
           </div>
 
           {/* Metode Bayar */}
-          <div data-tour="pos-payment-methods">
+          <div className="lg:col-start-1" data-tour="pos-payment-methods">
             <p className="text-slate-500 text-xs uppercase tracking-wide font-medium mb-2">Metode Bayar</p>
             <div className="grid grid-cols-3 gap-2">
               {methods.map(m => (
@@ -360,9 +363,9 @@ export default function PaymentModal({
           {method === 'cash' && (
             <>
               {/* Pecahan Uang */}
-              <div data-tour="pos-payment-cash-denominations">
+              <div className="lg:col-start-2" data-tour="pos-payment-cash-denominations">
                 <p className="text-slate-500 text-xs uppercase tracking-wide font-medium mb-2">Pecahan Uang</p>
-                <div className="grid grid-cols-4 gap-1.5">
+                <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-6 lg:grid-cols-4 xl:grid-cols-3">
                   {PECAHAN.map(p => (
                     <button
                       key={p}
@@ -376,7 +379,7 @@ export default function PaymentModal({
               </div>
 
               {/* Input Uang Diterima */}
-              <div data-tour="pos-payment-cash-input">
+              <div className="lg:col-start-2" data-tour="pos-payment-cash-input">
                 <label className="text-slate-500 text-xs uppercase tracking-wide font-medium block mb-2">
                   Uang Diterima
                 </label>
@@ -400,7 +403,7 @@ export default function PaymentModal({
               </div>
 
               {/* Kembalian */}
-              <div data-tour="pos-payment-change">
+              <div className="lg:col-start-2" data-tour="pos-payment-change">
                 <label className="text-slate-500 text-xs uppercase tracking-wide font-medium block mb-2">
                   Kembalian
                 </label>
@@ -421,7 +424,7 @@ export default function PaymentModal({
 
           {/* Non-cash info */}
           {method !== 'cash' && (
-            <div className="bg-slate-800 rounded-xl p-4 border border-slate-700 text-center" data-tour="pos-payment-noncash-note">
+            <div className="rounded-xl border border-slate-700 bg-slate-800 p-4 text-center lg:col-start-2" data-tour="pos-payment-noncash-note">
               <p className="text-slate-400 text-sm">
                 {method === 'qris' ? '📱 Tunjukkan QR kepada pelanggan' : '🏦 Konfirmasi transfer sebelum proses'}
               </p>
@@ -431,7 +434,7 @@ export default function PaymentModal({
         </div>
 
         {/* Footer */}
-        <div className="px-5 pb-5 flex gap-3" data-tour="pos-payment-actions">
+        <div className="flex shrink-0 gap-3 border-t border-slate-700 bg-slate-900/95 px-4 py-4 sm:px-5" data-tour="pos-payment-actions">
           <button
             onClick={onClose}
             disabled={processing}
