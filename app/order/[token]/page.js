@@ -206,6 +206,24 @@ const getBundleExcludedIds = (breakdown = []) => new Set(
     .filter(Boolean)
 );
 
+const getProductIngredientNames = (product) => {
+  const recipeItems = product?.ingredients || product?.recipe || product?.product_ingredients || [];
+  if (Array.isArray(recipeItems) && recipeItems.length) {
+    return recipeItems
+      .map((item) => item?.stock_item_name || item?.ingredient_name || item?.name || item?.stock_name || '')
+      .map((name) => String(name || '').trim())
+      .filter(Boolean);
+  }
+
+  return String(product?.description || '')
+    .split(',')
+    .map((item) => item
+      .replace(/\s+\d+([.,]\d+)?\s*(gram|gr|ml|pcs|porsi|buah|butir|sachet|kg|liter|ltr|cup)\b/gi, '')
+      .replace(/\s+/g, ' ')
+      .trim())
+    .filter(Boolean);
+};
+
 function StarPicker({ value = 5, onChange }) {
   const rating = Number(value || 0);
   return (
@@ -439,6 +457,8 @@ export default function CustomerOrderPage() {
   const [tableSession, setTableSession] = useState(null);
   const [leaveCartConfirmOpen, setLeaveCartConfirmOpen] = useState(false);
   const [reviewVoucherModal, setReviewVoucherModal] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [productDetailFlipped, setProductDetailFlipped] = useState(false);
   const cartRef = useRef([]);
   const orderRef = useRef(null);
   const discountPreviewRef = useRef(null);
@@ -1397,7 +1417,7 @@ export default function CustomerOrderPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#0D0A06] text-[#F5EDD8]">
+    <main className="min-h-screen overflow-x-hidden bg-[#0D0A06] text-[#F5EDD8]">
       <header className="sticky top-0 z-40 border-b border-[#C9A84C]/15 bg-[#0D0A06]/92 px-4 py-3 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 overflow-hidden">
           <div className="min-w-0">
@@ -1418,7 +1438,7 @@ export default function CustomerOrderPage() {
       <div className={`mx-auto grid gap-5 px-3 pb-28 pt-4 sm:px-4 sm:py-6 lg:pb-6 ${
         order ? 'max-w-5xl lg:grid-cols-1' : 'max-w-7xl lg:grid-cols-[minmax(0,1fr)_380px]'
       }`}>
-        <section className={order ? 'hidden' : ''}>
+        <section className={order ? 'hidden' : 'min-w-0'}>
           <div className="mb-4 rounded-3xl border border-[#C9A84C]/18 bg-[#1A1409] p-4 sm:mb-5 sm:rounded-[2rem] sm:p-5">
             <p className="text-xs font-black uppercase tracking-[0.28em] text-[#C9A84C]">Pesan langsung dari meja</p>
             <h2 className="mt-2 font-serif text-2xl font-black sm:text-3xl">Pilih menu favorit Anda</h2>
@@ -1506,9 +1526,13 @@ export default function CustomerOrderPage() {
                   initial={{ opacity: 0, y: 14 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.025 }}
-                  className="flex min-h-[158px] overflow-hidden rounded-3xl border border-[#C9A84C]/16 bg-[#1A1409] sm:block sm:min-h-0 sm:rounded-[1.6rem]"
+                  onClick={() => {
+                    setSelectedProduct(product);
+                    setProductDetailFlipped(false);
+                  }}
+                  className="flex min-h-[150px] cursor-pointer overflow-hidden rounded-3xl border border-[#C9A84C]/16 bg-[#1A1409] transition hover:border-[#C9A84C]/35 sm:block sm:min-h-0 sm:rounded-[1.6rem]"
                 >
-                  <div className="h-auto w-24 shrink-0 overflow-hidden bg-[#241C0E] min-[380px]:w-28 sm:h-44 sm:w-full">
+                  <div className="h-auto w-20 shrink-0 overflow-hidden bg-[#241C0E] min-[380px]:w-24 sm:h-44 sm:w-full">
                     {product.image_url ? (
                       <img src={resolveAssetUrl(product.image_url)} alt={product.name} className="h-full w-full object-cover" />
                     ) : (
@@ -1523,14 +1547,17 @@ export default function CustomerOrderPage() {
                       </div>
                       <strong className="text-sm text-[#C9A84C] sm:shrink-0 sm:text-base">{formatRp(product.price)}</strong>
                     </div>
-                    <div className="mt-auto flex flex-col items-stretch gap-2 pt-3 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between sm:mt-4 sm:flex-wrap sm:pt-0">
-                      <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${soldOut ? 'bg-red-500/15 text-red-200' : 'bg-emerald-500/15 text-emerald-200'}`}>
+                    <div className="mt-auto flex flex-col items-start gap-2 pt-3 min-[380px]:flex-row min-[380px]:flex-wrap min-[380px]:items-center min-[380px]:justify-between sm:mt-4 sm:pt-0">
+                      <span className={`max-w-full rounded-full px-2.5 py-1 text-xs font-bold ${soldOut ? 'bg-red-500/15 text-red-200' : 'bg-emerald-500/15 text-emerald-200'}`}>
                         {tableBusy ? 'Meja sedang aktif' : soldOut ? 'Stok habis' : `${product.stock} porsi siap`}
                       </span>
                       <button
-                        onClick={() => addToCart(product)}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          addToCart(product);
+                        }}
                         disabled={soldOut}
-                        className="min-h-10 w-full shrink-0 rounded-xl bg-[#C9A84C] px-4 py-2 text-sm font-black text-[#0D0A06] disabled:cursor-not-allowed disabled:opacity-40 min-[420px]:w-auto"
+                        className="min-h-9 min-w-[86px] max-w-full shrink-0 rounded-xl bg-[#C9A84C] px-3 py-2 text-sm font-black text-[#0D0A06] disabled:cursor-not-allowed disabled:opacity-40 sm:min-h-10 sm:px-4"
                       >
                         Tambah
                       </button>
@@ -1732,6 +1759,156 @@ export default function CustomerOrderPage() {
               transition={{ type: 'spring', stiffness: 420, damping: 38 }}
             >
               {renderCartPanel(true)}
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {selectedProduct && !order && (
+          <>
+            <motion.button
+              type="button"
+              aria-label="Tutup detail menu"
+              className="fixed inset-0 z-[70] bg-black/75 backdrop-blur-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedProduct(null)}
+            />
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              className="fixed inset-x-3 top-1/2 z-[80] mx-auto max-w-md -translate-y-1/2 text-[#F5EDD8] [perspective:1200px]"
+              initial={{ opacity: 0, y: 22, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 22, scale: 0.96 }}
+            >
+              <motion.div
+                className="relative min-h-[520px] rounded-[2rem] [transform-style:preserve-3d]"
+                animate={{ rotateY: productDetailFlipped ? 180 : 0 }}
+                transition={{ type: 'spring', stiffness: 190, damping: 24 }}
+              >
+                <div
+                  className="absolute inset-0 overflow-hidden rounded-[2rem] border border-[#C9A84C]/25 bg-[#1A1409] shadow-2xl shadow-black/60 [backface-visibility:hidden]"
+                  onClick={() => setProductDetailFlipped(true)}
+                >
+                  <div className="relative grid aspect-[4/3] place-items-center bg-[#0D0A06]">
+                    {selectedProduct.image_url ? (
+                      <img
+                        src={resolveAssetUrl(selectedProduct.image_url)}
+                        alt={selectedProduct.name}
+                        className="h-full w-full object-contain"
+                      />
+                    ) : (
+                      <div className="grid h-full w-full place-items-center text-7xl">K</div>
+                    )}
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#0D0A06] via-[#0D0A06]/82 to-transparent p-5">
+                      <p className="text-[11px] font-black uppercase tracking-[0.24em] text-[#C9A84C]">{selectedProduct.category_name || 'Menu'}</p>
+                      <div className="mt-2 flex items-end justify-between gap-3">
+                        <h3 className="text-2xl font-black leading-tight">{selectedProduct.name}</h3>
+                        <strong className="shrink-0 text-lg text-[#C9A84C]">{formatRp(selectedProduct.price)}</strong>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="space-y-4 p-5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className={`rounded-full px-3 py-1 text-xs font-black ${Number(selectedProduct.stock || 0) <= 0 || tableBusy ? 'bg-red-500/15 text-red-200' : 'bg-emerald-500/15 text-emerald-200'}`}>
+                        {tableBusy ? 'Meja sedang aktif' : Number(selectedProduct.stock || 0) <= 0 ? 'Stok habis' : `${selectedProduct.stock} porsi siap`}
+                      </span>
+                      <span className="rounded-full border border-[#C9A84C]/20 px-3 py-1 text-xs font-bold text-[#EDE0C4]/70">
+                        Klik kartu untuk lihat bahan
+                      </span>
+                    </div>
+                    <p className="text-sm leading-6 text-[#EDE0C4]/70">
+                      Gambar ditampilkan utuh supaya detail menu tetap jelas meskipun resolusi foto berbeda.
+                    </p>
+                    <div className="grid grid-cols-[1fr_auto] gap-3">
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setProductDetailFlipped(true);
+                        }}
+                        className="rounded-2xl border border-[#C9A84C]/25 px-4 py-3 text-sm font-black text-[#C9A84C]"
+                      >
+                        Lihat Bahan
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async (event) => {
+                          event.stopPropagation();
+                          await addToCart(selectedProduct);
+                          setSelectedProduct(null);
+                        }}
+                        disabled={tableBusy || Number(selectedProduct.stock || 0) <= 0}
+                        className="rounded-2xl bg-[#C9A84C] px-5 py-3 text-sm font-black text-[#0D0A06] disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        Tambah
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  className="absolute inset-0 overflow-hidden rounded-[2rem] border border-[#C9A84C]/25 bg-[#1A1409] p-5 shadow-2xl shadow-black/60 [backface-visibility:hidden] [transform:rotateY(180deg)]"
+                  onClick={() => setProductDetailFlipped(false)}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-black uppercase tracking-[0.24em] text-[#C9A84C]">Bahan Menu</p>
+                      <h3 className="mt-2 text-2xl font-black leading-tight">{selectedProduct.name}</h3>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setSelectedProduct(null);
+                      }}
+                      className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-[#C9A84C]/20 text-[#C9A84C]"
+                      aria-label="Tutup detail"
+                    >
+                      x
+                    </button>
+                  </div>
+                  <div className="mt-5 max-h-[330px] space-y-2 overflow-y-auto pr-1">
+                    {getProductIngredientNames(selectedProduct).length ? (
+                      getProductIngredientNames(selectedProduct).map((ingredient, index) => (
+                        <div key={`${ingredient}-${index}`} className="rounded-2xl border border-[#C9A84C]/14 bg-[#0D0A06]/55 px-4 py-3">
+                          <p className="text-sm font-black">{ingredient}</p>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="rounded-2xl border border-[#C9A84C]/14 bg-[#0D0A06]/55 p-4 text-sm leading-6 text-[#EDE0C4]/70">
+                        Detail bahan belum tersedia untuk menu ini.
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-5 grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setProductDetailFlipped(false);
+                      }}
+                      className="rounded-2xl border border-[#C9A84C]/25 px-4 py-3 text-sm font-black text-[#C9A84C]"
+                    >
+                      Kembali
+                    </button>
+                    <button
+                      type="button"
+                      onClick={async (event) => {
+                        event.stopPropagation();
+                        await addToCart(selectedProduct);
+                        setSelectedProduct(null);
+                      }}
+                      disabled={tableBusy || Number(selectedProduct.stock || 0) <= 0}
+                      className="rounded-2xl bg-[#C9A84C] px-4 py-3 text-sm font-black text-[#0D0A06] disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      Tambah
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
             </motion.div>
           </>
         )}
