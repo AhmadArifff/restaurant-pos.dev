@@ -1171,7 +1171,7 @@ export default function CustomerOrderPage() {
       initial={{ opacity: 0, x: isMobile ? 0 : 18, y: isMobile ? 18 : 0 }}
       animate={{ opacity: 1, x: 0, y: 0 }}
       exit={{ opacity: 0, x: isMobile ? 0 : 18, y: isMobile ? 18 : 0 }}
-      className={`${isMobile ? 'rounded-t-3xl border-t' : 'flex max-h-[calc(100vh-7rem)] flex-col overflow-hidden rounded-[2rem] border'} border-[#C9A84C]/20 bg-[#1A1409] p-4 sm:p-5`}
+      className={`${isMobile ? 'rounded-t-3xl border-t' : 'rounded-[2rem] border'} border-[#C9A84C]/20 bg-[#1A1409] p-4 sm:p-5`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -1190,7 +1190,7 @@ export default function CustomerOrderPage() {
         )}
       </div>
 
-      <div className={`${isMobile ? 'max-h-[34vh]' : 'max-h-44'} mt-5 space-y-3 overflow-y-auto pr-1`}>
+      <div className={`${isMobile ? 'max-h-[34vh] overflow-y-auto pr-1' : ''} mt-5 space-y-3`}>
         {cart.length === 0 && <p className="rounded-3xl bg-[#241C0E] p-5 text-sm text-[#EDE0C4]/65">Belum ada menu dipilih.</p>}
         {cart.map((item) => (
           <div key={item.id} className="rounded-3xl bg-[#241C0E] p-4">
@@ -1209,10 +1209,10 @@ export default function CustomerOrderPage() {
         ))}
       </div>
 
-      <div className={`${isMobile ? 'mt-5 space-y-3' : 'mt-4 grid gap-3 lg:grid-cols-2'}`}>
+      <div className="mt-5 space-y-3">
         <input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Nama pelanggan (opsional)" className="w-full rounded-2xl border border-[#C9A84C]/20 bg-[#0D0A06] px-4 py-3 outline-none" />
         <input value={customerPhone} onChange={(e) => setCustomerPhone(formatIndonesianPhone(e.target.value))} inputMode="numeric" placeholder="+62895-3530-25503" className="w-full rounded-2xl border border-[#C9A84C]/20 bg-[#0D0A06] px-4 py-3 outline-none" />
-        <div className="flex gap-2 lg:col-span-2">
+        <div className="flex gap-2">
           <input value={voucherCode} onChange={(e) => setVoucherCode(e.target.value.toUpperCase())} placeholder="Kode vocher / voucher (opsional)" className="min-w-0 flex-1 rounded-2xl border border-[#C9A84C]/20 bg-[#0D0A06] px-4 py-3 font-bold uppercase outline-none" />
           <button
             type="button"
@@ -1222,7 +1222,7 @@ export default function CustomerOrderPage() {
             Paste
           </button>
         </div>
-        <div className="rounded-2xl border border-[#C9A84C]/20 bg-[#0D0A06] p-3 lg:col-span-2">
+        <div className="rounded-2xl border border-[#C9A84C]/20 bg-[#0D0A06] p-3">
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.18em] text-[#C9A84C]">Voucher Review QR</p>
@@ -1260,12 +1260,12 @@ export default function CustomerOrderPage() {
             </div>
           )}
         </div>
-        <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Catatan pesanan..." className="max-h-28 w-full rounded-2xl border border-[#C9A84C]/20 bg-[#0D0A06] px-4 py-3 outline-none lg:col-span-2" />
+        <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Catatan pesanan..." className="max-h-28 w-full rounded-2xl border border-[#C9A84C]/20 bg-[#0D0A06] px-4 py-3 outline-none" />
       </div>
 
-      <div className={`${isMobile ? '' : 'mt-4 grid min-h-0 gap-3 xl:grid-cols-[1.04fr_0.96fr] xl:items-start'}`}>
+      <div>
       {cart.length > 0 && (
-        <div className={`${isMobile ? 'mt-5' : ''} rounded-3xl border border-[#C9A84C]/18 bg-[#241C0E] p-3`}>
+        <div className="mt-5 rounded-3xl border border-[#C9A84C]/18 bg-[#241C0E] p-3">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.18em] text-[#C9A84C]">Metode pembayaran</p>
@@ -1287,7 +1287,7 @@ export default function CustomerOrderPage() {
                     method={method}
                     active={active}
                     compact
-                    className={isMobile ? '' : '[&>div:first-child]:!min-h-[118px] [&>div:first-child]:!p-3'}
+                    className=""
                     onClick={() => setSelectedPaymentMethodId(String(method.id))}
                   />
                 );
@@ -1301,13 +1301,13 @@ export default function CustomerOrderPage() {
         </div>
       )}
 
-        <div className={`${isMobile ? 'mt-5 border-t border-[#C9A84C]/15 pt-4' : 'rounded-3xl border border-[#C9A84C]/18 bg-[#0D0A06]/50 p-3'}`}>
+        <div className="mt-5 border-t border-[#C9A84C]/15 pt-4">
           <div className="flex items-center justify-between gap-3">
             <span className="text-sm text-[#EDE0C4]/70">Subtotal</span>
             <strong className="text-2xl text-[#C9A84C]">{formatRp(total)}</strong>
           </div>
           {cart.length > 0 && (
-            <div className="mt-3 max-h-64 overflow-y-auto rounded-2xl border border-[#C9A84C]/15 bg-[#0D0A06]/55 p-3 text-xs">
+            <div className="mt-3 rounded-2xl border border-[#C9A84C]/15 bg-[#0D0A06]/55 p-3 text-xs">
               {discountLoading ? (
                 <p className="text-[#EDE0C4]/55">Mengecek diskon...</p>
               ) : discountPreview?.error ? (
@@ -1416,7 +1416,7 @@ export default function CustomerOrderPage() {
       </header>
 
       <div className={`mx-auto grid gap-5 px-3 pb-28 pt-4 sm:px-4 sm:py-6 lg:pb-6 ${
-        order ? 'max-w-5xl lg:grid-cols-1' : 'max-w-7xl lg:grid-cols-[minmax(0,1fr)_430px] xl:grid-cols-[minmax(0,1fr)_540px]'
+        order ? 'max-w-5xl lg:grid-cols-1' : 'max-w-7xl lg:grid-cols-[minmax(0,1fr)_380px]'
       }`}>
         <section className={order ? 'hidden' : ''}>
           <div className="mb-4 rounded-3xl border border-[#C9A84C]/18 bg-[#1A1409] p-4 sm:mb-5 sm:rounded-[2rem] sm:p-5">
@@ -1494,7 +1494,7 @@ export default function CustomerOrderPage() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 2xl:grid-cols-3">
             {filteredProducts.map((product, index) => {
               const soldOut = Number(product.stock || 0) <= 0 || tableBusy;
               const stockSource = product.stock_source_user?.user_name
@@ -1530,7 +1530,7 @@ export default function CustomerOrderPage() {
                       <button
                         onClick={() => addToCart(product)}
                         disabled={soldOut}
-                        className="min-h-10 rounded-xl bg-[#C9A84C] px-4 py-2 text-sm font-black text-[#0D0A06] disabled:cursor-not-allowed disabled:opacity-40"
+                        className="min-h-10 shrink-0 rounded-xl bg-[#C9A84C] px-4 py-2 text-sm font-black text-[#0D0A06] disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         Tambah
                       </button>
