@@ -1171,7 +1171,7 @@ export default function CustomerOrderPage() {
       initial={{ opacity: 0, x: isMobile ? 0 : 18, y: isMobile ? 18 : 0 }}
       animate={{ opacity: 1, x: 0, y: 0 }}
       exit={{ opacity: 0, x: isMobile ? 0 : 18, y: isMobile ? 18 : 0 }}
-      className={`${isMobile ? 'rounded-t-3xl border-t' : 'rounded-[2rem] border'} border-[#C9A84C]/20 bg-[#1A1409] p-4 sm:p-5`}
+      className={`${isMobile ? 'rounded-t-3xl border-t' : 'flex max-h-[calc(100vh-7rem)] flex-col overflow-hidden rounded-[2rem] border'} border-[#C9A84C]/20 bg-[#1A1409] p-4 sm:p-5`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -1190,7 +1190,7 @@ export default function CustomerOrderPage() {
         )}
       </div>
 
-      <div className={`${isMobile ? 'max-h-[34vh] overflow-y-auto pr-1' : ''} mt-5 space-y-3`}>
+      <div className={`${isMobile ? 'max-h-[34vh]' : 'max-h-44'} mt-5 space-y-3 overflow-y-auto pr-1`}>
         {cart.length === 0 && <p className="rounded-3xl bg-[#241C0E] p-5 text-sm text-[#EDE0C4]/65">Belum ada menu dipilih.</p>}
         {cart.map((item) => (
           <div key={item.id} className="rounded-3xl bg-[#241C0E] p-4">
@@ -1209,10 +1209,10 @@ export default function CustomerOrderPage() {
         ))}
       </div>
 
-      <div className="mt-5 space-y-3">
+      <div className={`${isMobile ? 'mt-5 space-y-3' : 'mt-4 grid gap-3 lg:grid-cols-2'}`}>
         <input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Nama pelanggan (opsional)" className="w-full rounded-2xl border border-[#C9A84C]/20 bg-[#0D0A06] px-4 py-3 outline-none" />
         <input value={customerPhone} onChange={(e) => setCustomerPhone(formatIndonesianPhone(e.target.value))} inputMode="numeric" placeholder="+62895-3530-25503" className="w-full rounded-2xl border border-[#C9A84C]/20 bg-[#0D0A06] px-4 py-3 outline-none" />
-        <div className="flex gap-2">
+        <div className="flex gap-2 lg:col-span-2">
           <input value={voucherCode} onChange={(e) => setVoucherCode(e.target.value.toUpperCase())} placeholder="Kode vocher / voucher (opsional)" className="min-w-0 flex-1 rounded-2xl border border-[#C9A84C]/20 bg-[#0D0A06] px-4 py-3 font-bold uppercase outline-none" />
           <button
             type="button"
@@ -1222,7 +1222,7 @@ export default function CustomerOrderPage() {
             Paste
           </button>
         </div>
-        <div className="rounded-2xl border border-[#C9A84C]/20 bg-[#0D0A06] p-3">
+        <div className="rounded-2xl border border-[#C9A84C]/20 bg-[#0D0A06] p-3 lg:col-span-2">
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.18em] text-[#C9A84C]">Voucher Review QR</p>
@@ -1260,11 +1260,12 @@ export default function CustomerOrderPage() {
             </div>
           )}
         </div>
-        <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Catatan pesanan..." className="max-h-28 w-full rounded-2xl border border-[#C9A84C]/20 bg-[#0D0A06] px-4 py-3 outline-none" />
+        <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Catatan pesanan..." className="max-h-28 w-full rounded-2xl border border-[#C9A84C]/20 bg-[#0D0A06] px-4 py-3 outline-none lg:col-span-2" />
       </div>
 
+      <div className={`${isMobile ? '' : 'mt-4 grid min-h-0 gap-3 xl:grid-cols-[1.04fr_0.96fr] xl:items-start'}`}>
       {cart.length > 0 && (
-        <div className="mt-5 rounded-3xl border border-[#C9A84C]/18 bg-[#241C0E] p-3">
+        <div className={`${isMobile ? 'mt-5' : ''} rounded-3xl border border-[#C9A84C]/18 bg-[#241C0E] p-3`}>
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.18em] text-[#C9A84C]">Metode pembayaran</p>
@@ -1286,6 +1287,7 @@ export default function CustomerOrderPage() {
                     method={method}
                     active={active}
                     compact
+                    className={isMobile ? '' : '[&>div:first-child]:!min-h-[118px] [&>div:first-child]:!p-3'}
                     onClick={() => setSelectedPaymentMethodId(String(method.id))}
                   />
                 );
@@ -1299,68 +1301,71 @@ export default function CustomerOrderPage() {
         </div>
       )}
 
-      <div className="mt-5 flex items-center justify-between border-t border-[#C9A84C]/15 pt-4">
-        <span className="text-sm text-[#EDE0C4]/70">Subtotal</span>
-        <strong className="text-2xl text-[#C9A84C]">{formatRp(total)}</strong>
-      </div>
-      {cart.length > 0 && (
-        <div className="mt-3 rounded-2xl border border-[#C9A84C]/15 bg-[#0D0A06]/55 p-3 text-xs">
-          {discountLoading ? (
-            <p className="text-[#EDE0C4]/55">Mengecek diskon...</p>
-          ) : discountPreview?.error ? (
-            <p className="text-yellow-200">{discountPreview.message}</p>
-          ) : discountAmount > 0 ? (
-            <div className="space-y-2">
-              <div className="flex justify-between gap-3 text-[#F5EDD8]">
-                <span>{discountPreview.label}</span>
-                <strong className="text-red-300">-{formatRp(discountAmount)}</strong>
-              </div>
-              {previewDiscountBreakdown.map((component) => (
-                <div key={`${component.type}-${component.program_id || component.label}`} className={`rounded-xl p-2 text-[11px] leading-5 ${getDiscountCardClass(component.type)}`}>
-                  <div className={`flex justify-between gap-2 font-black ${getDiscountTitleClass(component.type)}`}>
-                    <span>{component.label}</span>
-                    <span className="text-red-300">-{formatRp(component.discount_amount)}</span>
+        <div className={`${isMobile ? 'mt-5 border-t border-[#C9A84C]/15 pt-4' : 'rounded-3xl border border-[#C9A84C]/18 bg-[#0D0A06]/50 p-3'}`}>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-sm text-[#EDE0C4]/70">Subtotal</span>
+            <strong className="text-2xl text-[#C9A84C]">{formatRp(total)}</strong>
+          </div>
+          {cart.length > 0 && (
+            <div className="mt-3 max-h-64 overflow-y-auto rounded-2xl border border-[#C9A84C]/15 bg-[#0D0A06]/55 p-3 text-xs">
+              {discountLoading ? (
+                <p className="text-[#EDE0C4]/55">Mengecek diskon...</p>
+              ) : discountPreview?.error ? (
+                <p className="text-yellow-200">{discountPreview.message}</p>
+              ) : discountAmount > 0 ? (
+                <div className="space-y-2">
+                  <div className="flex justify-between gap-3 text-[#F5EDD8]">
+                    <span>{discountPreview.label}</span>
+                    <strong className="text-red-300">-{formatRp(discountAmount)}</strong>
                   </div>
-                  <p className="font-black">{getDiscountScopeTitle(component.type)}</p>
-                  {component.scopeItems.map((item) => (
-                    <p key={item.id}>{item.name} x{item.qty} - dasar {formatRp(item.subtotal)}</p>
-                  ))}
-                  <p className="mt-1 opacity-75">
-                    {getDiscountNote(component)}
-                    {component.type !== 'bundle' ? ` Dasar potongan ${formatRp(component.discount_base || 0)}.` : ''}
-                  </p>
-                </div>
-              ))}
-              {!previewDiscountBreakdown.some((component) => component.type === 'bundle') && qualifiedBundleAlternatives.length > 0 && (
-                <div className="rounded-xl border border-[#C9A84C]/15 bg-[#C9A84C]/10 p-2 text-[11px] leading-5 text-[#F5EDD8]/85">
-                  <p className="font-black text-[#C9A84C]">Paket bundle yang juga memenuhi syarat:</p>
-                  {qualifiedBundleAlternatives.slice(0, 2).map((program) => (
-                    <div key={program.id} className="mt-1">
-                      <p className="font-bold">{program.name} - potensi potongan {formatRp(program.discountAmountValue)}</p>
-                      <p className="text-[#EDE0C4]/65">
-                        {program.bundleProducts.map((product) => `${product.name} x${product.current_qty || product.required_qty || 1}`).join(', ')}
+                  {previewDiscountBreakdown.map((component) => (
+                    <div key={`${component.type}-${component.program_id || component.label}`} className={`rounded-xl p-2 text-[11px] leading-5 ${getDiscountCardClass(component.type)}`}>
+                      <div className={`flex justify-between gap-2 font-black ${getDiscountTitleClass(component.type)}`}>
+                        <span>{component.label}</span>
+                        <span className="text-red-300">-{formatRp(component.discount_amount)}</span>
+                      </div>
+                      <p className="font-black">{getDiscountScopeTitle(component.type)}</p>
+                      {component.scopeItems.map((item) => (
+                        <p key={item.id}>{item.name} x{item.qty} - dasar {formatRp(item.subtotal)}</p>
+                      ))}
+                      <p className="mt-1 opacity-75">
+                        {getDiscountNote(component)}
+                        {component.type !== 'bundle' ? ` Dasar potongan ${formatRp(component.discount_base || 0)}.` : ''}
                       </p>
                     </div>
                   ))}
-                  <p className="mt-1 text-[#EDE0C4]/65">Paket bundle akan memotong menu paket saja, sedangkan voucher memotong menu di luar paket.</p>
+                  {!previewDiscountBreakdown.some((component) => component.type === 'bundle') && qualifiedBundleAlternatives.length > 0 && (
+                    <div className="rounded-xl border border-[#C9A84C]/15 bg-[#C9A84C]/10 p-2 text-[11px] leading-5 text-[#F5EDD8]/85">
+                      <p className="font-black text-[#C9A84C]">Paket bundle yang juga memenuhi syarat:</p>
+                      {qualifiedBundleAlternatives.slice(0, 2).map((program) => (
+                        <div key={program.id} className="mt-1">
+                          <p className="font-bold">{program.name} - potensi potongan {formatRp(program.discountAmountValue)}</p>
+                          <p className="text-[#EDE0C4]/65">
+                            {program.bundleProducts.map((product) => `${product.name} x${product.current_qty || product.required_qty || 1}`).join(', ')}
+                          </p>
+                        </div>
+                      ))}
+                      <p className="mt-1 text-[#EDE0C4]/65">Paket bundle akan memotong menu paket saja, sedangkan voucher memotong menu di luar paket.</p>
+                    </div>
+                  )}
+                  <div className="flex justify-between gap-3 border-t border-[#C9A84C]/10 pt-2 text-emerald-300">
+                    <span>Total bayar</span>
+                    <strong className="text-emerald-200">{formatRp(payableTotal)}</strong>
+                  </div>
                 </div>
+              ) : bundleHints.some((program) => program.complete) && !customerPhoneForApi ? (
+                <p className="text-yellow-200">Isi nomor HP agar diskon paket bundle bisa diklaim.</p>
+              ) : bundleHints.some((program) => !program.complete && program.missingProducts?.length) ? (
+                <p className="text-[#C9A84C]">
+                  Tambah {bundleHints.find((program) => !program.complete && program.missingProducts?.length)?.missingProducts?.map((item) => `${item.name} x${Math.max(1, Number(item.required_qty || 1) - Number(item.current_qty || 0))}`).join(', ')} untuk membuka diskon paket.
+                </p>
+              ) : (
+                <p className="text-[#EDE0C4]/55">Voucher dan paket bundle otomatis dicek sebelum pesanan dikirim.</p>
               )}
-              <div className="flex justify-between gap-3 border-t border-[#C9A84C]/10 pt-2 text-emerald-300">
-                <span>Total bayar</span>
-                <strong className="text-emerald-200">{formatRp(payableTotal)}</strong>
-              </div>
             </div>
-          ) : bundleHints.some((program) => program.complete) && !customerPhoneForApi ? (
-            <p className="text-yellow-200">Isi nomor HP agar diskon paket bundle bisa diklaim.</p>
-          ) : bundleHints.some((program) => !program.complete && program.missingProducts?.length) ? (
-            <p className="text-[#C9A84C]">
-              Tambah {bundleHints.find((program) => !program.complete && program.missingProducts?.length)?.missingProducts?.map((item) => `${item.name} x${Math.max(1, Number(item.required_qty || 1) - Number(item.current_qty || 0))}`).join(', ')} untuk membuka diskon paket.
-            </p>
-          ) : (
-            <p className="text-[#EDE0C4]/55">Voucher dan paket bundle otomatis dicek sebelum pesanan dikirim.</p>
           )}
         </div>
-      )}
+      </div>
       <button
         onClick={submitOrder}
         disabled={submitting || !cart.length}
@@ -1411,7 +1416,7 @@ export default function CustomerOrderPage() {
       </header>
 
       <div className={`mx-auto grid gap-5 px-3 pb-28 pt-4 sm:px-4 sm:py-6 lg:pb-6 ${
-        order ? 'max-w-5xl lg:grid-cols-1' : 'max-w-7xl lg:grid-cols-[1fr_380px]'
+        order ? 'max-w-5xl lg:grid-cols-1' : 'max-w-7xl lg:grid-cols-[minmax(0,1fr)_430px] xl:grid-cols-[minmax(0,1fr)_540px]'
       }`}>
         <section className={order ? 'hidden' : ''}>
           <div className="mb-4 rounded-3xl border border-[#C9A84C]/18 bg-[#1A1409] p-4 sm:mb-5 sm:rounded-[2rem] sm:p-5">
