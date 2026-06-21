@@ -436,9 +436,9 @@ export default function ProductsPage() {
 
       {/* Modal Tambah/Edit Produk */}
       {modal && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div data-tour="product-modal" className="bg-slate-800 rounded-2xl p-6 w-full max-w-lg border border-slate-700 my-4">
-            <h2 className="text-white font-bold text-xl mb-5">
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-hidden bg-black/60 p-4 sm:items-center">
+          <div data-tour="product-modal" className="max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl border border-slate-700 bg-slate-800 p-6 shadow-2xl shadow-black/40">
+            <h2 className="sticky top-0 z-10 -mx-6 -mt-6 mb-5 border-b border-slate-700 bg-slate-800 px-6 py-5 text-xl font-bold text-white">
               {editing ? 'Edit Produk' : 'Tambah Produk'}
             </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -543,7 +543,7 @@ export default function ProductsPage() {
               </div>
 
               {/* Ingredients / Resep */}
-              <div data-tour="product-recipe-section">
+              <div data-tour="product-recipe-section" className="rounded-2xl border border-slate-700/70 bg-slate-900/35 p-3">
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-slate-400 text-sm">Bahan Baku (Resep)</label>
                   <button type="button" onClick={addIngredient} data-tour="product-add-ingredient" data-tour-action="product-add-ingredient"
@@ -551,7 +551,7 @@ export default function ProductsPage() {
                     + Tambah Bahan
                   </button>
                 </div>
-                <div className="space-y-2">
+                <div className="max-h-48 space-y-2 overflow-y-auto pr-1 sm:max-h-56">
                   {form.ingredients.map((ing, idx) => {
                     // Cari item yang dipilih untuk ambil satuannya
                     const selectedStock = stockItems.find(s => s.id == ing.stock_item_id);
@@ -605,9 +605,10 @@ export default function ProductsPage() {
                       Belum ada bahan — klik "+ Tambah Bahan" untuk menambahkan resep
                     </p>
                   )} */}
+                </div>
                   {/* Preview HPP & Validasi Harga */}
                   {form.ingredients.length > 0 && (
-                    <div data-tour="product-hpp-preview" className={`rounded-xl p-4 border ${
+                    <div data-tour="product-hpp-preview" className={`mt-3 rounded-xl p-4 border ${
                       hargaValid
                         ? 'bg-blue-500/10 border-blue-500/30'
                         : 'bg-red-500/10 border-red-500/30'
@@ -617,7 +618,7 @@ export default function ProductsPage() {
                       </p>
 
                       {/* Rincian per bahan */}
-                      <div className="space-y-1 mb-3">
+                      <div className="mb-3 max-h-32 space-y-1 overflow-y-auto pr-1">
                         {form.ingredients.map((ing, idx) => {
                           const item = stockItems.find(s => s.id == ing.stock_item_id);
                           if (!item || !ing.stock_item_id) return null;
@@ -625,9 +626,9 @@ export default function ProductsPage() {
                           const ppu = Number(item.price_per_unit || 0);
                           const subtotal = ppu * Number(ing.qty);
                           return (
-                            <div key={idx} className="flex justify-between text-xs text-slate-400">
-                              <span>{item.name} × {ing.qty} {item.unit}</span>
-                              <span>Rp {Math.round(subtotal).toLocaleString('id-ID')}</span>
+                            <div key={idx} className="flex justify-between gap-3 text-xs text-slate-400">
+                              <span className="min-w-0 truncate">{item.name} × {ing.qty} {item.unit}</span>
+                              <span className="shrink-0">Rp {Math.round(subtotal).toLocaleString('id-ID')}</span>
                             </div>
                           );
                         })}
@@ -664,10 +665,9 @@ export default function ProductsPage() {
                       )}
                     </div>
                   )}
-                </div>
               </div>
 
-              <div data-tour="product-form-actions" className="flex gap-3 pt-2">
+              <div data-tour="product-form-actions" className="sticky bottom-0 z-10 -mx-6 -mb-6 flex gap-3 border-t border-slate-700 bg-slate-800/95 px-6 pb-6 pt-4 backdrop-blur">
                 <button type="button" onClick={() => setModal(false)}
                   className="flex-1 bg-slate-700 hover:bg-slate-600 text-white rounded-xl py-3 transition-colors">
                   Batal
