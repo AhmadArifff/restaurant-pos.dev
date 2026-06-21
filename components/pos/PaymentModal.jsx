@@ -117,6 +117,7 @@ export default function PaymentModal({
   const [method, setMethod]   = useState('cash');
   const [tunai, setTunai]     = useState(0);
   const [tunaiStr, setTunaiStr] = useState('');
+  const [pecahanCounts, setPecahanCounts] = useState({});
   const [customerPhone, setCustomerPhone] = useState('+62');
   const [voucherCode, setVoucherCode] = useState('');
   const [discountPreview, setDiscountPreview] = useState(null);
@@ -183,18 +184,24 @@ export default function PaymentModal({
     const newVal = tunai + p;
     setTunai(newVal);
     setTunaiStr(newVal.toLocaleString('id-ID'));
+    setPecahanCounts((prev) => ({
+      ...prev,
+      [p]: Number(prev[p] || 0) + 1,
+    }));
   };
 
   const handleTunaiInput = (val) => {
     const clean = parseInt(val.replace(/\D/g, '')) || 0;
     setTunai(clean);
     setTunaiStr(clean > 0 ? clean.toLocaleString('id-ID') : '');
+    setPecahanCounts({});
   };
 
   const handleMethod = (m) => {
     setMethod(m);
     setTunai(0);
     setTunaiStr('');
+    setPecahanCounts({});
   };
 
   const methods = [
@@ -272,7 +279,7 @@ export default function PaymentModal({
           )}
 
           {/* Voucher */}
-          <div className="rounded-xl border border-slate-700 bg-slate-800/60 p-3 lg:col-start-1 lg:row-span-2" data-tour="pos-payment-discount">
+          <div className="rounded-xl border border-slate-700 bg-slate-800/60 p-3 lg:col-start-1 lg:row-start-2" data-tour="pos-payment-discount">
             <p className="text-slate-500 text-xs uppercase tracking-wide font-medium mb-2">Voucher & Diskon</p>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <input
@@ -339,7 +346,7 @@ export default function PaymentModal({
           </div>
 
           {/* Metode Bayar */}
-          <div className="lg:col-start-1" data-tour="pos-payment-methods">
+          <div className="lg:col-start-1 lg:row-start-3" data-tour="pos-payment-methods">
             <p className="text-slate-500 text-xs uppercase tracking-wide font-medium mb-2">Metode Bayar</p>
             <div className="grid grid-cols-3 gap-2">
               {methods.map(m => (
@@ -363,23 +370,31 @@ export default function PaymentModal({
           {method === 'cash' && (
             <>
               {/* Pecahan Uang */}
-              <div className="lg:col-start-2" data-tour="pos-payment-cash-denominations">
+              <div className="lg:col-start-2 lg:row-start-2" data-tour="pos-payment-cash-denominations">
                 <p className="text-slate-500 text-xs uppercase tracking-wide font-medium mb-2">Pecahan Uang</p>
                 <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-6 lg:grid-cols-4 xl:grid-cols-3">
-                  {PECAHAN.map(p => (
-                    <button
-                      key={p}
-                      onClick={() => addPecahan(p)}
-                      className="bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-orange-500 text-slate-300 hover:text-orange-400 text-xs font-semibold py-2 rounded-lg transition-all active:scale-95"
-                    >
-                      {fmtPecahan(p)}
-                    </button>
-                  ))}
+                  {PECAHAN.map(p => {
+                    const count = Number(pecahanCounts[p] || 0);
+                    return (
+                      <button
+                        key={p}
+                        onClick={() => addPecahan(p)}
+                        className="relative rounded-lg border border-slate-700 bg-slate-800 py-2 text-xs font-semibold text-slate-300 transition-all hover:border-orange-500 hover:bg-slate-700 hover:text-orange-400 active:scale-95"
+                      >
+                        {count > 0 && (
+                          <span className="absolute -right-1.5 -top-1.5 min-w-6 rounded-full border border-emerald-200/50 bg-emerald-500 px-1.5 py-0.5 text-[10px] font-black leading-none text-white shadow-lg shadow-emerald-950/40">
+                            {count}x
+                          </span>
+                        )}
+                        {fmtPecahan(p)}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
               {/* Input Uang Diterima */}
-              <div className="lg:col-start-2" data-tour="pos-payment-cash-input">
+              <div className="lg:col-start-2 lg:row-start-3" data-tour="pos-payment-cash-input">
                 <label className="text-slate-500 text-xs uppercase tracking-wide font-medium block mb-2">
                   Uang Diterima
                 </label>
@@ -395,7 +410,7 @@ export default function PaymentModal({
                   />
                   {tunai > 0 && (
                     <button
-                      onClick={() => { setTunai(0); setTunaiStr(''); }}
+                      onClick={() => { setTunai(0); setTunaiStr(''); setPecahanCounts({}); }}
                       className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 text-lg transition-colors"
                     >×</button>
                   )}
@@ -403,7 +418,7 @@ export default function PaymentModal({
               </div>
 
               {/* Kembalian */}
-              <div className="lg:col-start-2" data-tour="pos-payment-change">
+              <div className="lg:col-start-2 lg:row-start-4" data-tour="pos-payment-change">
                 <label className="text-slate-500 text-xs uppercase tracking-wide font-medium block mb-2">
                   Kembalian
                 </label>
