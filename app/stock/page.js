@@ -1605,8 +1605,8 @@ function AdminStockPage({ successModal, setSuccessModal }) {
           {mainTab === 'out' && (
             <div data-tour="stock-out" className="space-y-3">
               {/* Filter date + tombol */}
-              <div data-tour="stock-out-filters" className="flex flex-wrap gap-3 items-center justify-between">
-                <div className="w-full max-w-sm">
+              <div data-tour="stock-out-filters" className="flex justify-end">
+                <div className="w-full max-w-sm lg:ml-auto">
                   <DateRangePicker
                     label="Range pengeluaran"
                     value={{ start: selDate, end: selDateTo || selDate }}
@@ -1617,14 +1617,25 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                     helperText="Klik tanggal awal pengeluaran, lalu tanggal akhir"
                   />
                 </div>
-                <div className="flex flex-wrap gap-2 items-center">
-                  <button onClick={() => loadDaily()}
-                    className="px-3 py-2 rounded-xl text-xs font-semibold bg-slate-700 text-slate-300
-                      hover:bg-slate-600 hover:text-white border border-slate-600 transition-all">
-                    🔍 Cari
-                  </button>
+              </div>
+
+              {/* ── Filter pills ── */}
+              <div data-tour="stock-out-pills" className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap gap-1.5 items-center">
+                  {OUT_FILTERS.map(f => (
+                    <button key={f.val}
+                      onClick={() => setOutTypeFilter(f.val)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                        outTypeFilter === f.val
+                          ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/25'
+                          : 'bg-slate-700/60 text-slate-400 border border-slate-600/60 hover:text-white hover:border-slate-500'
+                      }`}>
+                      {f.label}
+                    </button>
+                  ))}
+                  <span className="text-slate-600 text-xs ml-1">{searchedOutData.length} data</span>
                 </div>
-              <button
+                <button
                   data-tour-action="stock-open-out-modal"
                   onClick={() => {
                     setOutMenuSelections([createEmptyRecipeSelection()]);
@@ -1635,22 +1646,6 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                     bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 transition-all">
                   + Catat Pengeluaran
                 </button>
-              </div>
-
-              {/* ── Filter pills ── */}
-              <div data-tour="stock-out-pills" className="flex flex-wrap gap-1.5 items-center">
-                {OUT_FILTERS.map(f => (
-                  <button key={f.val}
-                    onClick={() => setOutTypeFilter(f.val)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                      outTypeFilter === f.val
-                        ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/25'
-                        : 'bg-slate-700/60 text-slate-400 border border-slate-600/60 hover:text-white hover:border-slate-500'
-                    }`}>
-                    {f.label}
-                  </button>
-                ))}
-                <span className="text-slate-600 text-xs ml-1">{searchedOutData.length} data</span>
               </div>
 
               <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-3 flex gap-2.5">
@@ -1776,14 +1771,9 @@ function AdminStockPage({ successModal, setSuccessModal }) {
           <StockRequestSkeleton />
         ) : (
         <div data-tour="stock-requests" className="space-y-4">
-          <div data-tour="stock-request-filters" className="flex flex-wrap gap-3 items-center">
-            <input
-              value={requestSearch}
-              onChange={(e) => setRequestSearch(e.target.value)}
-              placeholder="Cari pengajuan..."
-              className="w-full rounded-xl border border-slate-600 bg-slate-800 px-3 py-2 text-xs font-semibold text-white outline-none placeholder:text-slate-500 focus:border-orange-500/60 sm:w-56"
-            />
-            <div className="w-full max-w-sm">
+          <div data-tour="stock-request-filters" className="space-y-3">
+            <div className="flex justify-end">
+              <div className="w-full max-w-sm lg:ml-auto">
               <DateRangePicker
                 label="Range pengajuan"
                 value={{ start: reqDateFrom2, end: reqDateTo2 }}
@@ -1793,20 +1783,29 @@ function AdminStockPage({ successModal, setSuccessModal }) {
                 }}
                 helperText="Klik tanggal awal pengajuan, lalu tanggal akhir"
               />
+              </div>
             </div>
-            <div className="flex gap-1.5 flex-wrap">
-              {STOCK_REQUEST_FILTERS.map(({ val, label }) => (
-                <button key={val || 'all'} onClick={() => setReqStatus(val)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                    reqStatus === val
-                      ? 'bg-orange-500 text-white'
-                      : 'bg-slate-800 text-slate-400 border border-slate-700 hover:text-white'
-                  }`}>
-                  {label}
-                </button>
-              ))}
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-1.5">
+                {STOCK_REQUEST_FILTERS.map(({ val, label }) => (
+                  <button key={val || 'all'} onClick={() => setReqStatus(val)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                      reqStatus === val
+                        ? 'bg-orange-500 text-white'
+                        : 'bg-slate-800 text-slate-400 border border-slate-700 hover:text-white'
+                    }`}>
+                    {label}
+                  </button>
+                ))}
+                <span className="text-slate-600 text-xs">{filteredRequests.length} pengajuan</span>
+              </div>
+              <input
+                value={requestSearch}
+                onChange={(e) => setRequestSearch(e.target.value)}
+                placeholder="Cari pengajuan..."
+                className="w-full rounded-xl border border-slate-600 bg-slate-800 px-3 py-2 text-xs font-semibold text-white outline-none placeholder:text-slate-500 focus:border-orange-500/60 sm:w-64"
+              />
             </div>
-            <span className="text-slate-600 text-xs">{filteredRequests.length} pengajuan</span>
           </div>
 
           {filteredRequests.length===0
@@ -2954,8 +2953,8 @@ function KasirStockPage({ successModal, setSuccessModal }) {
           {/* ── Pengeluaran ── */}
           {mainTab === 'out' && (
             <div data-tour="stock-out" className="space-y-3">
-              <div data-tour="stock-out-filters" className="flex flex-wrap gap-3 items-center justify-between">
-                <div className="w-full max-w-sm">
+              <div data-tour="stock-out-filters" className="flex justify-end">
+                <div className="w-full max-w-sm lg:ml-auto">
                   <DateRangePicker
                     label="Range pengeluaran"
                     value={{ start: selDate, end: selDateTo || selDate }}
@@ -2966,12 +2965,29 @@ function KasirStockPage({ successModal, setSuccessModal }) {
                     helperText="Klik tanggal awal pengeluaran, lalu tanggal akhir"
                   />
                 </div>
-                <div className="flex flex-wrap gap-2 items-center">
-                  <button onClick={() => loadDaily()}
-                    className="px-3 py-2 rounded-xl text-xs font-semibold bg-slate-700 text-slate-300
-                      hover:bg-slate-600 hover:text-white border border-slate-600 transition-all">
-                    🔍 Cari
-                  </button>
+              </div>
+
+              {/* Filter pills kasir — tanpa 'manual' karena kasir sudah filter by user sendiri */}
+              <div data-tour="stock-out-pills" className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap gap-1.5 items-center">
+                  {[
+                    { val: 'all',         label: 'Semua'           },
+                    { val: 'approved',    label: '✓ Sudah Keluar'  },
+                    { val: 'pending',     label: '⏳ Menunggu'      },
+                    { val: 'rejected',    label: '✕ Ditolak'        },
+                    { val: 'transaction', label: '🧾 Transaksi POS' },
+                  ].map(f => (
+                    <button key={f.val}
+                      onClick={() => setOutTypeFilter(f.val)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                        outTypeFilter === f.val
+                          ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/25'
+                          : 'bg-slate-700/60 text-slate-400 border border-slate-600/60 hover:text-white hover:border-slate-500'
+                      }`}>
+                      {f.label}
+                    </button>
+                  ))}
+                  <span className="text-slate-600 text-xs ml-1">{searchedOutData.length} data</span>
                 </div>
                 <button data-tour-action="stock-open-out-modal" onClick={() => {
                   setOutMenuSelections([createEmptyRecipeSelection()]);
@@ -2982,28 +2998,6 @@ function KasirStockPage({ successModal, setSuccessModal }) {
                     bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 transition-all">
                   + Catat Pengeluaran
                 </button>
-              </div>
-
-              {/* Filter pills kasir — tanpa 'manual' karena kasir sudah filter by user sendiri */}
-              <div data-tour="stock-out-pills" className="flex flex-wrap gap-1.5 items-center">
-                {[
-                  { val: 'all',         label: 'Semua'           },
-                  { val: 'approved',    label: '✓ Sudah Keluar'  },
-                  { val: 'pending',     label: '⏳ Menunggu'      },
-                  { val: 'rejected',    label: '✕ Ditolak'        },
-                  { val: 'transaction', label: '🧾 Transaksi POS' },
-                ].map(f => (
-                  <button key={f.val}
-                    onClick={() => setOutTypeFilter(f.val)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                      outTypeFilter === f.val
-                        ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/25'
-                        : 'bg-slate-700/60 text-slate-400 border border-slate-600/60 hover:text-white hover:border-slate-500'
-                    }`}>
-                    {f.label}
-                  </button>
-                ))}
-                <span className="text-slate-600 text-xs ml-1">{searchedOutData.length} data</span>
               </div>
 
               <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-3 flex gap-2.5">
@@ -3114,14 +3108,9 @@ function KasirStockPage({ successModal, setSuccessModal }) {
           <StockRequestSkeleton />
         ) : (
         <div data-tour="stock-requests" className="space-y-4">
-          <div data-tour="stock-request-filters" className="flex flex-wrap gap-3 items-center">
-            <input
-              value={requestSearch}
-              onChange={(e) => setRequestSearch(e.target.value)}
-              placeholder="Cari pengajuan..."
-              className="w-full rounded-xl border border-slate-600 bg-slate-800 px-3 py-2 text-xs font-semibold text-white outline-none placeholder:text-slate-500 focus:border-orange-500/60 sm:w-56"
-            />
-            <div className="w-full max-w-sm">
+          <div data-tour="stock-request-filters" className="space-y-3">
+            <div className="flex justify-end">
+              <div className="w-full max-w-sm lg:ml-auto">
               <DateRangePicker
                 label="Range pengajuan"
                 value={{ start: reqDateFrom, end: reqDateTo }}
@@ -3131,20 +3120,29 @@ function KasirStockPage({ successModal, setSuccessModal }) {
                 }}
                 helperText="Klik tanggal awal pengajuan, lalu tanggal akhir"
               />
+              </div>
             </div>
-            <div className="flex gap-1.5 flex-wrap">
-              {STOCK_REQUEST_FILTERS.map(({ val, label }) => (
-                <button key={val || 'all'} onClick={() => setReqStatus(val)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                    reqStatus === val
-                      ? 'bg-orange-500 text-white'
-                      : 'bg-slate-800 text-slate-400 border border-slate-700 hover:text-white'
-                  }`}>
-                  {label}
-                </button>
-              ))}
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-1.5">
+                {STOCK_REQUEST_FILTERS.map(({ val, label }) => (
+                  <button key={val || 'all'} onClick={() => setReqStatus(val)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                      reqStatus === val
+                        ? 'bg-orange-500 text-white'
+                        : 'bg-slate-800 text-slate-400 border border-slate-700 hover:text-white'
+                    }`}>
+                    {label}
+                  </button>
+                ))}
+                <span className="text-slate-600 text-xs">{filteredRequests.length} pengajuan</span>
+              </div>
+              <input
+                value={requestSearch}
+                onChange={(e) => setRequestSearch(e.target.value)}
+                placeholder="Cari pengajuan..."
+                className="w-full rounded-xl border border-slate-600 bg-slate-800 px-3 py-2 text-xs font-semibold text-white outline-none placeholder:text-slate-500 focus:border-orange-500/60 sm:w-64"
+              />
             </div>
-            <span className="text-slate-600 text-xs">{filteredRequests.length} pengajuan</span>
           </div>
 
           {filteredRequests.length === 0
