@@ -486,7 +486,11 @@ export default function CustomerOrderPage() {
       })();
       const savedDraftHasCart = Array.isArray(savedDraft?.cart) && savedDraft.cart.length > 0;
       const existingSessionToken = tableSessionStorageKey ? localStorage.getItem(tableSessionStorageKey) || '' : '';
-      const tableRes = await getDiningTableByToken(token, { session_token: existingSessionToken });
+      const savedCustomerPhone = savedDraft?.customerPhone || savedOrderPhone || '';
+      const tableRes = await getDiningTableByToken(token, {
+        session_token: existingSessionToken,
+        customer_phone: normalizeIndonesianPhoneForSubmit(savedCustomerPhone),
+      });
       const tableLockedByOtherCustomer = Number(tableRes.data?.active_orders || 0) > 0
         && !savedOrderCode
         && !savedDraftHasCart;
@@ -607,12 +611,13 @@ export default function CustomerOrderPage() {
     const interval = window.setInterval(() => {
       getDiningTableByToken(token, {
         session_token: tableSessionStorageKey ? localStorage.getItem(tableSessionStorageKey) || '' : '',
+        customer_phone: customerPhoneForApi,
       })
         .then((res) => setTable(res.data))
         .catch(() => {});
     }, 20000);
     return () => window.clearInterval(interval);
-  }, [token, order, tableSessionStorageKey]);
+  }, [token, order, tableSessionStorageKey, customerPhoneForApi]);
 
   useEffect(() => {
     if (!tableSession?.expires_at || order) return;
@@ -793,7 +798,10 @@ export default function CustomerOrderPage() {
     sessionTouchRef.current.lastTouchedAt = Date.now();
     sessionTouchRef.current.inFlight = (async () => {
       try {
-        const res = await createTableSession(token, { session_token: sessionToken });
+        const res = await createTableSession(token, {
+          session_token: sessionToken,
+          customer_phone: customerPhoneForApi,
+        });
         const session = res.data?.data;
         if (session?.session_token) {
           localStorage.setItem(tableSessionStorageKey, session.session_token);
@@ -966,9 +974,10 @@ export default function CustomerOrderPage() {
   };
 
   const startNewOrder = async () => {
+    const repeatCustomerPhone = order?.customer_phone || customerPhoneForApi || customerPhone;
     if (storageKey) localStorage.removeItem(storageKey);
     if (draftStorageKey) localStorage.removeItem(draftStorageKey);
-    if (phoneStorageKey) localStorage.removeItem(phoneStorageKey);
+    if (phoneStorageKey && repeatCustomerPhone) localStorage.setItem(phoneStorageKey, repeatCustomerPhone);
     setOrder(null);
     setCart([]);
     setVoucherCode('');
@@ -988,6 +997,7 @@ export default function CustomerOrderPage() {
       if (token) {
         const tableRes = await getDiningTableByToken(token, {
           session_token: tableSessionStorageKey ? localStorage.getItem(tableSessionStorageKey) || '' : '',
+          customer_phone: normalizeIndonesianPhoneForSubmit(repeatCustomerPhone),
         });
         setTable(tableRes.data);
         const menuRes = await getCustomerMenu({ branch_id: tableRes.data?.branch_id });
